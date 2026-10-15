@@ -215,21 +215,22 @@ export class PixelAssetManager {
     return tex;
   }
 
-  // 3. Đế Súng (BÁNH RĂNG CÔNG NGHIỆP 10 RĂNG BẢN TO) 96x96 - HOÀN TOÀN ĐỒNG TÂM 100%
-  static getGunBaseTexture(tier: number): Texture {
-    const key = `gun_base_gear_hires_v4_${tier}`;
+  // 3. Đế Súng (BÁNH RĂNG CÔNG NGHIỆP 10 RĂNG BẢN TO) 96x96 - ASSET CHUYỂN MÀU THEO LEVEL 1 -> 5
+  static getGunBaseTexture(level: number = 1): Texture {
+    const lvl = Math.min(5, Math.max(1, level));
+    const key = `gun_base_gear_level_${lvl}`;
     if (this.cache.has(key)) return this.cache.get(key)!;
 
     const tex = createHighResTexture(96, 96, (ctx) => {
       const cx = 48, cy = 48;
 
-      // Bảng màu chuẩn Rarity Gaming: 1 Trắng, 2 Xanh, 3 Tím, 4 Vàng, 5 Đỏ
+      // Bảng màu chuẩn Level 1-5: 1 Trắng/Bạc, 2 Xanh, 3 Tím, 4 Vàng, 5 Đỏ
       const gearMainColors = ['#94a3b8', '#2563eb', '#7e22ce', '#d97706', '#dc2626'];
       const gearRimColors = ['#f8fafc', '#60a5fa', '#c084fc', '#fde047', '#f87171'];
       const gearInnerColors = ['#475569', '#1d4ed8', '#581c87', '#92400e', '#991b1b'];
       const gearGrooveColors = ['#ffffff', '#93c5fd', '#e9d5ff', '#fef08a', '#fecaca'];
 
-      const colorIdx = Math.min(Math.max(0, tier - 1), 4);
+      const colorIdx = lvl - 1;
       const mainCol = gearMainColors[colorIdx];
       const rimCol = gearRimColors[colorIdx];
       const innerCol = gearInnerColors[colorIdx];
@@ -371,57 +372,83 @@ export class PixelAssetManager {
     return tex;
   }
 
-  // 4. Nòng Súng Xoay Độc Lập 80x80 (Tâm tại 40, 40)
-  static getGunBarrelTexture(kind: GunKind, level: number): Texture {
-    const key = `gun_barrel_hires_${kind}_${level}`;
+  // 4. Nòng Súng Xoay Độc Lập 80x80 (Tâm tại 40, 40) - ASSET CHUYỂN MÀU THEO LEVEL 1 -> 5
+  static getGunBarrelTexture(kind: GunKind, level: number = 1): Texture {
+    const lvl = Math.min(5, Math.max(1, level));
+    const key = `gun_barrel_hires_lvl_${kind}_${lvl}`;
     if (this.cache.has(key)) return this.cache.get(key)!;
 
     const tex = createHighResTexture(80, 80, (ctx) => {
       const cx = 40, cy = 40;
 
+      // Bảng màu kim loại của chính Asset thay đổi theo Level:
+      // Level 1: Thép mộc xám bạc cổ điển
+      // Level 2: Hợp kim tôi xanh năng lượng
+      // Level 3: Hắc diện thạch cổ ngữ tím
+      // Level 4: Hoàng kim vương giả
+      // Level 5: Hỏa ngục thần thoại đỏ rực
+      const palettes = [
+        { body: '#475569', accent: '#64748b', highlight: '#cbd5e1', core: '#f8fafc' },
+        { body: '#1e293b', accent: '#2563eb', highlight: '#60a5fa', core: '#38bdf8' },
+        { body: '#1e1b4b', accent: '#7e22ce', highlight: '#c084fc', core: '#e879f9' },
+        { body: '#292524', accent: '#d97706', highlight: '#fde047', core: '#ffffff' },
+        { body: '#18181b', accent: '#b91c1c', highlight: '#ef4444', core: '#fef08a' },
+      ];
+      const pal = palettes[lvl - 1];
+
       ctx.save();
       ctx.translate(cx, cy);
 
       if (kind === 'PISTOL') {
-        ctx.fillStyle = '#64748b';
+        ctx.fillStyle = pal.body;
         ctx.fillRect(-6, -30, 12, 30);
-        ctx.fillStyle = '#94a3b8';
+        ctx.fillStyle = pal.accent;
         ctx.fillRect(-4, -28, 8, 28);
-        ctx.fillStyle = '#f8fafc';
+        ctx.fillStyle = pal.highlight;
         ctx.fillRect(-5, -34, 10, 5);
+        ctx.fillStyle = pal.core;
+        ctx.fillRect(-2, -33, 4, 3);
       } else if (kind === 'CROSSBOW') {
-        ctx.fillStyle = '#854d0e';
+        ctx.fillStyle = lvl === 1 ? '#854d0e' : pal.body;
         ctx.fillRect(-4, -30, 8, 30);
-        ctx.strokeStyle = '#ca8a04';
+        ctx.strokeStyle = pal.accent;
         ctx.lineWidth = 5;
         ctx.beginPath();
         ctx.arc(0, -10, 24, Math.PI * 0.8, Math.PI * 2.2);
         ctx.stroke();
-        ctx.fillStyle = '#facc15';
+        ctx.fillStyle = pal.highlight;
         ctx.beginPath();
         ctx.moveTo(0, -36);
         ctx.lineTo(-6, -26);
         ctx.lineTo(6, -26);
         ctx.closePath();
         ctx.fill();
+        ctx.fillStyle = pal.core;
+        ctx.beginPath();
+        ctx.arc(0, -28, 2.5, 0, Math.PI * 2);
+        ctx.fill();
       } else if (kind === 'CRYO') {
-        ctx.fillStyle = '#0284c7';
+        ctx.fillStyle = pal.body;
         ctx.fillRect(-7, -28, 14, 28);
-        ctx.fillStyle = '#38bdf8';
+        ctx.fillStyle = pal.accent;
         ctx.fillRect(-4, -26, 8, 26);
-        ctx.fillStyle = '#e0f2fe';
+        ctx.fillStyle = pal.highlight;
         ctx.beginPath();
         ctx.moveTo(0, -38);
         ctx.lineTo(-7, -26);
         ctx.lineTo(7, -26);
         ctx.closePath();
         ctx.fill();
+        ctx.fillStyle = pal.core;
+        ctx.beginPath();
+        ctx.arc(0, -24, 3, 0, Math.PI * 2);
+        ctx.fill();
       } else if (kind === 'FLAMER') {
-        ctx.fillStyle = '#b91c1c';
+        ctx.fillStyle = pal.body;
         ctx.fillRect(-8, -26, 16, 26);
-        ctx.fillStyle = '#ea580c';
+        ctx.fillStyle = pal.accent;
         ctx.fillRect(-5, -24, 10, 24);
-        ctx.fillStyle = '#f97316';
+        ctx.fillStyle = pal.highlight;
         ctx.beginPath();
         ctx.moveTo(-9, -26);
         ctx.lineTo(9, -26);
@@ -429,51 +456,54 @@ export class PixelAssetManager {
         ctx.lineTo(-13, -34);
         ctx.closePath();
         ctx.fill();
-        ctx.fillStyle = '#fef08a';
+        ctx.fillStyle = pal.core;
         ctx.fillRect(-6, -36, 12, 3);
       } else if (kind === 'SHOTGUN') {
-        ctx.fillStyle = '#475569';
+        ctx.fillStyle = pal.body;
         ctx.fillRect(-9, -30, 7, 30);
         ctx.fillRect(2, -30, 7, 30);
-        ctx.fillStyle = '#94a3b8';
+        ctx.fillStyle = pal.accent;
         ctx.fillRect(-7, -28, 4, 28);
         ctx.fillRect(4, -28, 4, 28);
-        ctx.fillStyle = '#cbd5e1';
+        ctx.fillStyle = pal.highlight;
         ctx.fillRect(-10, -34, 20, 5);
+        ctx.fillStyle = pal.core;
+        ctx.fillRect(-6, -34, 2, 2);
+        ctx.fillRect(5, -34, 2, 2);
       } else if (kind === 'CANNON') {
-        ctx.fillStyle = '#1c1917';
+        ctx.fillStyle = pal.body;
         ctx.fillRect(-12, -32, 24, 32);
-        ctx.fillStyle = '#44403c';
+        ctx.fillStyle = pal.accent;
         ctx.fillRect(-9, -30, 18, 30);
-        ctx.fillStyle = '#78716c';
+        ctx.fillStyle = pal.highlight;
         ctx.beginPath();
         ctx.arc(0, -32, 14, Math.PI, 0);
         ctx.fill();
-        ctx.fillStyle = '#ef4444';
+        ctx.fillStyle = pal.core;
         ctx.fillRect(-5, -36, 10, 4);
       } else if (kind === 'TESLA') {
-        ctx.fillStyle = '#6b21a8';
+        ctx.fillStyle = pal.body;
         ctx.fillRect(-6, -26, 12, 26);
-        ctx.fillStyle = '#a855f7';
+        ctx.fillStyle = pal.accent;
         ctx.fillRect(-3, -24, 6, 24);
-        ctx.strokeStyle = '#38bdf8';
+        ctx.strokeStyle = pal.highlight;
         ctx.lineWidth = 3;
         ctx.beginPath();
         ctx.arc(0, -12, 14, 0, Math.PI * 2);
         ctx.arc(0, -22, 11, 0, Math.PI * 2);
         ctx.stroke();
-        ctx.fillStyle = '#00f0ff';
+        ctx.fillStyle = pal.highlight;
         ctx.beginPath();
         ctx.arc(0, -34, 7, 0, Math.PI * 2);
         ctx.fill();
-        ctx.fillStyle = '#ffffff';
+        ctx.fillStyle = pal.core;
         ctx.beginPath();
         ctx.arc(0, -34, 3, 0, Math.PI * 2);
         ctx.fill();
       } else if (kind === 'SLINGSHOT') {
-        ctx.fillStyle = '#854d0e';
+        ctx.fillStyle = lvl === 1 ? '#854d0e' : pal.body;
         ctx.fillRect(-4, -18, 8, 18);
-        ctx.strokeStyle = '#a16207';
+        ctx.strokeStyle = pal.accent;
         ctx.lineWidth = 4;
         ctx.beginPath();
         ctx.moveTo(-11, -32);
@@ -481,56 +511,56 @@ export class PixelAssetManager {
         ctx.lineTo(4, -18);
         ctx.lineTo(11, -32);
         ctx.stroke();
-        ctx.strokeStyle = '#f59e0b';
-        ctx.lineWidth = 2;
+        ctx.strokeStyle = pal.highlight;
+        ctx.lineWidth = 2.5;
         ctx.beginPath();
         ctx.moveTo(-11, -32);
         ctx.lineTo(0, -22);
         ctx.lineTo(11, -32);
         ctx.stroke();
-        ctx.fillStyle = '#94a3b8';
+        ctx.fillStyle = pal.core;
         ctx.beginPath();
-        ctx.arc(0, -22, 3.5, 0, Math.PI * 2);
+        ctx.arc(0, -22, 4, 0, Math.PI * 2);
         ctx.fill();
       } else if (kind === 'SNIPER') {
-        ctx.fillStyle = '#0f172a';
+        ctx.fillStyle = pal.body;
         ctx.fillRect(-4, -44, 8, 44);
-        ctx.fillStyle = '#334155';
+        ctx.fillStyle = pal.accent;
         ctx.fillRect(-2, -42, 4, 42);
-        ctx.fillStyle = '#64748b';
+        ctx.fillStyle = pal.highlight;
         ctx.fillRect(-5, -46, 10, 5);
-        ctx.fillStyle = '#1e293b';
+        ctx.fillStyle = pal.body;
         ctx.fillRect(-7, -26, 14, 8);
-        ctx.fillStyle = '#38bdf8';
+        ctx.fillStyle = pal.core;
         ctx.fillRect(-5, -24, 10, 4);
       } else if (kind === 'MINIGUN') {
-        ctx.fillStyle = '#334155';
+        ctx.fillStyle = pal.body;
         ctx.fillRect(-8, -32, 16, 32);
         for (let b = 0; b < 6; b++) {
           const ba = (b * Math.PI) / 3;
           const bx = Math.cos(ba) * 5;
           const by = -20 + Math.sin(ba) * 3;
-          ctx.fillStyle = '#64748b';
+          ctx.fillStyle = pal.accent;
           ctx.beginPath();
           ctx.arc(bx, by, 2.5, 0, Math.PI * 2);
           ctx.fill();
         }
-        ctx.fillStyle = '#facc15';
+        ctx.fillStyle = pal.highlight;
         ctx.fillRect(-9, -36, 18, 4);
       } else { // METEOR
-        ctx.fillStyle = '#450a0a';
+        ctx.fillStyle = pal.body;
         ctx.fillRect(-10, -32, 20, 32);
-        ctx.fillStyle = '#b91c1c';
+        ctx.fillStyle = pal.accent;
         ctx.fillRect(-7, -30, 14, 30);
-        ctx.fillStyle = '#f97316';
+        ctx.fillStyle = pal.highlight;
         ctx.beginPath();
         ctx.arc(0, -16, 6, 0, Math.PI * 2);
         ctx.fill();
-        ctx.fillStyle = '#fef08a';
+        ctx.fillStyle = pal.core;
         ctx.beginPath();
         ctx.arc(0, -16, 3, 0, Math.PI * 2);
         ctx.fill();
-        ctx.fillStyle = '#ea580c';
+        ctx.fillStyle = pal.accent;
         ctx.beginPath();
         ctx.moveTo(-12, -32);
         ctx.lineTo(12, -32);
@@ -540,12 +570,12 @@ export class PixelAssetManager {
         ctx.fill();
       }
 
-      ctx.fillStyle = '#1e293b';
+      ctx.fillStyle = pal.body;
       ctx.beginPath();
       ctx.arc(0, 0, 10, 0, Math.PI * 2);
       ctx.fill();
 
-      ctx.fillStyle = '#f59e0b';
+      ctx.fillStyle = pal.highlight;
       ctx.beginPath();
       ctx.arc(0, 0, 5, 0, Math.PI * 2);
       ctx.fill();

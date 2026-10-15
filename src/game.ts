@@ -26,6 +26,30 @@ const DEFAULT_SAVE: UserSaveData = {
   highestSurvivalWave: 0,
 };
 
+// Phân loại Tier súng cố định (Weapon Rarity):
+// Tier 1: PISTOL, CROSSBOW, SLINGSHOT -> Vòng hollow TRẮNG
+// Tier 2: CRYO, FLAMER, SHOTGUN -> Vòng hollow XANH
+// Tier 3: CANNON, TESLA, SNIPER -> Vòng hollow TÍM
+// Tier 4: MINIGUN -> Vòng hollow VÀNG
+// Tier 5: METEOR -> Vòng hollow ĐỎ
+export const GUN_TIERS: Record<GunKind, number> = {
+  PISTOL: 1,
+  CROSSBOW: 1,
+  SLINGSHOT: 1,
+  CRYO: 2,
+  FLAMER: 2,
+  SHOTGUN: 2,
+  CANNON: 3,
+  TESLA: 3,
+  SNIPER: 3,
+  MINIGUN: 4,
+  METEOR: 5,
+};
+
+export function getGunTier(kind: GunKind): number {
+  return GUN_TIERS[kind] || 1;
+}
+
 // Bảng màu chuẩn Rarity Gaming trên mạng:
 // 1: Trắng (Common) | 2: Xanh (Rare) | 3: Tím (Epic) | 4: Vàng (Legendary) | 5: Đỏ (Mythic)
 export interface RarityConfig {
@@ -33,7 +57,6 @@ export interface RarityConfig {
   name: string;
   color: number;
   hex: string;
-  barrelTint: number;
 }
 
 export const RARITY_CONFIGS: Record<number, RarityConfig> = {
@@ -42,35 +65,30 @@ export const RARITY_CONFIGS: Record<number, RarityConfig> = {
     name: 'THƯỜNG',
     color: 0xf8fafc,
     hex: '#f8fafc',
-    barrelTint: 0xffffff,
   },
   2: {
     tier: 2,
     name: 'HIẾM',
     color: 0x3b82f6,
     hex: '#38bdf8',
-    barrelTint: 0x93c5fd,
   },
   3: {
     tier: 3,
     name: 'SỬ THI',
     color: 0xa855f7,
     hex: '#c084fc',
-    barrelTint: 0xd8b4fe,
   },
   4: {
     tier: 4,
     name: 'HUYỀN THOẠI',
     color: 0xfacc15,
     hex: '#facc15',
-    barrelTint: 0xfde047,
   },
   5: {
     tier: 5,
     name: 'THẦN THOẠI',
     color: 0xef4444,
     hex: '#ef4444',
-    barrelTint: 0xfca5a5,
   },
 };
 
@@ -830,20 +848,26 @@ export class GameEngine {
     view.itemContainer.visible = true;
     view.itemContainer.alpha = 1.0;
 
-    const tier = Math.min(5, Math.max(1, item.level));
-    const rarity = RARITY_CONFIGS[tier];
+    // 1. TIER CỦA SÚNG (Cố định theo chủng loại súng, KHÔNG ĐỔI khi nâng Level):
+    // Tier 1: PISTOL, CROSSBOW, SLINGSHOT -> Vòng hollow TRẮNG
+    // Tier 2: CRYO, FLAMER, SHOTGUN -> Vòng hollow XANH
+    // Tier 3: CANNON, TESLA, SNIPER -> Vòng hollow TÍM
+    // Tier 4: MINIGUN -> Vòng hollow VÀNG
+    // Tier 5: METEOR -> Vòng hollow ĐỎ
+    const gunTier = (item.type === 'GUN' && item.gunKind) ? getGunTier(item.gunKind) : (item.tier || 1);
+    const tierRarity = RARITY_CONFIGS[gunTier];
 
-    // VÒNG HOLLOW VUÔNG THỂ HIỆN TIER CỦA SÚNG (1: Trắng, 2: Xanh, 3: Tím, 4: Vàng, 5: Đỏ)
+    // VÒNG HOLLOW VUÔNG THỂ HIỆN TIER CỦA SÚNG (Cố định không đổi khi nâng Level):
     view.tierFrameG.visible = true;
     view.tierFrameG.clear();
 
     // 1. Khung hollow vuông bo góc nhẹ 6px bao quanh toàn bộ ô
     view.tierFrameG.roundRect(4, 4, 88, 88, 6);
-    view.tierFrameG.stroke({ width: 3.5, color: rarity.color, alpha: 0.95 });
+    view.tierFrameG.stroke({ width: 3.5, color: tierRarity.color, alpha: 0.95 });
 
-    // 2. Lớp phát quang mỏng theo màu Rarity bên trong ô
+    // 2. Lớp phát quang mỏng theo màu Tier Rarity bên trong ô
     view.tierFrameG.roundRect(6, 6, 84, 84, 5);
-    view.tierFrameG.fill({ color: rarity.color, alpha: 0.08 });
+    view.tierFrameG.fill({ color: tierRarity.color, alpha: 0.08 });
 
     // 3. 4 Chấu góc vuông cơ khí (Corner Brackets) sáng trắng sắc nét
     view.tierFrameG.moveTo(2, 16); view.tierFrameG.lineTo(2, 2); view.tierFrameG.lineTo(16, 2);
@@ -851,6 +875,9 @@ export class GameEngine {
     view.tierFrameG.moveTo(2, 80); view.tierFrameG.lineTo(2, 94); view.tierFrameG.lineTo(16, 94);
     view.tierFrameG.moveTo(80, 94); view.tierFrameG.lineTo(94, 94); view.tierFrameG.lineTo(94, 80);
     view.tierFrameG.stroke({ width: 2, color: 0xffffff, alpha: 0.75 });
+
+    const lvlColors = ['#f8fafc', '#38bdf8', '#c084fc', '#facc15', '#ef4444'];
+    const lvlHex = lvlColors[Math.min(5, Math.max(1, item.level)) - 1];
 
     if (item.type === 'TRIGGER') {
       view.itemContainer.zIndex = 10; // Cò nẫy luôn nằm trên bánh răng
@@ -863,26 +890,26 @@ export class GameEngine {
       view.barrelSprite.visible = false;
       view.fillG.visible = false;
       view.lvlText.text = `x${item.level}`;
-      view.lvlText.style.fill = rarity.hex;
+      view.lvlText.style.fill = lvlHex;
     } else if (item.type === 'GUN') {
-      // ĐẾ BÁNH RĂNG CÔNG NGHIỆP 10 RĂNG ĐỔI MÀU THEO TIER RARITY (Trắng -> Xanh -> Tím -> Vàng -> Đỏ)
+      // ĐẾ BÁNH RĂNG CÔNG NGHIỆP: CHÍNH BẢN THÂN ASSET TỰ VẼ MÀU THEO LEVEL 1 -> 5
       view.itemContainer.zIndex = 5;
-      view.baseSprite.texture = PixelAssetManager.getGunBaseTexture(tier);
+      view.baseSprite.texture = PixelAssetManager.getGunBaseTexture(item.level);
       view.baseSprite.anchor.set(0.5);
       view.baseSprite.x = 40;
       view.baseSprite.y = 40;
       view.baseSprite.scale.set(1.0);
       view.baseSprite.rotation = item.gearAngle || 0;
 
-      // NÒNG SÚNG XOAY 360 ĐỘ NHUỘM MÀU TOÀN BỘ THEO TIER RARITY (TẠO CẢM GIÁC KÍCH THÍCH KHI MERGE)
+      // NÒNG SÚNG XOAY 360 ĐỘ: CHÍNH BẢN THÂN ASSET TỰ VẼ MÀU THEO LEVEL 1 -> 5 (KHÔNG DÙNG OVERLAY)
       view.barrelSprite.visible = true;
       view.barrelSprite.texture = PixelAssetManager.getGunBarrelTexture(item.gunKind!, item.level);
       view.barrelSprite.rotation = item.turretAngle;
-      view.barrelSprite.tint = rarity.barrelTint;
+      view.barrelSprite.tint = 0xffffff; // KHÔNG DÙNG OVERLAY TINT
 
       view.fillG.visible = true;
       view.lvlText.text = `${item.level}`;
-      view.lvlText.style.fill = rarity.hex;
+      view.lvlText.style.fill = lvlHex;
     } else if (item.type === 'BUFF') {
       view.itemContainer.zIndex = 5;
       view.baseSprite.texture = PixelAssetManager.getBuffTexture(item.buffKind!, item.level);
@@ -894,7 +921,7 @@ export class GameEngine {
       view.barrelSprite.visible = false;
       view.fillG.visible = false;
       view.lvlText.text = `${item.level}`;
-      view.lvlText.style.fill = rarity.hex;
+      view.lvlText.style.fill = lvlHex;
     }
   }
 
@@ -1102,9 +1129,7 @@ export class GameEngine {
       sp.rotation = (item.angle * Math.PI) / 180;
       cont.addChild(sp);
     } else if (item.type === 'GUN') {
-      const tier = Math.min(5, Math.max(1, item.level));
-      const rarity = RARITY_CONFIGS[tier];
-      const base = new Sprite(PixelAssetManager.getGunBaseTexture(tier));
+      const base = new Sprite(PixelAssetManager.getGunBaseTexture(item.level));
       base.anchor.set(0.5);
       base.x = 40;
       base.y = 40;
@@ -1116,7 +1141,7 @@ export class GameEngine {
       barrel.x = 40;
       barrel.y = 40;
       barrel.rotation = item.turretAngle;
-      barrel.tint = rarity.barrelTint;
+      barrel.tint = 0xffffff;
       cont.addChild(barrel);
     } else if (item.type === 'BUFF') {
       const sp = new Sprite(PixelAssetManager.getBuffTexture(item.buffKind!, item.level));
@@ -1132,40 +1157,36 @@ export class GameEngine {
   // ================= HIỆU ỨNG VFX / SFX THĂNG CẤP MERGE TIER CỰC ĐỈNH ================= //
 
   private triggerUpgradeFX(col: number, row: number, nextLevel: number, label: string) {
-    const tier = Math.min(5, Math.max(1, nextLevel));
-    const rarity = RARITY_CONFIGS[tier];
+    const lvl = Math.min(5, Math.max(1, nextLevel));
+    const lvlColors = [0xf8fafc, 0x3b82f6, 0xa855f7, 0xfacc15, 0xef4444];
+    const lvlHexes = ['#f8fafc', '#38bdf8', '#c084fc', '#facc15', '#ef4444'];
+    const fxColor = lvlColors[lvl - 1];
+    const fxHex = lvlHexes[lvl - 1];
     const centerX = this.GRID_X + col * this.CELL_SIZE + 48;
     const centerY = this.GRID_Y + row * this.CELL_SIZE + 48;
 
     // 1. Pop scale animation on slot view (bung to 1.38x rồi co lại tạo cảm giác đã tay)
     this.slotViews[row][col].popScale = 1.38;
 
-    // 2. Shockwaves mở rộng theo màu Rarity
-    this.addShockwave(centerX, centerY, 80, rarity.color);
+    // 2. Shockwaves mở rộng theo màu Level mới
+    this.addShockwave(centerX, centerY, 80, fxColor);
     this.addShockwave(centerX, centerY, 48, 0xffffff);
 
     // 3. Pháo hoa pháo sáng mảnh vỡ tung tóe
-    this.addSparks(centerX, centerY, 28, rarity.color, 240);
+    this.addSparks(centerX, centerY, 28, fxColor, 240);
     this.addSparks(centerX, centerY, 14, 0xffffff, 180);
 
     // 4. Lóe sáng viền nòng Muzzle Flash tại tâm
-    this.addMuzzleFlash(centerX, centerY, rarity.color);
+    this.addMuzzleFlash(centerX, centerY, fxColor);
 
-    // 5. Rung chấn màn hình theo độ hiếm
-    this.trauma = Math.min(1.0, this.trauma + 0.10 * tier);
+    // 5. Rung chấn màn hình theo cấp độ
+    this.trauma = Math.min(1.0, this.trauma + 0.10 * lvl);
 
     // 6. Floating Text siêu kích thích
-    const tierTitles: Record<number, string> = {
-      2: '★ TIER 2: HIẾM ★',
-      3: '★ TIER 3: SỬ THI ★',
-      4: '★ TIER 4: HUYỀN THOẠI ★',
-      5: '★ TIER 5: THẦN THOẠI ★',
-    };
-    const title = tierTitles[tier] || `TIER ${tier}`;
-    this.addFloatingText(centerX, centerY - 32, title, rarity.hex);
+    this.addFloatingText(centerX, centerY - 32, `★ NÂNG CẤP LV.${nextLevel} ★`, fxHex);
 
-    // 7. SFX âm thanh thăng cấp theo bậc Tier kích thích
-    sound.playMerge(tier);
+    // 7. SFX âm thanh thăng cấp theo bậc Level kích thích
+    sound.playMerge(lvl);
   }
 
   private updateSlotAnimations(dt: number) {
@@ -1202,13 +1223,13 @@ export class GameEngine {
     this.tooltipContainer.x = targetX;
     this.tooltipContainer.y = targetY;
 
-    const tier = Math.min(5, Math.max(1, item.level));
-    const rarity = RARITY_CONFIGS[tier];
+    const gunTier = (item.type === 'GUN' && item.gunKind) ? getGunTier(item.gunKind) : (item.tier || 1);
+    const tierRarity = RARITY_CONFIGS[gunTier];
 
     this.tooltipCard.clear();
     this.tooltipCard.roundRect(0, 0, tipW, tipH, 10);
     this.tooltipCard.fill({ color: 0x13151f, alpha: 0.96 });
-    this.tooltipCard.stroke({ color: rarity.color, width: 2.5 });
+    this.tooltipCard.stroke({ color: tierRarity.color, width: 2.5 });
 
     let name = '';
     let stats = '';
@@ -1233,7 +1254,7 @@ export class GameEngine {
         MINIGUN: 'MINIGUN 6 NÒNG',
         METEOR: 'BÁNH RĂNG THIÊN THẠCH',
       };
-      name = `[${rarity.name}] ${names[item.gunKind!]} Tier ${tier}`;
+      name = `[TIER ${gunTier} • ${tierRarity.name}] ${names[item.gunKind!]} Lv.${item.level}`;
       const hitsNeeded = Math.ceil(1.0 / item.fillPerHit);
       stats = `• Sát thương: ${item.damage} DMG\n• Cần nạp: ${hitsNeeded} lần gõ (1 viên)\n• Xoay 360° tự động ngắm quái`;
 
@@ -1258,7 +1279,7 @@ export class GameEngine {
         FILL: 'BUFF SIÊU NẠP',
         CRIT: 'BUFF CHÍ MẠNG',
       };
-      name = `[${rarity.name}] ${buffNames[item.buffKind!]} Tier ${tier}`;
+      name = `${buffNames[item.buffKind!]} Lv.${item.level}`;
       if (item.buffKind === 'DMG') stats = `• Tăng +${item.level * 20}% Sát thương súng kề`;
       if (item.buffKind === 'SPEED') stats = `• Tăng +${item.level * 20}% Tốc độ xoay Cò kề`;
       if (item.buffKind === 'FILL') stats = `• Tăng +${item.level * 15}% Tốc độ nạp súng kề`;
@@ -1267,7 +1288,7 @@ export class GameEngine {
     }
 
     this.tooltipTitleText.text = name;
-    this.tooltipTitleText.style.fill = rarity.hex;
+    this.tooltipTitleText.style.fill = tierRarity.hex;
     this.tooltipStatsText.text = stats;
     this.tooltipDescText.text = desc;
 
@@ -2281,8 +2302,7 @@ export class GameEngine {
     const permanentLvl = (this.saveData && this.saveData.gunLevels && this.saveData.gunLevels[kind]) || 1;
     const upgradeMult = 1 + (permanentLvl - 1) * 0.15;
     const dmg = Math.round(baseDamageMap[kind] * upgradeMult * Math.pow(1.8, level - 1));
-
-    const tier = Math.min(5, Math.max(1, level));
+    const tier = getGunTier(kind);
 
     return {
       id: `gun_${Date.now()}_${Math.random()}`,

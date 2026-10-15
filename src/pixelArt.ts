@@ -771,57 +771,383 @@ export class PixelAssetManager {
     return tex;
   }
 
-  // 7. Đạn Plasma
-  static getBulletTexture(element: string): Texture {
-    const key = `bullet_hires_${element}`;
+  // 7. Đạn đặc trưng riêng biệt cho từng loại trong 11 súng (Unique Projectiles)
+  static getProjectileTexture(kind: GunKind): Texture {
+    const key = `projectile_v2_${kind}`;
     if (this.cache.has(key)) return this.cache.get(key)!;
 
-    const tex = createHighResTexture(16, 24, (ctx) => {
-      const cx = 8, cy = 12;
+    let width = 24;
+    let height = 36;
+    if (kind === 'METEOR') { width = 48; height = 48; }
+    else if (kind === 'SNIPER') { width = 16; height = 48; }
+    else if (kind === 'CANNON') { width = 32; height = 32; }
+    else if (kind === 'FLAMER') { width = 32; height = 40; }
+    else if (kind === 'SLINGSHOT') { width = 28; height = 28; }
 
-      if (element === 'ICE') {
-        const grad = ctx.createLinearGradient(0, 0, 0, 24);
-        grad.addColorStop(0, '#ffffff');
-        grad.addColorStop(1, '#0284c7');
-        ctx.fillStyle = grad;
-        safeEllipse(ctx, cx, cy, 4, 10);
-        ctx.fill();
-        ctx.strokeStyle = '#bae6fd';
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-      } else if (element === 'FIRE') {
-        const grad = ctx.createLinearGradient(0, 0, 0, 24);
-        grad.addColorStop(0, '#fef08a');
-        grad.addColorStop(1, '#ea580c');
-        ctx.fillStyle = grad;
-        safeEllipse(ctx, cx, cy, 5, 10);
-        ctx.fill();
-      } else if (element === 'EXPLOSIVE') {
-        ctx.fillStyle = '#44403c';
-        ctx.beginPath();
-        ctx.arc(cx, cy, 7, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = '#ef4444';
-        ctx.beginPath();
-        ctx.arc(cx, cy, 4, 0, Math.PI * 2);
-        ctx.fill();
-      } else if (element === 'ELECTRIC') {
-        ctx.fillStyle = '#a855f7';
-        safeEllipse(ctx, cx, cy, 4, 10);
-        ctx.fill();
-        ctx.fillStyle = '#00f0ff';
-        ctx.fillRect(cx - 2, cy - 8, 4, 16);
-      } else { // NORMAL
-        const grad = ctx.createLinearGradient(0, 0, 0, 24);
-        grad.addColorStop(0, '#ffffff');
-        grad.addColorStop(1, '#3b82f6');
-        ctx.fillStyle = grad;
-        safeEllipse(ctx, cx, cy, 4, 9);
-        ctx.fill();
+    const tex = createHighResTexture(width, height, (ctx) => {
+      const cx = width / 2;
+      const cy = height / 2;
+
+      ctx.save();
+
+      switch (kind) {
+        case 'PISTOL': { // Tia plasma xanh ngọc
+          const grad = ctx.createLinearGradient(0, 0, 0, height);
+          grad.addColorStop(0, '#ffffff');
+          grad.addColorStop(0.3, '#38bdf8');
+          grad.addColorStop(1, '#0369a1');
+          ctx.fillStyle = grad;
+          safeEllipse(ctx, cx, cy, 5, 13);
+          ctx.fill();
+
+          ctx.fillStyle = '#ffffff';
+          safeEllipse(ctx, cx, cy - 4, 2.5, 6);
+          ctx.fill();
+          break;
+        }
+
+        case 'CROSSBOW': { // Mũi tên nỏ thép có ngạnh & cánh lông đỏ
+          // Thân gỗ
+          ctx.fillStyle = '#78350f';
+          ctx.fillRect(cx - 2, cy - 10, 4, 22);
+
+          // Mũi tên kim loại hình tam giác có ngạnh
+          ctx.fillStyle = '#cbd5e1';
+          ctx.beginPath();
+          ctx.moveTo(cx, cy - 16);
+          ctx.lineTo(cx + 6, cy - 8);
+          ctx.lineTo(cx + 3, cy - 6);
+          ctx.lineTo(cx - 3, cy - 6);
+          ctx.lineTo(cx - 6, cy - 8);
+          ctx.closePath();
+          ctx.fill();
+
+          // Cánh lông đuôi đỏ
+          ctx.fillStyle = '#ef4444';
+          ctx.beginPath();
+          ctx.moveTo(cx - 2, cy + 8);
+          ctx.lineTo(cx - 6, cy + 15);
+          ctx.lineTo(cx - 2, cy + 13);
+          ctx.closePath();
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.moveTo(cx + 2, cy + 8);
+          ctx.lineTo(cx + 6, cy + 15);
+          ctx.lineTo(cx + 2, cy + 13);
+          ctx.closePath();
+          ctx.fill();
+          break;
+        }
+
+        case 'SLINGSHOT': { // Viên đá cuội gồ ghề
+          ctx.fillStyle = '#57534e';
+          ctx.beginPath();
+          ctx.moveTo(cx - 7, cy - 9);
+          ctx.lineTo(cx + 8, cy - 8);
+          ctx.lineTo(cx + 11, cy + 2);
+          ctx.lineTo(cx + 5, cy + 10);
+          ctx.lineTo(cx - 6, cy + 9);
+          ctx.lineTo(cx - 10, cy - 1);
+          ctx.closePath();
+          ctx.fill();
+
+          ctx.fillStyle = '#a8a29e';
+          ctx.beginPath();
+          ctx.arc(cx - 3, cy - 3, 3, 0, Math.PI * 2);
+          ctx.fill();
+          break;
+        }
+
+        case 'CRYO': { // Mũi giáo băng sắc nhọn hình thoi
+          const grad = ctx.createLinearGradient(0, 0, 0, height);
+          grad.addColorStop(0, '#ffffff');
+          grad.addColorStop(0.4, '#bae6fd');
+          grad.addColorStop(1, '#0284c7');
+          ctx.fillStyle = grad;
+
+          ctx.beginPath();
+          ctx.moveTo(cx, cy - 16);
+          ctx.lineTo(cx + 7, cy);
+          ctx.lineTo(cx, cy + 16);
+          ctx.lineTo(cx - 7, cy);
+          ctx.closePath();
+          ctx.fill();
+
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.moveTo(cx, cy - 14);
+          ctx.lineTo(cx + 2, cy);
+          ctx.lineTo(cx, cy + 14);
+          ctx.lineTo(cx - 2, cy);
+          ctx.closePath();
+          ctx.fill();
+          break;
+        }
+
+        case 'FLAMER': { // Quả cầu lửa cuồn cuộn
+          const grad = ctx.createRadialGradient(cx, cy - 2, 2, cx, cy, 14);
+          grad.addColorStop(0, '#ffffff');
+          grad.addColorStop(0.3, '#fef08a');
+          grad.addColorStop(0.6, '#f97316');
+          grad.addColorStop(1, '#b91c1c');
+          ctx.fillStyle = grad;
+
+          ctx.beginPath();
+          ctx.arc(cx, cy - 2, 12, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Đuôi lửa bập bùng
+          ctx.fillStyle = '#ef4444';
+          ctx.beginPath();
+          ctx.moveTo(cx - 10, cy);
+          ctx.lineTo(cx - 4, cy + 16);
+          ctx.lineTo(cx, cy + 8);
+          ctx.lineTo(cx + 4, cy + 16);
+          ctx.lineTo(cx + 10, cy);
+          ctx.closePath();
+          ctx.fill();
+          break;
+        }
+
+        case 'SHOTGUN': { // Chùm 3 viên đạn chì lớn kèm khói
+          const pellets = [[cx, cy - 6], [cx - 6, cy + 4], [cx + 6, cy + 4]];
+          pellets.forEach(([px, py]) => {
+            ctx.fillStyle = '#334155';
+            ctx.beginPath();
+            ctx.arc(px, py, 4.5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#f8fafc';
+            ctx.beginPath();
+            ctx.arc(px - 1, py - 1, 1.5, 0, Math.PI * 2);
+            ctx.fill();
+          });
+          break;
+        }
+
+        case 'CANNON': { // Quả đại bác bom tròn vỏ gang có ngòi nổ cháy sáng
+          ctx.fillStyle = '#1c1917';
+          ctx.beginPath();
+          ctx.arc(cx, cy + 2, 11, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.strokeStyle = '#78716c';
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+
+          // Cổ ngòi & tia lửa ngòi nổ
+          ctx.fillStyle = '#a8a29e';
+          ctx.fillRect(cx - 2, cy - 12, 4, 4);
+
+          ctx.fillStyle = '#facc15';
+          ctx.beginPath();
+          ctx.arc(cx, cy - 12, 3.5, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#ef4444';
+          ctx.beginPath();
+          ctx.arc(cx, cy - 12, 1.8, 0, Math.PI * 2);
+          ctx.fill();
+          break;
+        }
+
+        case 'TESLA': { // Quả cầu plasma điện từ tích điện
+          ctx.fillStyle = '#a855f7';
+          ctx.beginPath();
+          ctx.arc(cx, cy, 9, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = '#38bdf8';
+          ctx.beginPath();
+          ctx.arc(cx, cy, 5, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.arc(cx, cy, 2.5, 0, Math.PI * 2);
+          ctx.fill();
+          break;
+        }
+
+        case 'SNIPER': { // Viên đạn xuyên giáp vonfram đỏ rực siêu dài
+          const grad = ctx.createLinearGradient(0, 0, 0, height);
+          grad.addColorStop(0, '#ffffff');
+          grad.addColorStop(0.2, '#f87171');
+          grad.addColorStop(0.8, '#dc2626');
+          grad.addColorStop(1, '#7f1d1d');
+          ctx.fillStyle = grad;
+
+          ctx.beginPath();
+          ctx.moveTo(cx, cy - 20);
+          ctx.lineTo(cx + 4, cy - 12);
+          ctx.lineTo(cx + 3, cy + 20);
+          ctx.lineTo(cx - 3, cy + 20);
+          ctx.lineTo(cx - 4, cy - 12);
+          ctx.closePath();
+          ctx.fill();
+          break;
+        }
+
+        case 'MINIGUN': { // Đạn đồng vàng rực có vệt nhiệt
+          const grad = ctx.createLinearGradient(0, 0, 0, height);
+          grad.addColorStop(0, '#ffffff');
+          grad.addColorStop(0.3, '#fde047');
+          grad.addColorStop(0.8, '#eab308');
+          grad.addColorStop(1, '#ca8a04');
+          ctx.fillStyle = grad;
+
+          ctx.beginPath();
+          ctx.moveTo(cx, cy - 11);
+          ctx.lineTo(cx + 3.5, cy - 6);
+          ctx.lineTo(cx + 3, cy + 11);
+          ctx.lineTo(cx - 3, cy + 11);
+          ctx.lineTo(cx - 3.5, cy - 6);
+          ctx.closePath();
+          ctx.fill();
+          break;
+        }
+
+        case 'METEOR': { // Bánh răng thiên thạch nham thạch khổng lồ
+          // Lửa bao quanh
+          const auraGrad = ctx.createRadialGradient(cx, cy, 10, cx, cy, 22);
+          auraGrad.addColorStop(0, '#ea580c');
+          auraGrad.addColorStop(0.6, '#dc2626');
+          auraGrad.addColorStop(1, 'rgba(185, 28, 28, 0)');
+          ctx.fillStyle = auraGrad;
+          ctx.beginPath();
+          ctx.arc(cx, cy, 22, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Lõi đá đen núi lửa
+          ctx.fillStyle = '#292524';
+          ctx.beginPath();
+          ctx.arc(cx, cy, 14, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Các khe nứt dung nham vàng rực
+          ctx.strokeStyle = '#facc15';
+          ctx.lineWidth = 2.5;
+          ctx.beginPath();
+          ctx.moveTo(cx - 8, cy - 4);
+          ctx.lineTo(cx - 2, cy + 2);
+          ctx.lineTo(cx + 8, cy - 3);
+          ctx.moveTo(cx - 2, cy + 2);
+          ctx.lineTo(cx + 4, cy + 8);
+          ctx.stroke();
+          break;
+        }
       }
+
+      ctx.restore();
     });
 
     this.cache.set(key, tex);
     return tex;
   }
+
+  // 8. Texture nút bấm phong cách Steampunk Máy Móc Đinh Tán (Brass Machinery UI)
+  static getSteampunkButtonTexture(w: number, h: number, theme: 'GOLD' | 'GREEN' | 'RED' | 'BLUE' = 'GOLD'): Texture {
+    const key = `sp_btn_${w}_${h}_${theme}`;
+    if (this.cache.has(key)) return this.cache.get(key)!;
+
+    const tex = createHighResTexture(w, h, (ctx) => {
+      // 1. Viền ngoài sắt đặc đen đúc
+      ctx.fillStyle = '#1c1917';
+      safeRoundRect(ctx, 0, 0, w, h, 10);
+      ctx.fill();
+
+      // 2. Viền kim loại mạ đồng thau / thép
+      const borderColors = {
+        GOLD: { border: '#b45309', fill1: '#d97706', fill2: '#78350f', highlight: '#fef08a' },
+        GREEN: { border: '#15803d', fill1: '#16a34a', fill2: '#14532d', highlight: '#86efac' },
+        RED: { border: '#b91c1c', fill1: '#dc2626', fill2: '#7f1d1d', highlight: '#fca5a5' },
+        BLUE: { border: '#1d4ed8', fill1: '#2563eb', fill2: '#1e3a8a', highlight: '#93c5fd' },
+      }[theme];
+
+      ctx.fillStyle = borderColors.border;
+      safeRoundRect(ctx, 3, 3, w - 6, h - 6, 8);
+      ctx.fill();
+
+      // 3. Mặt nút có gradient kim loại máy móc
+      const grad = ctx.createLinearGradient(0, 5, 0, h - 5);
+      grad.addColorStop(0, borderColors.fill1);
+      grad.addColorStop(1, borderColors.fill2);
+      ctx.fillStyle = grad;
+      safeRoundRect(ctx, 6, 6, w - 12, h - 12, 6);
+      ctx.fill();
+
+      // Đường highlight trên cùng tạo độ bóng 3D
+      ctx.fillStyle = borderColors.highlight;
+      safeRoundRect(ctx, 8, 8, w - 16, 3, 1);
+      ctx.fill();
+
+      // 4 Đinh tán đồng máy móc ở 4 góc
+      const rivets = [
+        [12, 12],
+        [w - 12, 12],
+        [12, h - 12],
+        [w - 12, h - 12],
+      ];
+      rivets.forEach(([rx, ry]) => {
+        ctx.fillStyle = '#292524';
+        ctx.beginPath();
+        ctx.arc(rx, ry, 3.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#fde047';
+        ctx.beginPath();
+        ctx.arc(rx - 0.8, ry - 0.8, 1.2, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    });
+
+    this.cache.set(key, tex);
+    return tex;
+  }
+
+  // 9. Vạch cảnh báo nguy hiểm công nghiệp (Hazard Warning Stripes cho Thùng Rác)
+  static getHazardZoneTexture(w: number, h: number): Texture {
+    const key = `hazard_zone_${w}_${h}`;
+    if (this.cache.has(key)) return this.cache.get(key)!;
+
+    const tex = createHighResTexture(w, h, (ctx) => {
+      // Nền đen sắt
+      ctx.fillStyle = '#1c1917';
+      safeRoundRect(ctx, 0, 0, w, h, 12);
+      ctx.fill();
+
+      // Vùng kẻ sọc vàng - đen
+      ctx.save();
+      safeRoundRect(ctx, 5, 5, w - 10, h - 10, 8);
+      ctx.clip();
+
+      ctx.fillStyle = '#7f1d1d'; // Nền đỏ thẫm lò thiêu hủy
+      ctx.fillRect(0, 0, w, h);
+
+      // Kẻ sọc xiên chéo màu vàng cảnh báo
+      ctx.strokeStyle = '#eab308';
+      ctx.lineWidth = 8;
+      for (let x = -h; x < w + h; x += 22) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x + h, h);
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      // Viền đinh tán bảo vệ ngoài
+      ctx.strokeStyle = '#ef4444';
+      ctx.lineWidth = 2.5;
+      safeRoundRect(ctx, 3, 3, w - 6, h - 6, 9);
+      ctx.stroke();
+    });
+
+    this.cache.set(key, tex);
+    return tex;
+  }
+
+  // 10. Fallback getBulletTexture
+  static getBulletTexture(element: string): Texture {
+    return this.getProjectileTexture('PISTOL');
+  }
 }
+

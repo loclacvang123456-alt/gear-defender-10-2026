@@ -57,6 +57,7 @@ export interface GridCell {
 
 export interface Bullet {
   id: number;
+  gunKind: GunKind;
   x: number;
   y: number;
   vx: number;
@@ -67,6 +68,42 @@ export interface Bullet {
   active: boolean;
   radius: number;
   angle: number;
+  scale?: number;
+}
+
+export interface LightningBolt {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  chainX?: number;
+  chainY?: number;
+  lifetime: number;
+  maxLifetime: number;
+  color: number;
+}
+
+export interface Shockwave {
+  x: number;
+  y: number;
+  radius: number;
+  maxRadius: number;
+  color: number;
+  alpha: number;
+  lifetime: number;
+  maxLifetime: number;
+}
+
+export interface VisualSpark {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  color: number;
+  size: number;
+  alpha: number;
+  lifetime: number;
+  maxLifetime: number;
 }
 
 export interface Enemy {

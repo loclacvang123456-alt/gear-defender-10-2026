@@ -1,5 +1,5 @@
 import { Container, Graphics, Sprite, Text, TextStyle, Rectangle, FederatedPointerEvent } from 'pixi.js';
-import { GridCell, GridItem, Bullet, Enemy, GunKind, BuffKind, EnemyKind, GameMode, UserSaveData } from './types';
+import { GridCell, GridItem, Bullet, Enemy, GunKind, BuffKind, EnemyKind, GameMode, UserSaveData, LightningBolt, Shockwave, VisualSpark } from './types';
 import { PixelAssetManager } from './pixelArt';
 import { sound } from './audio';
 
@@ -103,7 +103,7 @@ export class GameEngine {
 
   // Ô Thùng Rác (Bán món đồ khi đang kéo)
   private trashContainer!: Container;
-  private trashBg!: Graphics;
+  private trashBg!: Sprite;
   private trashText!: Text;
 
   // Tooltip Popover (Hiện cạnh súng)
@@ -148,13 +148,20 @@ export class GameEngine {
   private waveText!: Text;
   private hpText!: Text;
   private rollBtnContainer!: Container;
-  private rollBtnBg!: Graphics;
+  private rollBtnBg!: Sprite;
   private rollBtnText!: Text;
   private startWaveBtnContainer!: Container;
-  private startWaveBtnBg!: Graphics;
+  private startWaveBtnBg!: Sprite;
   private startWaveBtnText!: Text;
   private speedBtnText!: Text;
   private tipText!: Text;
+
+  // FX Special: Sét giật liên tục, Sóng nổ lan, Mảnh văng, Lóe viền nòng
+  private lightningBolts: LightningBolt[] = [];
+  private shockwaves: Shockwave[] = [];
+  private visualSparks: VisualSpark[] = [];
+  private muzzleFlashes: { x: number; y: number; radius: number; color: number; lifetime: number }[] = [];
+  private fxGraphics!: Graphics;
 
   private nextId: number = 1;
   private readonly FONT_FAMILY = '"Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, sans-serif';
@@ -189,6 +196,9 @@ export class GameEngine {
     this.stage.addChild(this.tooltipContainer);
     this.stage.addChild(this.mainMenuContainer);
     this.stage.addChild(this.resultModalContainer);
+
+    this.fxGraphics = new Graphics();
+    this.fxContainer.addChild(this.fxGraphics);
 
     this.initBackground();
     this.initGrid();
@@ -478,7 +488,7 @@ export class GameEngine {
     this.tooltipContainer.addChild(this.tooltipHintText);
   }
 
-  // Khởi tạo Ô Thùng Rác (Trash Zone) màu đỏ để bán món đồ khi đang kéo
+  // Khởi tạo Ô Thùng Rác (Trash Zone) phong cách Dieselpunk cảnh báo nguy hiểm
   private initTrashZone() {
     this.trashContainer = new Container();
     this.trashContainer.x = 20;
@@ -486,7 +496,7 @@ export class GameEngine {
     this.trashContainer.visible = false; // Chỉ hiện khi đang kéo món đồ!
     this.trashContainer.eventMode = 'none';
 
-    this.trashBg = new Graphics();
+    this.trashBg = new Sprite(PixelAssetManager.getHazardZoneTexture(230, 84));
     this.drawTrashBg(false);
     this.trashContainer.addChild(this.trashBg);
 
@@ -496,14 +506,15 @@ export class GameEngine {
     this.trashContainer.addChild(trashIcon);
 
     this.trashText = new Text({
-      text: '🗑 THẢ VÀO ĐỂ BÁN\n+2$ VÀNG',
+      text: '🗑 THẢ VÀO ĐỂ BÁN\n(+50% VÀNG)',
       style: {
         fontFamily: this.FONT_FAMILY,
         fontSize: 16,
-        fill: '#ffffff',
+        fill: '#fef08a',
         fontWeight: 'bold',
         align: 'left',
         lineHeight: 22,
+        stroke: { color: 0x000000, width: 3 },
       }
     });
     this.trashText.x = 88;
@@ -514,18 +525,11 @@ export class GameEngine {
   }
 
   private drawTrashBg(isHover: boolean) {
-    this.trashBg.clear();
-    this.trashBg.roundRect(0, 0, 230, 84, 12);
-    if (isHover) {
-      this.trashBg.fill({ color: 0xef4444 });
-      this.trashBg.stroke({ color: 0xfef08a, width: 4 });
-    } else {
-      this.trashBg.fill({ color: 0xb91c1c });
-      this.trashBg.stroke({ color: 0xf87171, width: 3 });
-    }
+    this.trashBg.alpha = isHover ? 1.0 : 0.85;
+    this.trashBg.tint = isHover ? 0xffffff : 0xdddddd;
   }
 
-  // UI & Buttons
+  // UI & Buttons - Phong cách Steampunk Máy Móc Đinh Tán
   private initUI() {
     const textStyle = new TextStyle({
       fontFamily: this.FONT_FAMILY,
@@ -534,34 +538,46 @@ export class GameEngine {
       fontWeight: 'bold',
     });
 
-    // 1. Top HUD
+    // 1. Top HUD - Tấm đồng Steampunk đinh tán
     const topBar = new Graphics();
     topBar.rect(0, 0, 720, 56);
-    topBar.fill({ color: 0x090a0f, alpha: 0.95 });
+    topBar.fill({ color: 0x181512, alpha: 0.98 });
+    topBar.stroke({ color: 0xb45309, width: 2.5 });
+    topBar.rect(0, 52, 720, 4);
+    topBar.fill({ color: 0xd97706 });
+    for (let x = 20; x < 720; x += 90) {
+      topBar.circle(x, 28, 3.5);
+      topBar.fill({ color: 0x451a03 });
+      topBar.circle(x - 0.8, 27.2, 1.2);
+      topBar.fill({ color: 0xfef08a });
+    }
     this.uiContainer.addChild(topBar);
 
-    this.waveText = new Text({ text: 'WAVE 1/10 (CHUẨN BỊ)', style: { ...textStyle, fontSize: 18, fill: '#60a5fa' } });
-    this.waveText.x = 16;
-    this.waveText.y = 14;
+    this.waveText = new Text({ text: '⚙ WAVE 1/10 (CHUẨN BỊ)', style: { ...textStyle, fontSize: 17, fill: '#60a5fa' } });
+    this.waveText.x = 20;
+    this.waveText.y = 15;
     this.uiContainer.addChild(this.waveText);
 
-    this.hpText = new Text({ text: 'HP THÀNH: 100/100', style: { ...textStyle, fontSize: 18, fill: '#4ade80' } });
-    this.hpText.x = 340;
-    this.hpText.y = 14;
+    this.hpText = new Text({ text: '🛡 HP: 100/100', style: { ...textStyle, fontSize: 17, fill: '#4ade80' } });
+    this.hpText.x = 330;
+    this.hpText.y = 15;
     this.uiContainer.addChild(this.hpText);
 
-    this.goldText = new Text({ text: '$: 15', style: { ...textStyle, fontSize: 20, fill: '#facc15' } });
-    this.goldText.x = 610;
-    this.goldText.y = 14;
+    this.goldText = new Text({ text: '💰 $: 15', style: { ...textStyle, fontSize: 19, fill: '#facc15' } });
+    this.goldText.x = 590;
+    this.goldText.y = 15;
     this.uiContainer.addChild(this.goldText);
 
-    // 2. Bottom Controls
+    // 2. Bottom Controls - Khung máy móc hơi nước công nghiệp
     const botBar = new Graphics();
     botBar.rect(0, 1060, 720, 220);
-    botBar.fill({ color: 0x0d0e15 });
+    botBar.fill({ color: 0x11131a });
+    botBar.stroke({ color: 0x78350f, width: 3 });
+    botBar.rect(0, 1060, 720, 4);
+    botBar.fill({ color: 0xb45309 });
     this.uiContainer.addChild(botBar);
 
-    // Nút ROLL (w = 230, h = 84)
+    // Nút ROLL Steampunk (w = 230, h = 84)
     this.rollBtnContainer = new Container();
     this.rollBtnContainer.x = 20;
     this.rollBtnContainer.y = 1080;
@@ -569,15 +585,12 @@ export class GameEngine {
     this.rollBtnContainer.cursor = 'pointer';
     this.rollBtnContainer.hitArea = new Rectangle(0, 0, 230, 84);
 
-    this.rollBtnBg = new Graphics();
-    this.rollBtnBg.roundRect(0, 0, 230, 84, 12);
-    this.rollBtnBg.fill({ color: 0x1d4ed8 });
-    this.rollBtnBg.stroke({ color: 0x60a5fa, width: 3 });
+    this.rollBtnBg = new Sprite(PixelAssetManager.getSteampunkButtonTexture(230, 84, 'BLUE'));
     this.rollBtnContainer.addChild(this.rollBtnBg);
 
     this.rollBtnText = new Text({
       text: '🎲 ROLL (2$)\n(Súng / Cò / Buff)',
-      style: { ...textStyle, fontSize: 18, align: 'center' }
+      style: { ...textStyle, fontSize: 17, fill: '#ffffff', align: 'center', stroke: { color: 0x000000, width: 3 } }
     });
     this.rollBtnText.anchor.set(0.5);
     this.rollBtnText.x = 115;
@@ -592,7 +605,7 @@ export class GameEngine {
     });
     this.uiContainer.addChild(this.rollBtnContainer);
 
-    // Nút BẮT ĐẦU VÁN (w = 430, h = 84)
+    // Nút BẮT ĐẦU VÁN Steampunk (w = 430, h = 84)
     this.startWaveBtnContainer = new Container();
     this.startWaveBtnContainer.x = 270;
     this.startWaveBtnContainer.y = 1080;
@@ -600,13 +613,13 @@ export class GameEngine {
     this.startWaveBtnContainer.cursor = 'pointer';
     this.startWaveBtnContainer.hitArea = new Rectangle(0, 0, 430, 84);
 
-    this.startWaveBtnBg = new Graphics();
+    this.startWaveBtnBg = new Sprite(PixelAssetManager.getSteampunkButtonTexture(430, 84, 'GREEN'));
     this.drawStartWaveBtn(true);
     this.startWaveBtnContainer.addChild(this.startWaveBtnBg);
 
     this.startWaveBtnText = new Text({
       text: '⚔ BẮT ĐẦU VÁN 1',
-      style: { ...textStyle, fontSize: 24, fill: '#ffffff', align: 'center', fontWeight: 'bold' }
+      style: { ...textStyle, fontSize: 23, fill: '#ffffff', align: 'center', fontWeight: 'bold', stroke: { color: 0x000000, width: 4 } }
     });
     this.startWaveBtnText.anchor.set(0.5);
     this.startWaveBtnText.x = 215;
@@ -621,7 +634,7 @@ export class GameEngine {
     });
     this.uiContainer.addChild(this.startWaveBtnContainer);
 
-    // Nút TUA NHANH x1 / x2 (y = 1185)
+    // Nút TUA NHANH x1 / x2 Steampunk (y = 1185)
     const speedBtn = new Container();
     speedBtn.x = 20;
     speedBtn.y = 1185;
@@ -629,13 +642,13 @@ export class GameEngine {
     speedBtn.cursor = 'pointer';
     speedBtn.hitArea = new Rectangle(0, 0, 160, 52);
 
-    const speedBg = new Graphics();
-    speedBg.roundRect(0, 0, 160, 52, 8);
-    speedBg.fill({ color: 0x334155 });
-    speedBg.stroke({ color: 0x64748b, width: 2 });
+    const speedBg = new Sprite(PixelAssetManager.getSteampunkButtonTexture(160, 52, 'GOLD'));
     speedBtn.addChild(speedBg);
 
-    this.speedBtnText = new Text({ text: 'TỐC ĐỘ: x1', style: { ...textStyle, fontSize: 16 } });
+    this.speedBtnText = new Text({
+      text: 'TỐC ĐỘ: x1',
+      style: { ...textStyle, fontSize: 16, fill: '#fef08a', stroke: { color: 0x000000, width: 3 } }
+    });
     this.speedBtnText.anchor.set(0.5);
     this.speedBtnText.x = 80;
     this.speedBtnText.y = 26;
@@ -663,15 +676,8 @@ export class GameEngine {
   }
 
   private drawStartWaveBtn(isActive: boolean) {
-    this.startWaveBtnBg.clear();
-    this.startWaveBtnBg.roundRect(0, 0, 430, 84, 12);
-    if (isActive) {
-      this.startWaveBtnBg.fill({ color: 0x16a34a });
-      this.startWaveBtnBg.stroke({ color: 0x4ade80, width: 3 });
-    } else {
-      this.startWaveBtnBg.fill({ color: 0x3f3f46 });
-      this.startWaveBtnBg.stroke({ color: 0x71717a, width: 2 });
-    }
+    this.startWaveBtnBg.texture = PixelAssetManager.getSteampunkButtonTexture(430, 84, isActive ? 'GREEN' : 'GOLD');
+    this.startWaveBtnBg.alpha = isActive ? 1.0 : 0.65;
   }
 
   public onStartWaveClicked() {
@@ -705,19 +711,26 @@ export class GameEngine {
 
     this.gold -= this.rollPrice;
     this.rollCount++;
-    this.rollPrice = Math.min(2 + Math.floor(this.rollCount * 0.7), 12);
+    // TĂNG GIÁ ROLL ĐỀU ĐẶN SAU MỖI LẦN MUA (KHÔNG GIỚI HẠN TRẦN 12$)
+    this.rollPrice = 2 + this.rollCount * 2;
     this.rollBtnText.text = `🎲 ROLL (${this.rollPrice}$)\n(Súng / Cò / Buff)`;
 
     const rollType = Math.random();
     if (rollType < 0.60) {
-      const guns: GunKind[] = ['PISTOL', 'CROSSBOW', 'CRYO', 'FLAMER', 'SHOTGUN', 'CANNON', 'TESLA'];
-      const chosen = guns[Math.floor(Math.random() * guns.length)];
+      // Chỉ xuất hiện trong danh sách 5 súng người chơi đã trang bị!
+      const pool = (this.saveData.equippedGuns && this.saveData.equippedGuns.length > 0)
+        ? this.saveData.equippedGuns
+        : (['PISTOL', 'CROSSBOW', 'CRYO', 'FLAMER', 'SHOTGUN'] as GunKind[]);
+      const chosen = pool[Math.floor(Math.random() * pool.length)];
       emptyCell.item = this.createGun(chosen, 1);
     } else if (rollType < 0.85) {
       emptyCell.item = this.createTrigger(1);
     } else {
-      const buffs: BuffKind[] = ['DMG', 'SPEED', 'FILL', 'CRIT'];
-      const chosen = buffs[Math.floor(Math.random() * buffs.length)];
+      // Chỉ xuất hiện trong danh sách 2 buff đã trang bị!
+      const buffPool = (this.saveData.equippedBuffs && this.saveData.equippedBuffs.length > 0)
+        ? this.saveData.equippedBuffs
+        : (['DMG', 'SPEED'] as BuffKind[]);
+      const chosen = buffPool[Math.floor(Math.random() * buffPool.length)];
       emptyCell.item = this.createBuff(chosen, 1);
     }
 
@@ -1148,6 +1161,7 @@ export class GameEngine {
     }
 
     this.updateBullets(dt);
+    this.updateSpecialFX(dt);
     this.updateFloatingTexts(dt);
     this.updateScreenShake(dt);
 
@@ -1338,40 +1352,196 @@ export class GameEngine {
 
     const isCrit = Math.random() < critChance;
     const finalDmg = Math.round(gun.damage * dmgMultiplier * (isCrit ? 2.0 : 1.0));
+    const gunKind = gun.gunKind || 'PISTOL';
 
-    const bulletSpeed = 750;
-    sound.playShoot(gun.tier);
+    // Âm thanh riêng biệt chuẩn xác từng loại súng!
+    sound.playGunShot(gunKind);
 
-    if (gun.rangeType === 'SPREAD') {
-      [-0.2, 0, 0.2].forEach(offset => {
-        const a = angle + offset;
+    // Lóe sáng viền súng và đầu nòng
+    const flashCol = this.getMuzzleFlashColor(gunKind);
+    this.addMuzzleFlash(gunX + Math.cos(angle) * 34, gunY + Math.sin(angle) * 34, flashCol);
+
+    // SÚNG SÉT TESLA: Bắn tia sét thực giật lan trực tiếp và thay đổi nhánh rung giật liên tục
+    if (gunKind === 'TESLA') {
+      if (target) {
+        target.hp -= finalDmg;
+        target.hitFlashTimer = 0.14;
+        this.addShockwave(target.x, target.y, 35, 0x38bdf8);
+        this.addSparks(target.x, target.y, 8, 0x38bdf8, 160);
+        this.addFloatingText(target.x, target.y - 18, `${finalDmg} ⚡`, '#38bdf8');
+        if (target.hp <= 0) this.killEnemy(target);
+
+        // Giật lan sang quái gần nhất
+        let chainTarget: Enemy | null = null;
+        for (const other of this.enemies) {
+          if (!other.active || other === target) continue;
+          const cDist = Math.hypot(other.x - target.x, other.y - target.y);
+          if (cDist <= 180) {
+            chainTarget = other;
+            break;
+          }
+        }
+
+        if (chainTarget) {
+          const chainDmg = Math.round(finalDmg * 0.7);
+          chainTarget.hp -= chainDmg;
+          chainTarget.hitFlashTimer = 0.14;
+          this.addShockwave(chainTarget.x, chainTarget.y, 30, 0x38bdf8);
+          this.addSparks(chainTarget.x, chainTarget.y, 6, 0x38bdf8, 140);
+          this.addFloatingText(chainTarget.x, chainTarget.y - 18, `${chainDmg} ⚡`, '#a855f7');
+          if (chainTarget.hp <= 0) this.killEnemy(chainTarget);
+
+          this.lightningBolts.push({
+            x1: gunX,
+            y1: gunY,
+            x2: target.x,
+            y2: target.y,
+            chainX: chainTarget.x,
+            chainY: chainTarget.y,
+            color: 0x38bdf8,
+            lifetime: 0.18,
+            maxLifetime: 0.18,
+          });
+        } else {
+          this.lightningBolts.push({
+            x1: gunX,
+            y1: gunY,
+            x2: target.x,
+            y2: target.y,
+            color: 0x38bdf8,
+            lifetime: 0.18,
+            maxLifetime: 0.18,
+          });
+        }
+      }
+      return;
+    }
+
+    // BÁNH RĂNG THIÊN THẠCH METEOR: Quả thiên thạch khổng lồ bay tới phát nổ hủy diệt diện rộng
+    if (gunKind === 'METEOR') {
+      const vx = Math.cos(angle) * 850;
+      const vy = Math.sin(angle) * 850;
+      this.spawnBullet(gunX, gunY, vx, vy, finalDmg, 1, 'EXPLOSIVE', angle, 'METEOR', 1.3);
+      return;
+    }
+
+    // SHOTGUN: Chùm 5 viên đạn chì tỏa rộng
+    if (gunKind === 'SHOTGUN') {
+      const offsets = [-0.24, -0.12, 0, 0.12, 0.24];
+      offsets.forEach(off => {
+        const a = angle + off;
+        const spd = 780 + (Math.random() - 0.5) * 60;
         this.spawnBullet(
           gunX, gunY,
-          Math.cos(a) * bulletSpeed,
-          Math.sin(a) * bulletSpeed,
-          Math.round(finalDmg * 0.7),
-          1, 'NORMAL', a
+          Math.cos(a) * spd,
+          Math.sin(a) * spd,
+          Math.round(finalDmg * 0.45),
+          1, 'NORMAL', a, 'SHOTGUN', 0.95
         );
       });
-    } else {
-      const vx = Math.cos(angle) * bulletSpeed;
-      const vy = Math.sin(angle) * bulletSpeed;
-      const pierce = gun.gunKind === 'CROSSBOW' ? 2 : 1;
-      this.spawnBullet(gunX, gunY, vx, vy, finalDmg, pierce, this.getGunElement(gun.gunKind), angle);
+      return;
+    }
+
+    // SÚNG PHUN LỬA FLAMER: 2 quả cầu lửa bốc khói cuồn cuộn bay tới
+    if (gunKind === 'FLAMER') {
+      [-0.08, 0.08].forEach(off => {
+        const a = angle + off;
+        this.spawnBullet(
+          gunX, gunY,
+          Math.cos(a) * 580,
+          Math.sin(a) * 580,
+          Math.round(finalDmg * 0.6),
+          4, 'FIRE', a, 'FLAMER', 1.1
+        );
+      });
+      return;
+    }
+
+    // SÚNG BẮN TỈA SNIPER: Đạn siêu thanh tốc độ cao xuyên giáp 4 quái
+    if (gunKind === 'SNIPER') {
+      const vx = Math.cos(angle) * 1600;
+      const vy = Math.sin(angle) * 1600;
+      this.spawnBullet(gunX, gunY, vx, vy, finalDmg, 4, 'NORMAL', angle, 'SNIPER', 1.2);
+      return;
+    }
+
+    // NỎ THÉP CROSSBOW: Mũi tên sắt xuyên 3 quái
+    if (gunKind === 'CROSSBOW') {
+      const vx = Math.cos(angle) * 850;
+      const vy = Math.sin(angle) * 850;
+      this.spawnBullet(gunX, gunY, vx, vy, finalDmg, 3, 'NORMAL', angle, 'CROSSBOW', 1.0);
+      return;
+    }
+
+    // ĐẠI BÁC BOM CANNON: Đạn pháo nổ lan
+    if (gunKind === 'CANNON') {
+      const vx = Math.cos(angle) * 650;
+      const vy = Math.sin(angle) * 650;
+      this.spawnBullet(gunX, gunY, vx, vy, finalDmg, 1, 'EXPLOSIVE', angle, 'CANNON', 1.1);
+      return;
+    }
+
+    // NÁ CAO SU SLINGSHOT: Bắn đá cuội văng lùi
+    if (gunKind === 'SLINGSHOT') {
+      const vx = Math.cos(angle) * 720;
+      const vy = Math.sin(angle) * 720;
+      this.spawnBullet(gunX, gunY, vx, vy, finalDmg, 1, 'NORMAL', angle, 'SLINGSHOT', 1.0);
+      return;
+    }
+
+    // MINIGUN: Xả liên thanh
+    if (gunKind === 'MINIGUN') {
+      const spray = (Math.random() - 0.5) * 0.08;
+      const a = angle + spray;
+      this.spawnBullet(gunX, gunY, Math.cos(a) * 920, Math.sin(a) * 920, finalDmg, 1, 'NORMAL', a, 'MINIGUN', 0.9);
+      return;
+    }
+
+    // SÚNG BĂNG CRYO:
+    if (gunKind === 'CRYO') {
+      const vx = Math.cos(angle) * 780;
+      const vy = Math.sin(angle) * 780;
+      this.spawnBullet(gunX, gunY, vx, vy, finalDmg, 1, 'ICE', angle, 'CRYO', 1.0);
+      return;
+    }
+
+    // Mặc định: SÚNG LỤC PISTOL
+    const vx = Math.cos(angle) * 800;
+    const vy = Math.sin(angle) * 800;
+    this.spawnBullet(gunX, gunY, vx, vy, finalDmg, 1, 'NORMAL', angle, 'PISTOL', 1.0);
+  }
+
+  private getMuzzleFlashColor(kind?: GunKind): number {
+    switch (kind) {
+      case 'TESLA': return 0x38bdf8;
+      case 'CRYO': return 0xbae6fd;
+      case 'FLAMER': return 0xf97316;
+      case 'METEOR': return 0xef4444;
+      case 'CANNON': return 0xf59e0b;
+      case 'SHOTGUN': return 0xfbbf24;
+      case 'SNIPER': return 0xe2e8f0;
+      case 'MINIGUN': return 0xfde047;
+      case 'CROSSBOW': return 0x60a5fa;
+      case 'SLINGSHOT': return 0xd97706;
+      default: return 0xfacc15;
     }
   }
 
-  private getGunElement(kind?: GunKind): 'NORMAL' | 'ICE' | 'FIRE' | 'ELECTRIC' | 'EXPLOSIVE' {
-    if (kind === 'CRYO') return 'ICE';
-    if (kind === 'FLAMER') return 'FIRE';
-    if (kind === 'CANNON') return 'EXPLOSIVE';
-    if (kind === 'TESLA') return 'ELECTRIC';
-    return 'NORMAL';
-  }
-
-  private spawnBullet(x: number, y: number, vx: number, vy: number, damage: number, pierce: number, element: any, angle: number) {
+  private spawnBullet(
+    x: number,
+    y: number,
+    vx: number,
+    vy: number,
+    damage: number,
+    pierce: number,
+    element: any,
+    angle: number,
+    gunKind: GunKind = 'PISTOL',
+    scale: number = 1.0
+  ) {
     this.bullets.push({
       id: this.nextId++,
+      gunKind,
       x,
       y,
       vx,
@@ -1380,8 +1550,9 @@ export class GameEngine {
       pierce,
       element,
       active: true,
-      radius: 10,
+      radius: gunKind === 'METEOR' ? 18 : (gunKind === 'CANNON' || gunKind === 'FLAMER' ? 14 : 10),
       angle,
+      scale,
     });
   }
 
@@ -1552,6 +1723,8 @@ export class GameEngine {
     e.active = false;
     this.gold += e.bounty;
     sound.playExplode();
+    this.addShockwave(e.x, e.y, e.isBoss ? 80 : 36, e.isBoss ? 0xa855f7 : 0xfacc15);
+    this.addSparks(e.x, e.y, e.isBoss ? 18 : 8, e.isBoss ? 0xa855f7 : 0xfacc15, 180);
     this.addFloatingText(e.x, e.y, `+${e.bounty}$`, '#facc15');
   }
 
@@ -1608,13 +1781,39 @@ export class GameEngine {
         const hitDist = b.radius + e.width / 2;
 
         if (dx * dx + dy * dy <= hitDist * hitDist) {
+          // CANNON: Nổ bom diện rộng AOE
+          if (b.gunKind === 'CANNON') {
+            this.triggerAoeExplosion(b.x, b.y, 85, b.damage, 0xf97316);
+            this.trauma = Math.min(1.0, this.trauma + 0.25);
+            b.active = false;
+            break;
+          }
+          // METEOR: Thiên thạch nổ hủy diệt khổng lồ
+          if (b.gunKind === 'METEOR') {
+            this.triggerAoeExplosion(b.x, b.y, 115, b.damage, 0xef4444);
+            this.trauma = Math.min(1.0, this.trauma + 0.40);
+            b.active = false;
+            break;
+          }
+
           e.hp -= b.damage;
           e.hitFlashTimer = 0.08;
           sound.playHit();
           this.addFloatingText(e.x + (Math.random() * 24 - 12), e.y - 16, `${b.damage}`, '#ffffff');
 
-          if (b.element === 'ICE') e.slowTimer = 2.0;
-          if (b.element === 'FIRE') e.burnTimer = 3.0;
+          if (b.gunKind === 'CRYO' || b.element === 'ICE') {
+            e.slowTimer = 3.0;
+            this.addShockwave(b.x, b.y, 35, 0x38bdf8);
+            this.addSparks(b.x, b.y, 6, 0x38bdf8, 140);
+          } else if (b.gunKind === 'FLAMER' || b.element === 'FIRE') {
+            e.burnTimer = 3.5;
+            this.addSparks(b.x, b.y, 5, 0xf97316, 120);
+          } else if (b.gunKind === 'SLINGSHOT') {
+            e.y = Math.max(80, e.y - 20); // Đẩy lùi
+            this.addSparks(b.x, b.y, 5, 0xa8a29e, 140);
+          } else {
+            this.addSparks(b.x, b.y, 4, 0xfde047, 120);
+          }
 
           if (e.hp <= 0) {
             this.killEnemy(e);
@@ -1641,6 +1840,170 @@ export class GameEngine {
     } else {
       this.stage.x = 0;
       this.stage.y = 0;
+    }
+  }
+
+  private addMuzzleFlash(x: number, y: number, color: number) {
+    this.muzzleFlashes.push({
+      x,
+      y,
+      radius: 18,
+      color,
+      lifetime: 0.08,
+    });
+  }
+
+  private addShockwave(x: number, y: number, maxRadius: number, color: number) {
+    this.shockwaves.push({
+      x,
+      y,
+      radius: 4,
+      maxRadius,
+      color,
+      alpha: 1.0,
+      lifetime: 0.22,
+      maxLifetime: 0.22,
+    });
+  }
+
+  private addSparks(x: number, y: number, count: number, color: number, speed: number = 140) {
+    for (let i = 0; i < count; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const spd = speed * (0.6 + Math.random() * 0.8);
+      const lt = 0.25 + Math.random() * 0.2;
+      this.visualSparks.push({
+        x,
+        y,
+        vx: Math.cos(angle) * spd,
+        vy: Math.sin(angle) * spd,
+        color,
+        alpha: 1.0,
+        size: 3 + Math.random() * 3,
+        lifetime: lt,
+        maxLifetime: lt,
+      });
+    }
+  }
+
+  private triggerAoeExplosion(x: number, y: number, radius: number, damage: number, color: number) {
+    this.addShockwave(x, y, radius, color);
+    this.addSparks(x, y, 16, color, 220);
+    sound.playExplode();
+    for (const e of this.enemies) {
+      if (!e.active) continue;
+      const dist = Math.hypot(e.x - x, e.y - y);
+      if (dist <= radius) {
+        const falloff = 1.0 - (dist / radius) * 0.4;
+        const finalDmg = Math.round(damage * falloff);
+        e.hp -= finalDmg;
+        e.hitFlashTimer = 0.12;
+        this.addFloatingText(e.x, e.y - 14, `${finalDmg}`, color === 0xef4444 ? '#ef4444' : '#f97316');
+        if (e.hp <= 0) {
+          this.killEnemy(e);
+        }
+      }
+    }
+  }
+
+  private drawJaggedLightning(g: Graphics, x1: number, y1: number, x2: number, y2: number, color: number, alpha: number) {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const dist = Math.hypot(dx, dy);
+    if (dist < 5) return;
+
+    const segments = Math.max(4, Math.floor(dist / 22));
+    const nx = -dy / dist;
+    const ny = dx / dist;
+
+    const points: { x: number; y: number }[] = [{ x: x1, y: y1 }];
+    for (let i = 1; i < segments; i++) {
+      const t = i / segments;
+      const jitter = (Math.random() * 2 - 1) * 16 * (1 - Math.abs(t - 0.5) * 0.8);
+      points.push({
+        x: x1 + dx * t + nx * jitter,
+        y: y1 + dy * t + ny * jitter,
+      });
+    }
+    points.push({ x: x2, y: y2 });
+
+    // Outer glow
+    g.moveTo(points[0].x, points[0].y);
+    for (let i = 1; i < points.length; i++) {
+      g.lineTo(points[i].x, points[i].y);
+    }
+    g.stroke({ width: 4.5, color, alpha: alpha * 0.75 });
+
+    // Inner bright core
+    g.moveTo(points[0].x, points[0].y);
+    for (let i = 1; i < points.length; i++) {
+      g.lineTo(points[i].x, points[i].y);
+    }
+    g.stroke({ width: 1.8, color: 0xffffff, alpha: Math.min(1.0, alpha * 1.2) });
+  }
+
+  private updateSpecialFX(dt: number) {
+    this.fxGraphics.clear();
+
+    // 1. Shockwaves
+    for (let i = this.shockwaves.length - 1; i >= 0; i--) {
+      const sw = this.shockwaves[i];
+      sw.lifetime -= dt;
+      if (sw.lifetime <= 0) {
+        this.shockwaves.splice(i, 1);
+        continue;
+      }
+      const progress = 1 - sw.lifetime / sw.maxLifetime;
+      sw.radius = sw.maxRadius * progress;
+      sw.alpha = 1 - progress;
+      this.fxGraphics.circle(sw.x, sw.y, sw.radius);
+      this.fxGraphics.stroke({ width: 3, color: sw.color, alpha: sw.alpha });
+    }
+
+    // 2. Muzzle Flashes
+    for (let i = this.muzzleFlashes.length - 1; i >= 0; i--) {
+      const mf = this.muzzleFlashes[i];
+      mf.lifetime -= dt;
+      if (mf.lifetime <= 0) {
+        this.muzzleFlashes.splice(i, 1);
+        continue;
+      }
+      const alpha = mf.lifetime / 0.08;
+      this.fxGraphics.circle(mf.x, mf.y, mf.radius);
+      this.fxGraphics.fill({ color: mf.color, alpha: alpha * 0.85 });
+      this.fxGraphics.circle(mf.x, mf.y, mf.radius * 0.5);
+      this.fxGraphics.fill({ color: 0xffffff, alpha });
+    }
+
+    // 3. Sparks & Debris
+    for (let i = this.visualSparks.length - 1; i >= 0; i--) {
+      const sp = this.visualSparks[i];
+      sp.lifetime -= dt;
+      if (sp.lifetime <= 0) {
+        this.visualSparks.splice(i, 1);
+        continue;
+      }
+      sp.x += sp.vx * dt;
+      sp.y += sp.vy * dt;
+      sp.vy += 120 * dt; // Gravity
+      sp.alpha = sp.lifetime / sp.maxLifetime;
+
+      this.fxGraphics.rect(sp.x - sp.size / 2, sp.y - sp.size / 2, sp.size, sp.size);
+      this.fxGraphics.fill({ color: sp.color, alpha: sp.alpha });
+    }
+
+    // 4. Jagged Lightning Bolts (Anim giật liên tục re-render ngẫu nhiên mỗi frame)
+    for (let i = this.lightningBolts.length - 1; i >= 0; i--) {
+      const lb = this.lightningBolts[i];
+      lb.lifetime -= dt;
+      if (lb.lifetime <= 0) {
+        this.lightningBolts.splice(i, 1);
+        continue;
+      }
+      const alpha = lb.lifetime / lb.maxLifetime;
+      this.drawJaggedLightning(this.fxGraphics, lb.x1, lb.y1, lb.x2, lb.y2, lb.color, alpha);
+      if (lb.chainX !== undefined && lb.chainY !== undefined) {
+        this.drawJaggedLightning(this.fxGraphics, lb.x2, lb.y2, lb.chainX, lb.chainY, 0xa855f7, alpha);
+      }
     }
   }
 
@@ -1729,7 +2092,8 @@ export class GameEngine {
         view.sprite.x = b.x;
         view.sprite.y = b.y;
         view.sprite.rotation = b.angle + Math.PI / 2;
-        view.sprite.texture = PixelAssetManager.getBulletTexture(b.element);
+        view.sprite.texture = PixelAssetManager.getProjectileTexture(b.gunKind);
+        view.sprite.scale.set(b.scale || 1.0);
       } else {
         view.sprite.visible = false;
       }

@@ -102,21 +102,21 @@ export class PixelAssetManager {
         ctx.translate(cx, cy);
         ctx.rotate(rad);
 
-        // Thân cánh tay nẫy bằng đồng thau dày dặn, vươn dài từ r=16 ra r=62
+        // Thân cánh tay nẫy bằng đồng thau dày dặn, vươn dài từ r=16 ra r=65
         // Bản ngoài (Shadow & Outline)
         ctx.fillStyle = '#78350f';
         ctx.beginPath();
         ctx.moveTo(14, -8);
-        ctx.lineTo(44, -12);
-        ctx.lineTo(62, -4); // Mỏ nẫy vát nhọn chạm khít vào răng của bánh răng kề!
-        ctx.lineTo(58, 8);
-        ctx.lineTo(42, 10);
+        ctx.lineTo(46, -12);
+        ctx.lineTo(65, -4); // Mỏ nẫy vát nhọn chạm khít vào răng của bánh răng kề!
+        ctx.lineTo(61, 8);
+        ctx.lineTo(44, 10);
         ctx.lineTo(14, 8);
         ctx.closePath();
         ctx.fill();
 
         // Mặt trên cánh nẫy (Gradient kim loại mạ vàng đồng)
-        const armGrad = ctx.createLinearGradient(16, 0, 62, 0);
+        const armGrad = ctx.createLinearGradient(16, 0, 65, 0);
         armGrad.addColorStop(0, '#d97706');
         armGrad.addColorStop(0.5, '#f59e0b');
         armGrad.addColorStop(0.9, '#fef08a');
@@ -125,10 +125,10 @@ export class PixelAssetManager {
         ctx.fillStyle = armGrad;
         ctx.beginPath();
         ctx.moveTo(16, -6);
-        ctx.lineTo(43, -9);
-        ctx.lineTo(59, -3); // Mỏ gạt cơ học
-        ctx.lineTo(55, 6);
-        ctx.lineTo(41, 7);
+        ctx.lineTo(45, -9);
+        ctx.lineTo(62, -3); // Mỏ gạt cơ học
+        ctx.lineTo(58, 6);
+        ctx.lineTo(43, 7);
         ctx.lineTo(16, 6);
         ctx.closePath();
         ctx.fill();

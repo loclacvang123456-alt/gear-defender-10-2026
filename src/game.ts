@@ -1158,7 +1158,7 @@ export class GameEngine {
     this.renderActiveEntities();
   }
 
-  // Animation xoay bánh răng đế súng mượt mà: mỗi hit xoay đúng 90 độ (PI/2), giảm tốc độ 1/4 để nhìn rõ
+  // Phục hồi độ nảy sau va chạm cho bánh răng súng (bánh răng CHỈ xoay khi Cò chạm vào, không tự quay theo quán tính)
   private updateGearRotations(dt: number) {
     for (let r = 0; r < this.ROWS; r++) {
       for (let c = 0; c < this.COLS; c++) {
@@ -1172,20 +1172,26 @@ export class GameEngine {
           const nextScale = Math.max(1.0, baseSprite.scale.x - 0.8 * dt);
           baseSprite.scale.set(nextScale);
         }
-
-        // Bánh răng xoay đúng 90 độ (PI/2) mượt mà với tốc độ giảm còn 1/4 (nhìn rõ từng bước quay)
-        if (item.gearAngle < item.gearTargetAngle) {
-          const diff = item.gearTargetAngle - item.gearAngle;
-          // Tốc độ quay 1.8 rad/s (~100 deg/s): xoay 90 độ trong ~0.8s, nhìn cực rõ và mượt!
-          const step = Math.min(diff, 1.8 * dt);
-          item.gearAngle += step;
-          baseSprite.rotation = item.gearAngle;
-        }
       }
     }
   }
 
+  // Cò quay truyền động cơ khí trực tiếp:
+  // - Bánh răng CHỈ xoay trong khoảng thời gian chấu Cò thực sự chạm vào bánh răng [-20°, +20°].
+  // - Cò đi qua một cái là DỪNG XOAY ngay lập tức (triệt tiêu hoàn toàn quán tính).
+  // - Bánh răng quay ĐÚNG CHIỀU (Cò quay thuận chiều kim đồng hồ -> Bánh răng quay ngược chiều kim đồng hồ).
+  // - Khi quét hết 40° tiếp xúc, bánh răng xoay đúng 90° (PI/2 rad).
   private updateTriggers(dt: number) {
+    const HALF_CONTACT_DEG = 20; // Vùng tiếp xúc cơ học 40 độ
+    const GEAR_RATIO = (Math.PI / 2) / ((HALF_CONTACT_DEG * 2) * (Math.PI / 180)); // 2.25
+
+    const cardinalDirs = [
+      { dir: 'RIGHT', cardinalAngle: 0, dc: 1, dr: 0 },
+      { dir: 'DOWN', cardinalAngle: 90, dc: 0, dr: 1 },
+      { dir: 'LEFT', cardinalAngle: 180, dc: -1, dr: 0 },
+      { dir: 'UP', cardinalAngle: 270, dc: 0, dr: -1 },
+    ];
+
     for (let r = 0; r < this.ROWS; r++) {
       for (let c = 0; c < this.COLS; c++) {
         const item = this.grid[r][c].item;
@@ -1198,76 +1204,80 @@ export class GameEngine {
           }
         });
 
-        const prevAngle = item.angle;
+        // Cò quay theo chiều kim đồng hồ (angle tăng dần)
         const speedDeg = item.rotationSpeed * speedMultiplier * 360;
-        item.angle = (item.angle + speedDeg * dt) % 360;
+        const dAngleDeg = speedDeg * dt;
+        const prevAngle = item.angle;
+        item.angle = (item.angle + dAngleDeg) % 360;
 
-        // Xoay nẫy Cò
+        // Xoay nẫy Cò theo chiều kim đồng hồ
         this.slotViews[r][c].baseSprite.rotation = (item.angle * Math.PI) / 180;
-
-        const cardinalAngles = [
-          { dir: 'RIGHT', angle: 0, dc: 1, dr: 0 },
-          { dir: 'DOWN', angle: 90, dc: 0, dr: 1 },
-          { dir: 'LEFT', angle: 180, dc: -1, dr: 0 },
-          { dir: 'UP', angle: 270, dc: 0, dr: -1 },
-        ];
 
         const bladesCount = item.level;
         const bladeStep = 360 / bladesCount;
 
         for (let b = 0; b < bladesCount; b++) {
           const bladeAngle = (item.angle + b * bladeStep) % 360;
-          const prevBladeAngle = (prevBladeAngleFallback => prevBladeAngleFallback)( (prevAngle + b * bladeStep) % 360 );
+          const prevBladeAngle = (prevAngle + b * bladeStep) % 360;
 
-          cardinalAngles.forEach(card => {
-            if (this.angleCrossed(prevBladeAngle, bladeAngle, card.angle)) {
-              this.triggerHit(c + card.dc, r + card.dr);
+          for (let d = 0; d < 4; d++) {
+            const card = cardinalDirs[d];
+            const targetCol = c + card.dc;
+            const targetRow = r + card.dr;
+            if (targetCol < 0 || targetCol >= this.COLS || targetRow < 0 || targetRow >= this.ROWS) continue;
+
+            const targetCell = this.grid[targetRow][targetCol];
+            if (!targetCell || !targetCell.item || targetCell.item.type !== 'GUN') continue;
+
+            const gunItem = targetCell.item;
+            const gunView = this.slotViews[targetRow][targetCol];
+
+            // Góc tương đối của nẫy so với hướng bánh răng [-180, 180)
+            const diffPrev = ((prevBladeAngle - card.cardinalAngle + 540) % 360) - 180;
+            const diffCurr = diffPrev + dAngleDeg;
+
+            // Đoạn quét trong vùng tiếp xúc [-HALF_CONTACT_DEG, +HALF_CONTACT_DEG]
+            const contactStart = Math.max(diffPrev, -HALF_CONTACT_DEG);
+            const contactEnd = Math.min(diffCurr, HALF_CONTACT_DEG);
+
+            if (contactStart < contactEnd) {
+              const sweepDeg = contactEnd - contactStart;
+              // QUAY ĐÚNG CHIỀU VÀ CHỈ QUAY KHI CHẠM:
+              // Cò quay thuận chiều kim đồng hồ -> Bánh răng quay NGƯỢC chiều kim đồng hồ
+              const dGearRad = -(sweepDeg * (Math.PI / 180)) * GEAR_RATIO;
+              gunItem.gearAngle = (gunItem.gearAngle || 0) + dGearRad;
+              gunView.baseSprite.rotation = gunItem.gearAngle;
             }
-          });
+
+            // Khi chấu Cò vừa rời khỏi điểm chạm (+HALF_CONTACT_DEG): Dừng xoay ngay & nạp đạn
+            if (diffPrev < HALF_CONTACT_DEG && diffCurr >= HALF_CONTACT_DEG) {
+              this.onTriggerReleaseGun(targetCol, targetRow, gunItem);
+            }
+          }
         }
       }
     }
   }
 
-  private angleCrossed(prev: number, curr: number, target: number): boolean {
-    if (prev <= curr) {
-      return prev < target && target <= curr;
-    } else {
-      return prev < target || target <= curr;
-    }
-  }
+  // Khi chấu Cò rời khỏi răng súng: nhả chấu, nạp đạn & kích hoạt bắn nếu đầy
+  private onTriggerReleaseGun(targetCol: number, targetRow: number, item: GridItem) {
+    let fillMultiplier = 1.0;
+    this.getAdjacentCells(targetCol, targetRow).forEach(adj => {
+      if (adj.item && adj.item.type === 'BUFF' && adj.item.buffKind === 'FILL') {
+        fillMultiplier += 0.15 * adj.item.level;
+      }
+    });
 
-  // Khi Cò chạm vào súng: TĂNG ĐÚNG 90 ĐỘ ĐỂ BÁNH RĂNG XOAY ĐÚNG 90 ĐỘ MƯỢT MÀ
-  private triggerHit(targetCol: number, targetRow: number) {
-    if (targetCol < 0 || targetCol >= this.COLS || targetRow < 0 || targetRow >= this.ROWS) return;
+    item.fill += item.fillPerHit * fillMultiplier;
+    item.recoilOffset = 6;
+    this.slotViews[targetRow][targetCol].baseSprite.scale.set(1.08); // Nhịp nảy cơ học khi nhả
 
-    const targetCell = this.grid[targetRow][targetCol];
-    if (!targetCell || !targetCell.item) return;
+    sound.playClick();
 
-    const item = targetCell.item;
-
-    if (item.type === 'GUN') {
-      let fillMultiplier = 1.0;
-      this.getAdjacentCells(targetCol, targetRow).forEach(adj => {
-        if (adj.item && adj.item.type === 'BUFF' && adj.item.buffKind === 'FILL') {
-          fillMultiplier += 0.15 * adj.item.level;
-        }
-      });
-
-      item.fill += item.fillPerHit * fillMultiplier;
-      item.recoilOffset = 6;
-
-      // Mỗi lần gõ: TĂNG ĐÚNG 90 ĐỘ (PI / 2) ĐỂ BÁNH RĂNG XOAY ĐÚNG 90 ĐỘ MƯỢT MÀ!
-      item.gearTargetAngle = (item.gearTargetAngle || item.gearAngle || 0) + Math.PI / 2;
-      this.slotViews[targetRow][targetCol].baseSprite.scale.set(1.10); // Nảy nhẹ ăn khớp bánh răng
-
-      sound.playClick();
-
-      if (item.fill >= 1.0) {
-        item.fill -= 1.0;
-        if (this.isWaveActive || this.enemies.length > 0) {
-          this.fireGunTowardsTarget(targetCol, targetRow, item);
-        }
+    if (item.fill >= 1.0) {
+      item.fill -= 1.0;
+      if (this.isWaveActive || this.enemies.length > 0) {
+        this.fireGunTowardsTarget(targetCol, targetRow, item);
       }
     }
   }
@@ -1831,7 +1841,7 @@ export class GameEngine {
       level,
       tier: 1,
       angle: 0,
-      rotationSpeed: 1.5,
+      rotationSpeed: 0.8,
       lastHitAngle: [],
       fill: 0,
       fillPerHit: 0,

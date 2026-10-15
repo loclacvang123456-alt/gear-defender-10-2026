@@ -87,7 +87,7 @@ export class PixelAssetManager {
     return tex;
   }
 
-  // 2. Bánh Răng Cò (Trigger Gear) 80x80
+  // 2. Bánh Răng Cò (Trigger Gear) 80x80 - Thiết kế dạng CÁI NẪY BÁNH RĂNG (Ratchet / Pawl Lever)
   static getTriggerTexture(level: number): Texture {
     const key = `trigger_hires_${level}`;
     if (this.cache.has(key)) return this.cache.get(key)!;
@@ -95,55 +95,73 @@ export class PixelAssetManager {
     const tex = createHighResTexture(80, 80, (ctx) => {
       const cx = 40, cy = 40;
 
+      // Các mỏ nẫy bánh răng cơ khí (Pawls)
       for (let i = 0; i < level; i++) {
         const rad = (i * (360 / level) * Math.PI) / 180;
         ctx.save();
         ctx.translate(cx, cy);
         ctx.rotate(rad);
 
-        const armGrad = ctx.createLinearGradient(0, 0, 36, 0);
-        armGrad.addColorStop(0, '#d97706');
-        armGrad.addColorStop(1, '#fbbf24');
-        ctx.fillStyle = armGrad;
-        safeRoundRect(ctx, 14, -6, 24, 12, 3);
+        // Cánh nẫy cong dạng mỏ móc cơ học
+        ctx.fillStyle = '#b45309';
+        ctx.beginPath();
+        ctx.moveTo(12, -4);
+        ctx.lineTo(26, -9);
+        ctx.lineTo(38, -3); // Đỉnh mỏ nẫy nhô ra ngoài
+        ctx.lineTo(34, 4);
+        ctx.lineTo(20, 5);
+        ctx.lineTo(12, 4);
+        ctx.closePath();
         ctx.fill();
 
-        ctx.fillStyle = '#fef08a';
+        const pawlGrad = ctx.createLinearGradient(12, 0, 38, 0);
+        pawlGrad.addColorStop(0, '#f59e0b');
+        pawlGrad.addColorStop(1, '#fef08a');
+        ctx.fillStyle = pawlGrad;
         ctx.beginPath();
-        ctx.arc(36, 0, 5, 0, Math.PI * 2);
+        ctx.moveTo(14, -2);
+        ctx.lineTo(25, -7);
+        ctx.lineTo(36, -2);
+        ctx.lineTo(32, 2);
+        ctx.lineTo(18, 3);
+        ctx.closePath();
+        ctx.fill();
+
+        // Đinh tán chốt khớp nẫy
+        ctx.fillStyle = '#78350f';
+        ctx.beginPath();
+        ctx.arc(22, 0, 2.5, 0, Math.PI * 2);
         ctx.fill();
 
         ctx.restore();
       }
 
-      const discGrad = ctx.createRadialGradient(cx, cy, 10, cx, cy, 26);
-      discGrad.addColorStop(0, '#b45309');
-      discGrad.addColorStop(0.7, '#78350f');
-      discGrad.addColorStop(1, '#d97706');
+      // Đĩa xoay trung tâm của bộ nẫy
+      const discGrad = ctx.createRadialGradient(cx, cy, 6, cx, cy, 22);
+      discGrad.addColorStop(0, '#d97706');
+      discGrad.addColorStop(0.8, '#78350f');
+      discGrad.addColorStop(1, '#b45309');
       ctx.fillStyle = discGrad;
       ctx.beginPath();
-      ctx.arc(cx, cy, 24, 0, Math.PI * 2);
+      ctx.arc(cx, cy, 20, 0, Math.PI * 2);
       ctx.fill();
 
+      // Vòng đệm kim loại mạ vàng
       ctx.strokeStyle = '#fef08a';
       ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.arc(cx, cy, 21, 0, Math.PI * 2);
+      ctx.arc(cx, cy, 18, 0, Math.PI * 2);
       ctx.stroke();
 
-      ctx.fillStyle = '#1e293b';
+      // Tâm trục ổ bi
+      ctx.fillStyle = '#0f172a';
       ctx.beginPath();
-      ctx.arc(cx, cy, 10, 0, Math.PI * 2);
+      ctx.arc(cx, cy, 9, 0, Math.PI * 2);
       ctx.fill();
 
       ctx.fillStyle = '#38bdf8';
       ctx.beginPath();
-      ctx.arc(cx, cy, 6, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.fillStyle = '#ffffff';
-      ctx.beginPath();
-      ctx.arc(cx - 2, cy - 2, 2.5, 0, Math.PI * 2);
+      ctx.arc(cx, cy, 5, 0, Math.PI * 2);
       ctx.fill();
     });
 
@@ -151,43 +169,125 @@ export class PixelAssetManager {
     return tex;
   }
 
-  // 3. Bệ Tháp Súng (Base) 80x80
+  // 3. Đế Súng (BÁNH RĂNG KIM LOẠI 12 RĂNG CƯA) 80x80
   static getGunBaseTexture(tier: number): Texture {
-    const key = `gun_base_hires_${tier}`;
+    const key = `gun_base_gear_hires_${tier}`;
     if (this.cache.has(key)) return this.cache.get(key)!;
 
     const tex = createHighResTexture(80, 80, (ctx) => {
       const cx = 40, cy = 40;
 
-      const baseColors = ['#334155', '#1e3a5f', '#3b1d54', '#5c3111', '#5c1122'];
-      const borderColors = ['#64748b', '#38bdf8', '#c084fc', '#fbbf24', '#f43f5e'];
+      const baseColors = ['#475569', '#1e3a8a', '#581c87', '#78350f', '#831843'];
+      const gearRimColors = ['#94a3b8', '#38bdf8', '#c084fc', '#facc15', '#fb7185'];
+      const innerColors = ['#334155', '#172554', '#3b0764', '#451a03', '#4c0519'];
 
       const colorIdx = Math.min(tier - 1, 4);
 
+      // Vẽ Bánh Răng 12 răng cưa cơ khí
+      const numTeeth = 12;
+      const rInner = 28;
+      const rOuter = 37;
+
       ctx.fillStyle = baseColors[colorIdx];
       ctx.beginPath();
-      for (let i = 0; i < 6; i++) {
-        const rad = (i * 60 * Math.PI) / 180;
-        const x = cx + Math.cos(rad) * 34;
-        const y = cy + Math.sin(rad) * 34;
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
+      for (let i = 0; i < numTeeth; i++) {
+        const a0 = (i * 2 * Math.PI) / numTeeth;
+        const a1 = a0 + Math.PI / numTeeth * 0.35;
+        const a2 = a0 + Math.PI / numTeeth * 0.65;
+        const a3 = ((i + 1) * 2 * Math.PI) / numTeeth;
+
+        // Điểm chân răng
+        const x0 = cx + Math.cos(a0) * rInner;
+        const y0 = cy + Math.sin(a0) * rInner;
+        // Điểm đỉnh răng 1
+        const x1 = cx + Math.cos(a1) * rOuter;
+        const y1 = cy + Math.sin(a1) * rOuter;
+        // Điểm đỉnh răng 2
+        const x2 = cx + Math.cos(a2) * rOuter;
+        const y2 = cy + Math.sin(a2) * rOuter;
+        // Điểm chân răng kế
+        const x3 = cx + Math.cos(a3) * rInner;
+        const y3 = cy + Math.sin(a3) * rInner;
+
+        if (i === 0) ctx.moveTo(x0, y0);
+        else ctx.lineTo(x0, y0);
+        ctx.lineTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.lineTo(x3, y3);
       }
       ctx.closePath();
       ctx.fill();
 
-      ctx.strokeStyle = borderColors[colorIdx];
-      ctx.lineWidth = 2.5;
+      // Viền kim loại nổi
+      ctx.strokeStyle = gearRimColors[colorIdx];
+      ctx.lineWidth = 2;
       ctx.stroke();
 
-      ctx.fillStyle = '#0f172a';
+      // Vành trong bánh răng
+      ctx.fillStyle = innerColors[colorIdx];
       ctx.beginPath();
-      ctx.arc(cx, cy, 20, 0, Math.PI * 2);
+      ctx.arc(cx, cy, 24, 0, Math.PI * 2);
       ctx.fill();
 
-      ctx.strokeStyle = '#475569';
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
+      // 4 Lỗ khoét giảm trọng lượng cơ khí
+      for (let j = 0; j < 4; j++) {
+        const holeAngle = (j * Math.PI) / 2;
+        const hx = cx + Math.cos(holeAngle) * 16;
+        const hy = cy + Math.sin(holeAngle) * 16;
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.arc(hx, hy, 4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = gearRimColors[colorIdx];
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+
+      // Trục xoay nòng súng ở giữa
+      ctx.fillStyle = '#1e293b';
+      ctx.beginPath();
+      ctx.arc(cx, cy, 10, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    this.cache.set(key, tex);
+    return tex;
+  }
+
+  // 3.5. Icon Thùng Rác (Bán món đồ) 64x64
+  static getTrashIconTexture(): Texture {
+    const key = `trash_icon_hires`;
+    if (this.cache.has(key)) return this.cache.get(key)!;
+
+    const tex = createHighResTexture(64, 64, (ctx) => {
+      const cx = 32, cy = 32;
+
+      // Nắp thùng rác mở nghiêng
+      ctx.save();
+      ctx.translate(cx, cy - 10);
+      ctx.rotate(-0.25);
+      ctx.fillStyle = '#ffffff';
+      safeRoundRect(ctx, -18, -4, 36, 6, 2);
+      ctx.fill();
+      // Quai nắp
+      ctx.fillRect(-6, -9, 12, 5);
+      ctx.restore();
+
+      // Thân thùng rác
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.moveTo(cx - 15, cy - 6);
+      ctx.lineTo(cx + 15, cy - 6);
+      ctx.lineTo(cx + 12, cy + 20);
+      ctx.lineTo(cx - 12, cy + 20);
+      ctx.closePath();
+      ctx.fill();
+
+      // 3 Vạch gân dập nổi trên thân
+      ctx.fillStyle = '#dc2626';
+      ctx.fillRect(cx - 8, cy - 2, 3, 18);
+      ctx.fillRect(cx - 1.5, cy - 2, 3, 18);
+      ctx.fillRect(cx + 5, cy - 2, 3, 18);
     });
 
     this.cache.set(key, tex);

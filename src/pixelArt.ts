@@ -218,17 +218,17 @@ export class PixelAssetManager {
   // 3. Đế Súng (BÁNH RĂNG CÔNG NGHIỆP 10 RĂNG BẢN TO) 96x96 - ASSET CHUYỂN MÀU THEO LEVEL 1 -> 5
   static getGunBaseTexture(level: number = 1): Texture {
     const lvl = Math.min(5, Math.max(1, level));
-    const key = `gun_base_gear_level_${lvl}`;
+    const key = `gun_base_gear_dark_v1_${lvl}`;
     if (this.cache.has(key)) return this.cache.get(key)!;
 
     const tex = createHighResTexture(96, 96, (ctx) => {
       const cx = 48, cy = 48;
 
-      // Bảng màu chuẩn Level 1-5: 1 Trắng/Bạc, 2 Xanh, 3 Tím, 4 Vàng, 5 Đỏ
-      const gearMainColors = ['#94a3b8', '#2563eb', '#7e22ce', '#d97706', '#dc2626'];
-      const gearRimColors = ['#f8fafc', '#60a5fa', '#c084fc', '#fde047', '#f87171'];
-      const gearInnerColors = ['#475569', '#1d4ed8', '#581c87', '#92400e', '#991b1b'];
-      const gearGrooveColors = ['#ffffff', '#93c5fd', '#e9d5ff', '#fef08a', '#fecaca'];
+      // Bảng màu Đế Bánh Răng Tối (Tạo độ tương phản cao, làm nòng súng nổi bật, không bị lẫn màu)
+      const gearMainColors = ['#1e293b', '#0f172a', '#1a0c2e', '#231508', '#220808'];
+      const gearRimColors = ['#334155', '#1e3a8a', '#4c1d95', '#78350f', '#7f1d1d'];
+      const gearInnerColors = ['#0f172a', '#020617', '#0c0514', '#0f0a04', '#0f0202'];
+      const gearGrooveColors = ['#475569', '#1d4ed8', '#6b21a8', '#b45309', '#991b1b'];
 
       const colorIdx = lvl - 1;
       const mainCol = gearMainColors[colorIdx];

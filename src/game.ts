@@ -388,29 +388,32 @@ export class GameEngine {
         baseSprite.y = 40;
         itemContainer.addChild(baseSprite);
 
-        // Nòng súng xoay 360 độ tự động ngắm quái
+        // Nòng súng xoay 360 độ tự động ngắm quái (To hơn 20% nổi bật trên nền bánh răng)
         const barrelSprite = new Sprite();
         barrelSprite.anchor.set(0.5);
         barrelSprite.x = 40;
         barrelSprite.y = 40;
+        barrelSprite.scale.set(1.2);
         itemContainer.addChild(barrelSprite);
 
         // Thanh Fill Bar
         const fillG = new Graphics();
         itemContainer.addChild(fillG);
 
+        // Chữ Level to rõ ràng, viền đen dày dễ nhìn từ xa
         const lvlText = new Text({
           text: '',
           style: {
             fontFamily: this.FONT_FAMILY,
-            fontSize: 16,
+            fontSize: 22,
             fill: '#ffffff',
-            fontWeight: 'bold',
-            stroke: { color: 0x000000, width: 3 },
+            fontWeight: '900',
+            stroke: { color: 0x000000, width: 4.5 },
           }
         });
-        lvlText.x = 52;
-        lvlText.y = 48;
+        lvlText.anchor.set(0.5);
+        lvlText.x = 64;
+        lvlText.y = 62;
         lvlText.eventMode = 'none';
         itemContainer.addChild(lvlText);
 
@@ -848,26 +851,34 @@ export class GameEngine {
     view.itemContainer.visible = true;
     view.itemContainer.alpha = 1.0;
 
-    // 1. TIER CỦA SÚNG (Cố định theo chủng loại súng, KHÔNG ĐỔI khi nâng Level):
-    // Tier 1: PISTOL, CROSSBOW, SLINGSHOT -> Vòng hollow TRẮNG
-    // Tier 2: CRYO, FLAMER, SHOTGUN -> Vòng hollow XANH
-    // Tier 3: CANNON, TESLA, SNIPER -> Vòng hollow TÍM
-    // Tier 4: MINIGUN -> Vòng hollow VÀNG
-    // Tier 5: METEOR -> Vòng hollow ĐỎ
-    const gunTier = (item.type === 'GUN' && item.gunKind) ? getGunTier(item.gunKind) : (item.tier || 1);
-    const tierRarity = RARITY_CONFIGS[gunTier];
+    // 1. VÒNG HOLLOW VUÔNG CỐ ĐỊNH THEO LOẠI MÓN ĐỒ (KHÔNG ĐỔI KHI NÂNG LEVEL):
+    let frameColor: number = 0xf8fafc;
+    if (item.type === 'GUN') {
+      const gunTier = item.gunKind ? getGunTier(item.gunKind) : (item.tier || 1);
+      frameColor = RARITY_CONFIGS[gunTier].color;
+    } else if (item.type === 'TRIGGER') {
+      frameColor = 0xf59e0b; // Đồng thau Steampunk vàng cam cố định cho Cò (Không đổi khi lên level)
+    } else if (item.type === 'BUFF') {
+      const buffColors: Record<BuffKind, number> = {
+        DMG: 0xef4444,    // Đỏ Sát thương
+        SPEED: 0x3b82f6,  // Xanh Lam Tốc độ
+        FILL: 0x22c55e,   // Xanh lá Siêu nạp
+        CRIT: 0xfacc15,   // Vàng Kim Chí mạng
+      };
+      frameColor = (item.buffKind && buffColors[item.buffKind]) ? buffColors[item.buffKind] : 0x38bdf8;
+    }
 
-    // VÒNG HOLLOW VUÔNG THỂ HIỆN TIER CỦA SÚNG (Cố định không đổi khi nâng Level):
+    // VÒNG HOLLOW VUÔNG (Cố định không đổi khi nâng Level):
     view.tierFrameG.visible = true;
     view.tierFrameG.clear();
 
     // 1. Khung hollow vuông bo góc nhẹ 6px bao quanh toàn bộ ô
     view.tierFrameG.roundRect(4, 4, 88, 88, 6);
-    view.tierFrameG.stroke({ width: 3.5, color: tierRarity.color, alpha: 0.95 });
+    view.tierFrameG.stroke({ width: 3.5, color: frameColor, alpha: 0.95 });
 
-    // 2. Lớp phát quang mỏng theo màu Tier Rarity bên trong ô
+    // 2. Lớp phát quang mỏng theo màu cố định bên trong ô
     view.tierFrameG.roundRect(6, 6, 84, 84, 5);
-    view.tierFrameG.fill({ color: tierRarity.color, alpha: 0.08 });
+    view.tierFrameG.fill({ color: frameColor, alpha: 0.08 });
 
     // 3. 4 Chấu góc vuông cơ khí (Corner Brackets) sáng trắng sắc nét
     view.tierFrameG.moveTo(2, 16); view.tierFrameG.lineTo(2, 2); view.tierFrameG.lineTo(16, 2);
@@ -890,7 +901,8 @@ export class GameEngine {
       view.barrelSprite.visible = false;
       view.fillG.visible = false;
       view.lvlText.text = `x${item.level}`;
-      view.lvlText.style.fill = lvlHex;
+      view.lvlText.style.fill = '#fde047';
+      view.lvlText.style.fontSize = 22;
     } else if (item.type === 'GUN') {
       // ĐẾ BÁNH RĂNG CÔNG NGHIỆP: CHÍNH BẢN THÂN ASSET TỰ VẼ MÀU THEO LEVEL 1 -> 5
       view.itemContainer.zIndex = 5;
@@ -901,15 +913,17 @@ export class GameEngine {
       view.baseSprite.scale.set(1.0);
       view.baseSprite.rotation = item.gearAngle || 0;
 
-      // NÒNG SÚNG XOAY 360 ĐỘ: CHÍNH BẢN THÂN ASSET TỰ VẼ MÀU THEO LEVEL 1 -> 5 (KHÔNG DÙNG OVERLAY)
+      // NÒNG SÚNG XOAY 360 ĐỘ: CHÍNH BẢN THÂN ASSET TỰ VẼ MÀU THEO LEVEL 1 -> 5, TO HƠN 20%
       view.barrelSprite.visible = true;
       view.barrelSprite.texture = PixelAssetManager.getGunBarrelTexture(item.gunKind!, item.level);
       view.barrelSprite.rotation = item.turretAngle;
+      view.barrelSprite.scale.set(1.2); // Nòng súng to hơn rõ rệt
       view.barrelSprite.tint = 0xffffff; // KHÔNG DÙNG OVERLAY TINT
 
       view.fillG.visible = true;
       view.lvlText.text = `${item.level}`;
       view.lvlText.style.fill = lvlHex;
+      view.lvlText.style.fontSize = 20;
     } else if (item.type === 'BUFF') {
       view.itemContainer.zIndex = 5;
       view.baseSprite.texture = PixelAssetManager.getBuffTexture(item.buffKind!, item.level);
@@ -920,8 +934,9 @@ export class GameEngine {
       view.baseSprite.rotation = 0;
       view.barrelSprite.visible = false;
       view.fillG.visible = false;
-      view.lvlText.text = `${item.level}`;
-      view.lvlText.style.fill = lvlHex;
+      view.lvlText.text = `Lv${item.level}`;
+      view.lvlText.style.fill = '#ffffff';
+      view.lvlText.style.fontSize = 20;
     }
   }
 

@@ -53,4 +53,20 @@ async function bootstrap() {
   });
 }
 
-bootstrap().catch(console.error);
+bootstrap().catch((err) => {
+  console.error("FATAL ERROR IN BOOTSTRAP:", err);
+  const errDiv = document.createElement('div');
+  errDiv.style.position = 'fixed';
+  errDiv.style.top = '10px';
+  errDiv.style.left = '10px';
+  errDiv.style.right = '10px';
+  errDiv.style.padding = '20px';
+  errDiv.style.backgroundColor = 'rgba(239, 68, 68, 0.95)';
+  errDiv.style.color = '#ffffff';
+  errDiv.style.fontSize = '14px';
+  errDiv.style.fontFamily = 'monospace';
+  errDiv.style.zIndex = '999999';
+  errDiv.style.whiteSpace = 'pre-wrap';
+  errDiv.innerText = 'LỖI RUNTIME:\n' + (err?.stack || err?.message || String(err));
+  document.body.appendChild(errDiv);
+});

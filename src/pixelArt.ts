@@ -1,7 +1,31 @@
 import { Texture } from 'pixi.js';
 import { GunKind, BuffKind } from './types';
 
-// Helper tạo Texture độ nét cao từ Canvas
+// Helper vẽ Rounded Rectangle an toàn 100% trên mọi trình duyệt
+function safeRoundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.arcTo(x + w, y, x + w, y + r, r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+  ctx.lineTo(x + r, y + h);
+  ctx.arcTo(x, y + h, x, y + h - r, r);
+  ctx.lineTo(x, y + r);
+  ctx.arcTo(x, y, x + r, y, r);
+  ctx.closePath();
+}
+
+// Helper vẽ Ellipse an toàn 100% trên mọi trình duyệt
+function safeEllipse(ctx: CanvasRenderingContext2D, cx: number, cy: number, rx: number, ry: number) {
+  ctx.save();
+  ctx.beginPath();
+  ctx.translate(cx, cy);
+  ctx.scale(rx, ry);
+  ctx.arc(0, 0, 1, 0, Math.PI * 2);
+  ctx.restore();
+}
+
 function createHighResTexture(width: number, height: number, drawFn: (ctx: CanvasRenderingContext2D) => void): Texture {
   const canvas = document.createElement('canvas');
   canvas.width = width;
@@ -17,28 +41,25 @@ function createHighResTexture(width: number, height: number, drawFn: (ctx: Canva
 export class PixelAssetManager {
   private static cache: Map<string, Texture> = new Map();
 
-  // 1. Ô bàn cờ 96x96 (Hi-Res Gothic / Steampunk Stone)
+  // 1. Ô bàn cờ 96x96
   static getCellTexture(unlocked: boolean): Texture {
     const key = `cell_hires_${unlocked}`;
     if (this.cache.has(key)) return this.cache.get(key)!;
 
     const tex = createHighResTexture(96, 96, (ctx) => {
       if (unlocked) {
-        // Nền đá pháo đài kim loại
         const grad = ctx.createLinearGradient(0, 0, 96, 96);
         grad.addColorStop(0, '#282d3c');
         grad.addColorStop(1, '#1e2230');
         ctx.fillStyle = grad;
         ctx.fillRect(0, 0, 96, 96);
 
-        // Viền lõm công nghệ
         ctx.fillStyle = '#181b26';
         ctx.fillRect(4, 4, 88, 88);
 
         ctx.fillStyle = '#222736';
         ctx.fillRect(6, 6, 84, 84);
 
-        // 4 Đinh ốc tán kim loại ở 4 góc
         const bolts = [[10, 10], [86, 10], [10, 86], [86, 86]];
         bolts.forEach(([bx, by]) => {
           ctx.fillStyle = '#475569';
@@ -51,12 +72,10 @@ export class PixelAssetManager {
           ctx.fill();
         });
 
-        // Đường rãnh mạch dẫn năng lượng mờ ở giữa
         ctx.strokeStyle = '#2f384d';
         ctx.lineWidth = 1.5;
         ctx.strokeRect(16, 16, 64, 64);
       } else {
-        // Ô bị khóa
         ctx.fillStyle = '#11131a';
         ctx.fillRect(0, 0, 96, 96);
         ctx.fillStyle = '#171922';
@@ -68,7 +87,7 @@ export class PixelAssetManager {
     return tex;
   }
 
-  // 2. Bánh Răng Cò (Trigger Gear) 80x80 - Tinh xảo với số chấu N = level
+  // 2. Bánh Răng Cò (Trigger Gear) 80x80
   static getTriggerTexture(level: number): Texture {
     const key = `trigger_hires_${level}`;
     if (this.cache.has(key)) return this.cache.get(key)!;
@@ -76,23 +95,19 @@ export class PixelAssetManager {
     const tex = createHighResTexture(80, 80, (ctx) => {
       const cx = 40, cy = 40;
 
-      // Các chấu cò cơ khí vàng đồng
       for (let i = 0; i < level; i++) {
         const rad = (i * (360 / level) * Math.PI) / 180;
         ctx.save();
         ctx.translate(cx, cy);
         ctx.rotate(rad);
 
-        // Cánh cò vươn ra
         const armGrad = ctx.createLinearGradient(0, 0, 36, 0);
         armGrad.addColorStop(0, '#d97706');
         armGrad.addColorStop(1, '#fbbf24');
         ctx.fillStyle = armGrad;
-        ctx.beginPath();
-        ctx.roundRect(14, -6, 24, 12, 3);
+        safeRoundRect(ctx, 14, -6, 24, 12, 3);
         ctx.fill();
 
-        // Đầu chấu gõ kim cương cứng
         ctx.fillStyle = '#fef08a';
         ctx.beginPath();
         ctx.arc(36, 0, 5, 0, Math.PI * 2);
@@ -101,7 +116,6 @@ export class PixelAssetManager {
         ctx.restore();
       }
 
-      // Vành đĩa bánh răng ngoài
       const discGrad = ctx.createRadialGradient(cx, cy, 10, cx, cy, 26);
       discGrad.addColorStop(0, '#b45309');
       discGrad.addColorStop(0.7, '#78350f');
@@ -111,14 +125,12 @@ export class PixelAssetManager {
       ctx.arc(cx, cy, 24, 0, Math.PI * 2);
       ctx.fill();
 
-      // Vòng tròn kim loại mạ vàng
       ctx.strokeStyle = '#fef08a';
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.arc(cx, cy, 21, 0, Math.PI * 2);
       ctx.stroke();
 
-      // Tâm trục vòng bi
       ctx.fillStyle = '#1e293b';
       ctx.beginPath();
       ctx.arc(cx, cy, 10, 0, Math.PI * 2);
@@ -139,7 +151,7 @@ export class PixelAssetManager {
     return tex;
   }
 
-  // 3. Bệ Tháp Súng (Base) 80x80 cố định
+  // 3. Bệ Tháp Súng (Base) 80x80
   static getGunBaseTexture(tier: number): Texture {
     const key = `gun_base_hires_${tier}`;
     if (this.cache.has(key)) return this.cache.get(key)!;
@@ -147,7 +159,6 @@ export class PixelAssetManager {
     const tex = createHighResTexture(80, 80, (ctx) => {
       const cx = 40, cy = 40;
 
-      // Đế lục giác kiên cố
       const baseColors = ['#334155', '#1e3a5f', '#3b1d54', '#5c3111', '#5c1122'];
       const borderColors = ['#64748b', '#38bdf8', '#c084fc', '#fbbf24', '#f43f5e'];
 
@@ -169,7 +180,6 @@ export class PixelAssetManager {
       ctx.lineWidth = 2.5;
       ctx.stroke();
 
-      // Vòng tròn ổ quay nòng súng
       ctx.fillStyle = '#0f172a';
       ctx.beginPath();
       ctx.arc(cx, cy, 20, 0, Math.PI * 2);
@@ -184,7 +194,7 @@ export class PixelAssetManager {
     return tex;
   }
 
-  // 4. Nòng Súng Xoay Độc Lập 80x80 (Tâm tại 40, 40) - Chĩa theo góc xoay 360 độ
+  // 4. Nòng Súng Xoay Độc Lập 80x80 (Tâm tại 40, 40)
   static getGunBarrelTexture(kind: GunKind, level: number): Texture {
     const key = `gun_barrel_hires_${kind}_${level}`;
     if (this.cache.has(key)) return this.cache.get(key)!;
@@ -192,29 +202,24 @@ export class PixelAssetManager {
     const tex = createHighResTexture(80, 80, (ctx) => {
       const cx = 40, cy = 40;
 
-      // Hướng nòng vẽ thẳng lên phía trên (Y âm)
       ctx.save();
       ctx.translate(cx, cy);
 
       if (kind === 'PISTOL') {
-        // Nòng đơn thanh thoát
         ctx.fillStyle = '#64748b';
         ctx.fillRect(-6, -30, 12, 30);
         ctx.fillStyle = '#94a3b8';
         ctx.fillRect(-4, -28, 8, 28);
         ctx.fillStyle = '#f8fafc';
-        ctx.fillRect(-5, -34, 10, 5); // Đầu nòng mạ bạc
+        ctx.fillRect(-5, -34, 10, 5);
       } else if (kind === 'CROSSBOW') {
-        // Cánh nỏ trợ lực
         ctx.fillStyle = '#854d0e';
         ctx.fillRect(-4, -30, 8, 30);
-        // Cánh cung cong ngang
         ctx.strokeStyle = '#ca8a04';
         ctx.lineWidth = 5;
         ctx.beginPath();
         ctx.arc(0, -10, 24, Math.PI * 0.8, Math.PI * 2.2);
         ctx.stroke();
-        // Mũi tên nhọn
         ctx.fillStyle = '#facc15';
         ctx.beginPath();
         ctx.moveTo(0, -36);
@@ -223,12 +228,10 @@ export class PixelAssetManager {
         ctx.closePath();
         ctx.fill();
       } else if (kind === 'CRYO') {
-        // Nòng tinh thể băng hàn khí
         ctx.fillStyle = '#0284c7';
         ctx.fillRect(-7, -28, 14, 28);
         ctx.fillStyle = '#38bdf8';
         ctx.fillRect(-4, -26, 8, 26);
-        // Khối pha lê băng xanh phát sáng
         ctx.fillStyle = '#e0f2fe';
         ctx.beginPath();
         ctx.moveTo(0, -38);
@@ -237,12 +240,10 @@ export class PixelAssetManager {
         ctx.closePath();
         ctx.fill();
       } else if (kind === 'FLAMER') {
-        // Súng phun lửa 2 bình áp lực
         ctx.fillStyle = '#b91c1c';
         ctx.fillRect(-8, -26, 16, 26);
         ctx.fillStyle = '#ea580c';
         ctx.fillRect(-5, -24, 10, 24);
-        // Loa phun lửa to
         ctx.fillStyle = '#f97316';
         ctx.beginPath();
         ctx.moveTo(-9, -26);
@@ -254,7 +255,6 @@ export class PixelAssetManager {
         ctx.fillStyle = '#fef08a';
         ctx.fillRect(-6, -36, 12, 3);
       } else if (kind === 'SHOTGUN') {
-        // 2 Nòng cưa đôi to bản
         ctx.fillStyle = '#475569';
         ctx.fillRect(-9, -30, 7, 30);
         ctx.fillRect(2, -30, 7, 30);
@@ -264,12 +264,10 @@ export class PixelAssetManager {
         ctx.fillStyle = '#cbd5e1';
         ctx.fillRect(-10, -34, 20, 5);
       } else if (kind === 'CANNON') {
-        // Đại bác pháo cối khổng lồ
         ctx.fillStyle = '#1c1917';
         ctx.fillRect(-12, -32, 24, 32);
         ctx.fillStyle = '#44403c';
         ctx.fillRect(-9, -30, 18, 30);
-        // Vành nòng pháo đúc thép
         ctx.fillStyle = '#78716c';
         ctx.beginPath();
         ctx.arc(0, -32, 14, Math.PI, 0);
@@ -277,19 +275,16 @@ export class PixelAssetManager {
         ctx.fillStyle = '#ef4444';
         ctx.fillRect(-5, -36, 10, 4);
       } else { // TESLA
-        // Tháp phóng sét cuộn cảm
         ctx.fillStyle = '#6b21a8';
         ctx.fillRect(-6, -26, 12, 26);
         ctx.fillStyle = '#a855f7';
         ctx.fillRect(-3, -24, 6, 24);
-        // 3 Vòng nhẫn hồ quang điện
         ctx.strokeStyle = '#38bdf8';
         ctx.lineWidth = 3;
         ctx.beginPath();
         ctx.arc(0, -12, 14, 0, Math.PI * 2);
         ctx.arc(0, -22, 11, 0, Math.PI * 2);
         ctx.stroke();
-        // Quả cầu plasma đỉnh tháp
         ctx.fillStyle = '#00f0ff';
         ctx.beginPath();
         ctx.arc(0, -34, 7, 0, Math.PI * 2);
@@ -300,7 +295,6 @@ export class PixelAssetManager {
         ctx.fill();
       }
 
-      // Tâm quay của nòng
       ctx.fillStyle = '#1e293b';
       ctx.beginPath();
       ctx.arc(0, 0, 10, 0, Math.PI * 2);
@@ -333,7 +327,6 @@ export class PixelAssetManager {
         CRIT: { bg: '#713f12', fg: '#eab308', core: '#fef9c3', glow: '#fde047' },
       }[kind];
 
-      // Đĩa xoay năng lượng ngoài
       ctx.fillStyle = colors.bg;
       ctx.beginPath();
       ctx.arc(cx, cy, 32, 0, Math.PI * 2);
@@ -344,21 +337,17 @@ export class PixelAssetManager {
       ctx.arc(cx, cy, 26, 0, Math.PI * 2);
       ctx.fill();
 
-      // Vòng hào quang sáng
       ctx.strokeStyle = colors.glow;
       ctx.lineWidth = 3;
       ctx.beginPath();
       ctx.arc(cx, cy, 24, 0, Math.PI * 2);
       ctx.stroke();
 
-      // Rune ký hiệu sắc nét ở giữa
       ctx.fillStyle = colors.core;
       if (kind === 'DMG') {
-        // Kiếm bừng sáng
         ctx.fillRect(cx - 3, cy - 16, 6, 32);
         ctx.fillRect(cx - 10, cy - 4, 20, 6);
       } else if (kind === 'SPEED') {
-        // 2 Mũi tên gia tốc >>
         ctx.beginPath();
         ctx.moveTo(cx - 12, cy - 10);
         ctx.lineTo(cx - 2, cy);
@@ -370,7 +359,6 @@ export class PixelAssetManager {
         ctx.lineWidth = 4;
         ctx.stroke();
       } else if (kind === 'FILL') {
-        // Sấm sét nạp điện
         ctx.beginPath();
         ctx.moveTo(cx + 4, cy - 16);
         ctx.lineTo(cx - 6, cy);
@@ -381,7 +369,6 @@ export class PixelAssetManager {
         ctx.closePath();
         ctx.fill();
       } else {
-        // Ngôi sao 4 cánh chí mạng
         ctx.beginPath();
         ctx.moveTo(cx, cy - 16);
         ctx.lineTo(cx + 5, cy - 5);
@@ -400,7 +387,7 @@ export class PixelAssetManager {
     return tex;
   }
 
-  // 6. Quái vật Độ Nét Cao
+  // 6. Quái vật
   static getEnemyTexture(type: 'NORMAL' | 'FAST' | 'TANK' | 'BOSS'): Texture {
     const key = `enemy_hires_${type}`;
     if (this.cache.has(key)) return this.cache.get(key)!;
@@ -410,7 +397,6 @@ export class PixelAssetManager {
       const cx = size / 2, cy = size / 2;
 
       if (type === 'NORMAL') {
-        // Goblin quỷ lùn chiến binh mắt đỏ
         ctx.fillStyle = '#15803d';
         ctx.beginPath();
         ctx.arc(cx, cy, 18, 0, Math.PI * 2);
@@ -421,57 +407,46 @@ export class PixelAssetManager {
         ctx.arc(cx, cy, 14, 0, Math.PI * 2);
         ctx.fill();
 
-        // 2 Mắt đỏ rực hung dữ
         ctx.fillStyle = '#ef4444';
         ctx.beginPath();
         ctx.arc(cx - 6, cy - 3, 3.5, 0, Math.PI * 2);
         ctx.arc(cx + 6, cy - 3, 3.5, 0, Math.PI * 2);
         ctx.fill();
 
-        // Miệng nhe răng nanh
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(cx - 5, cy + 6, 3, 4);
         ctx.fillRect(cx + 2, cy + 6, 3, 4);
       } else if (type === 'FAST') {
-        // Sói săn / Quỷ cánh tím tốc độ
         ctx.fillStyle = '#6b21a8';
-        ctx.beginPath();
-        ctx.ellipse(cx, cy, 20, 14, 0, 0, Math.PI * 2);
+        safeEllipse(ctx, cx, cy, 20, 14);
         ctx.fill();
 
         ctx.fillStyle = '#c084fc';
-        ctx.beginPath();
-        ctx.ellipse(cx, cy, 15, 10, 0, 0, Math.PI * 2);
+        safeEllipse(ctx, cx, cy, 15, 10);
         ctx.fill();
 
-        // Mắt vàng sắc sảo
         ctx.fillStyle = '#facc15';
         ctx.beginPath();
         ctx.arc(cx - 6, cy - 2, 3, 0, Math.PI * 2);
         ctx.arc(cx + 6, cy - 2, 3, 0, Math.PI * 2);
         ctx.fill();
       } else if (type === 'TANK') {
-        // Người đá bọc thép khổng lồ
         ctx.fillStyle = '#1e293b';
-        ctx.beginPath();
-        ctx.roundRect(cx - 26, cy - 26, 52, 52, 8);
+        safeRoundRect(ctx, cx - 26, cy - 26, 52, 52, 8);
         ctx.fill();
 
         ctx.fillStyle = '#475569';
-        ctx.beginPath();
-        ctx.roundRect(cx - 22, cy - 22, 44, 44, 6);
+        safeRoundRect(ctx, cx - 22, cy - 22, 44, 44, 6);
         ctx.fill();
 
         ctx.strokeStyle = '#f97316';
         ctx.lineWidth = 3;
         ctx.strokeRect(cx - 16, cy - 16, 32, 32);
 
-        // Mắt cam rực lửa
         ctx.fillStyle = '#fb923c';
         ctx.fillRect(cx - 10, cy - 6, 6, 6);
         ctx.fillRect(cx + 4, cy - 6, 6, 6);
       } else { // BOSS
-        // Ma Vương / Cỗ Máy Hủy Diệt 96x96
         ctx.fillStyle = '#450a0a';
         ctx.beginPath();
         ctx.arc(cx, cy, 40, 0, Math.PI * 2);
@@ -487,7 +462,6 @@ export class PixelAssetManager {
         ctx.arc(cx, cy, 26, 0, Math.PI * 2);
         ctx.fill();
 
-        // Cặp sừng vàng nhọn
         ctx.fillStyle = '#f59e0b';
         ctx.beginPath();
         ctx.moveTo(cx - 24, cy - 24);
@@ -503,7 +477,6 @@ export class PixelAssetManager {
         ctx.closePath();
         ctx.fill();
 
-        // Mắt rực lửa
         ctx.fillStyle = '#fef08a';
         ctx.beginPath();
         ctx.arc(cx - 12, cy - 4, 6, 0, Math.PI * 2);
@@ -521,7 +494,7 @@ export class PixelAssetManager {
     return tex;
   }
 
-  // 7. Đạn Plasma Phát Sáng Siêu Nét
+  // 7. Đạn Plasma
   static getBulletTexture(element: string): Texture {
     const key = `bullet_hires_${element}`;
     if (this.cache.has(key)) return this.cache.get(key)!;
@@ -534,8 +507,7 @@ export class PixelAssetManager {
         grad.addColorStop(0, '#ffffff');
         grad.addColorStop(1, '#0284c7');
         ctx.fillStyle = grad;
-        ctx.beginPath();
-        ctx.ellipse(cx, cy, 4, 10, 0, 0, Math.PI * 2);
+        safeEllipse(ctx, cx, cy, 4, 10);
         ctx.fill();
         ctx.strokeStyle = '#bae6fd';
         ctx.lineWidth = 1.5;
@@ -545,8 +517,7 @@ export class PixelAssetManager {
         grad.addColorStop(0, '#fef08a');
         grad.addColorStop(1, '#ea580c');
         ctx.fillStyle = grad;
-        ctx.beginPath();
-        ctx.ellipse(cx, cy, 5, 10, 0, 0, Math.PI * 2);
+        safeEllipse(ctx, cx, cy, 5, 10);
         ctx.fill();
       } else if (element === 'EXPLOSIVE') {
         ctx.fillStyle = '#44403c';
@@ -559,8 +530,7 @@ export class PixelAssetManager {
         ctx.fill();
       } else if (element === 'ELECTRIC') {
         ctx.fillStyle = '#a855f7';
-        ctx.beginPath();
-        ctx.ellipse(cx, cy, 4, 10, 0, 0, Math.PI * 2);
+        safeEllipse(ctx, cx, cy, 4, 10);
         ctx.fill();
         ctx.fillStyle = '#00f0ff';
         ctx.fillRect(cx - 2, cy - 8, 4, 16);
@@ -569,8 +539,7 @@ export class PixelAssetManager {
         grad.addColorStop(0, '#ffffff');
         grad.addColorStop(1, '#3b82f6');
         ctx.fillStyle = grad;
-        ctx.beginPath();
-        ctx.ellipse(cx, cy, 4, 9, 0, 0, Math.PI * 2);
+        safeEllipse(ctx, cx, cy, 4, 9);
         ctx.fill();
       }
     });

@@ -188,14 +188,14 @@ export class GameEngine {
     this.stage.addChild(this.bgContainer);
     this.stage.addChild(this.enemyContainer);
     this.stage.addChild(this.wallContainer);
-    this.stage.addChild(this.bulletContainer);
     this.stage.addChild(this.gridContainer);
-    this.stage.addChild(this.dragContainer);
+    this.stage.addChild(this.bulletContainer);
     this.stage.addChild(this.fxContainer);
+    this.stage.addChild(this.dragContainer);
     this.stage.addChild(this.uiContainer);
     this.stage.addChild(this.tooltipContainer);
-    this.stage.addChild(this.mainMenuContainer);
     this.stage.addChild(this.resultModalContainer);
+    this.stage.addChild(this.mainMenuContainer);
 
     this.fxGraphics = new Graphics();
     this.fxContainer.addChild(this.fxGraphics);

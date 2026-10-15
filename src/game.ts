@@ -1141,7 +1141,6 @@ export class GameEngine {
     const dt = Math.min(rawDt, 0.1) * this.gameSpeed;
 
     this.updateTriggers(dt);
-    this.updateGearRotations(dt);
     this.updateGunsAndAim(dt);
 
     if (this.isWaveActive) {
@@ -1156,24 +1155,6 @@ export class GameEngine {
     this.hpText.text = `HP THÀNH: ${this.castleHp}/${this.maxCastleHp}`;
 
     this.renderActiveEntities();
-  }
-
-  // Phục hồi độ nảy sau va chạm cho bánh răng súng (bánh răng CHỈ xoay khi Cò chạm vào, không tự quay theo quán tính)
-  private updateGearRotations(dt: number) {
-    for (let r = 0; r < this.ROWS; r++) {
-      for (let c = 0; c < this.COLS; c++) {
-        const item = this.grid[r][c].item;
-        if (!item || item.type !== 'GUN') continue;
-
-        const baseSprite = this.slotViews[r][c].baseSprite;
-
-        // Phục hồi độ nảy sau va chạm
-        if (baseSprite.scale.x > 1.0) {
-          const nextScale = Math.max(1.0, baseSprite.scale.x - 0.8 * dt);
-          baseSprite.scale.set(nextScale);
-        }
-      }
-    }
   }
 
   // Cò quay truyền động cơ khí trực tiếp:
@@ -1269,8 +1250,7 @@ export class GameEngine {
     });
 
     item.fill += item.fillPerHit * fillMultiplier;
-    item.recoilOffset = 6;
-    this.slotViews[targetRow][targetCol].baseSprite.scale.set(1.08); // Nhịp nảy cơ học khi nhả
+    item.recoilOffset = 0;
 
     sound.playClick();
 
@@ -1301,11 +1281,6 @@ export class GameEngine {
             item.turretAngle = targetAngle;
             view.barrelSprite.rotation = targetAngle;
           }
-
-          if (item.recoilOffset > 0) {
-            item.recoilOffset = Math.max(0, item.recoilOffset - 36 * dt);
-          }
-          view.itemContainer.y = (this.GRID_Y + r * this.CELL_SIZE + 8) - item.recoilOffset;
 
           const fillW = Math.min(60, Math.floor(item.fill * 60));
           view.fillG.clear();

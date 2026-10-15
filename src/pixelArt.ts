@@ -1204,5 +1204,859 @@ export class PixelAssetManager {
   static getBulletTexture(element: string): Texture {
     return this.getProjectileTexture('PISTOL');
   }
+
+  // ================= MAIN MENU HABBY / ARCHERO STYLE ASSETS ================= //
+
+  // 11. Đền Thờ Ánh Sáng Thần Thoại 3D (Radiant Temple Shrine) - Centerpiece
+  static getRadiantTempleTexture(w: number = 480, h: number = 460): Texture {
+    const key = `radiant_temple_${w}_${h}`;
+    if (this.cache.has(key)) return this.cache.get(key)!;
+
+    const tex = createHighResTexture(w, h, (ctx) => {
+      const cx = w / 2;
+
+      // 1. Vùng nước phản chiếu & sương mù huyền bí bên dưới
+      const waterGrad = ctx.createRadialGradient(cx, 380, 40, cx, 380, 220);
+      waterGrad.addColorStop(0, 'rgba(56, 189, 248, 0.28)');
+      waterGrad.addColorStop(0.5, 'rgba(30, 27, 75, 0.45)');
+      waterGrad.addColorStop(1, 'rgba(15, 23, 42, 0)');
+      ctx.fillStyle = waterGrad;
+      ctx.beginPath();
+      ctx.ellipse(cx, 380, 220, 60, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Vòng sóng nước phản quang nhẹ
+      ctx.strokeStyle = 'rgba(125, 211, 252, 0.35)';
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      ctx.ellipse(cx, 390, 180, 42, 0, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // 2. Bệ trụ tròn đá cẩm thạch trắng (Cylindrical White Shrine Drum Base)
+      const baseCy = 290;
+      const baseRx = 175;
+      const baseRy = 55;
+      const drumH = 75;
+
+      // Thành trụ đứng (Drum sides)
+      const drumGrad = ctx.createLinearGradient(cx - baseRx, baseCy, cx + baseRx, baseCy);
+      drumGrad.addColorStop(0, '#cbd5e1');
+      drumGrad.addColorStop(0.2, '#f8fafc');
+      drumGrad.addColorStop(0.5, '#ffffff');
+      drumGrad.addColorStop(0.8, '#f1f5f9');
+      drumGrad.addColorStop(1, '#94a3b8');
+
+      ctx.fillStyle = drumGrad;
+      ctx.beginPath();
+      ctx.moveTo(cx - baseRx, baseCy);
+      ctx.lineTo(cx - baseRx, baseCy + drumH);
+      ctx.ellipse(cx, baseCy + drumH, baseRx, baseRy, 0, 0, Math.PI, false);
+      ctx.lineTo(cx + baseRx, baseCy);
+      ctx.ellipse(cx, baseCy, baseRx, baseRy, 0, 0, Math.PI, true);
+      ctx.fill();
+
+      // Viền vàng trang trí đáy trụ
+      ctx.strokeStyle = '#d97706';
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.ellipse(cx, baseCy + drumH, baseRx - 2, baseRy, 0, 0, Math.PI, false);
+      ctx.stroke();
+
+      // Các gờ rãnh vàng thẳng đứng (Vertical Gold Flutings)
+      const fluteCols = [-120, -75, -25, 25, 75, 120];
+      fluteCols.forEach(fx => {
+        const xPos = cx + fx;
+        ctx.fillStyle = '#b45309';
+        ctx.fillRect(xPos - 3, baseCy + 14, 6, drumH - 14);
+        ctx.fillStyle = '#fde047';
+        ctx.fillRect(xPos - 1, baseCy + 14, 2, drumH - 14);
+      });
+
+      // Vành đai lan can vàng viền quanh bệ (Golden Balustrade Trim)
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.ellipse(cx, baseCy, baseRx, baseRy, 0, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.strokeStyle = '#fef08a';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.ellipse(cx, baseCy - 1, baseRx - 1, baseRy - 1, 0, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // 3. Mặt sàn đài phun / sân khấu trung tâm (Polished Radiant Floor)
+      const floorGrad = ctx.createRadialGradient(cx, baseCy, 10, cx, baseCy, baseRx - 12);
+      floorGrad.addColorStop(0, '#f43f5e'); // Đỏ hồng thạch anh lấp lánh
+      floorGrad.addColorStop(0.65, '#be185d'); // Hồng tím quý phái
+      floorGrad.addColorStop(1, '#831843'); // Viền sẫm phản chiếu
+      ctx.fillStyle = floorGrad;
+      ctx.beginPath();
+      ctx.ellipse(cx, baseCy, baseRx - 8, baseRy - 6, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 2 Bục thờ vàng nhỏ trên sân khấu (Golden Altars)
+      // Bục trái
+      ctx.fillStyle = '#f59e0b';
+      ctx.beginPath();
+      ctx.ellipse(cx - 65, baseCy + 4, 18, 9, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#38bdf8'; // Tinh thể xanh sáng
+      ctx.beginPath();
+      ctx.ellipse(cx - 65, baseCy + 2, 10, 5, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Bục phải
+      ctx.fillStyle = '#f59e0b';
+      ctx.beginPath();
+      ctx.ellipse(cx + 65, baseCy + 12, 18, 9, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#fef08a'; // Tinh thể vàng sáng
+      ctx.beginPath();
+      ctx.ellipse(cx + 65, baseCy + 10, 10, 5, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 4. Hào quang vàng thiêng liêng tỏa sau cổng vòm (Divine Backlight Aura)
+      const auraGrad = ctx.createRadialGradient(cx, 160, 20, cx, 160, 150);
+      auraGrad.addColorStop(0, 'rgba(254, 240, 138, 0.95)');
+      auraGrad.addColorStop(0.4, 'rgba(250, 204, 21, 0.65)');
+      auraGrad.addColorStop(0.8, 'rgba(245, 158, 11, 0.25)');
+      auraGrad.addColorStop(1, 'rgba(245, 158, 11, 0)');
+      ctx.fillStyle = auraGrad;
+      ctx.beginPath();
+      ctx.ellipse(cx, 160, 140, 150, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Tia hào quang tỏa nan quạt
+      ctx.save();
+      ctx.translate(cx, 160);
+      ctx.strokeStyle = 'rgba(254, 240, 138, 0.45)';
+      ctx.lineWidth = 3;
+      for (let a = -Math.PI * 0.8; a <= -Math.PI * 0.2; a += 0.18) {
+        ctx.beginPath();
+        ctx.moveTo(Math.cos(a) * 45, Math.sin(a) * 45);
+        ctx.lineTo(Math.cos(a) * 135, Math.sin(a) * 135);
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      // 5. Cổng Vòm Cánh Thiên Thần Trắng (Winged Archway Structure)
+      // Khối vòm vòm cong lớn trắng tuyết
+      ctx.fillStyle = '#f8fafc';
+      ctx.beginPath();
+      ctx.moveTo(cx - 150, baseCy);
+      // Vòm cong lên tới đỉnh cánh
+      ctx.bezierCurveTo(cx - 165, 120, cx - 110, 60, cx, 65);
+      ctx.bezierCurveTo(cx + 110, 60, cx + 165, 120, cx + 150, baseCy);
+      // Mặt trong vòm
+      ctx.bezierCurveTo(cx + 105, 145, cx + 75, 110, cx, 110);
+      ctx.bezierCurveTo(cx - 75, 110, cx - 105, 145, cx - 150, baseCy);
+      ctx.closePath();
+      ctx.fill();
+
+      // Đổ bóng 3D cho các lớp cánh thiên thần
+      ctx.strokeStyle = '#e2e8f0';
+      ctx.lineWidth = 4;
+      ctx.stroke();
+
+      // Viền vàng óng ánh viền cánh
+      ctx.strokeStyle = '#facc15';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(cx - 146, baseCy - 6);
+      ctx.bezierCurveTo(cx - 160, 125, cx - 108, 66, cx, 71);
+      ctx.bezierCurveTo(cx + 108, 66, cx + 160, 125, cx + 146, baseCy - 6);
+      ctx.stroke();
+
+      // 6. Cửa Kính Màu Nhà Thờ Lộng Lẫy (Stained Glass Cathedral Window)
+      const windowX = cx - 55;
+      const windowY = 125;
+      const windowW = 110;
+      const windowH = 150;
+
+      // Khung vòm cửa kính
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(windowX, windowY + windowH);
+      ctx.lineTo(windowX, windowY + 45);
+      ctx.quadraticCurveTo(windowX, windowY, cx, windowY);
+      ctx.quadraticCurveTo(windowX + windowW, windowY, windowX + windowW, windowY + 45);
+      ctx.lineTo(windowX + windowW, windowY + windowH);
+      ctx.closePath();
+      ctx.clip();
+
+      // Nền kính màu tím hoa cà
+      const glassGrad = ctx.createLinearGradient(windowX, windowY, windowX, windowY + windowH);
+      glassGrad.addColorStop(0, '#f43f5e');
+      glassGrad.addColorStop(0.5, '#ec4899');
+      glassGrad.addColorStop(1, '#8b5cf6');
+      ctx.fillStyle = glassGrad;
+      ctx.fillRect(windowX, windowY, windowW, windowH);
+
+      // Thánh giá vàng phát sáng rực rỡ ở tâm kính
+      ctx.fillStyle = '#fef08a';
+      // Trục dọc
+      ctx.fillRect(cx - 7, windowY + 20, 14, windowH - 30);
+      // Trục ngang
+      ctx.fillRect(cx - 36, windowY + 58, 72, 14);
+
+      // Kính màu cyan & vàng hình thoi góc
+      ctx.fillStyle = '#38bdf8';
+      ctx.beginPath();
+      ctx.moveTo(windowX + 12, windowY + 80);
+      ctx.lineTo(windowX + 24, windowY + 68);
+      ctx.lineTo(windowX + 36, windowY + 80);
+      ctx.lineTo(windowX + 24, windowY + 92);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.moveTo(windowX + windowW - 36, windowY + 80);
+      ctx.lineTo(windowX + windowW - 24, windowY + 68);
+      ctx.lineTo(windowX + windowW - 12, windowY + 80);
+      ctx.lineTo(windowX + windowW - 24, windowY + 92);
+      ctx.closePath();
+      ctx.fill();
+
+      // Đường viền chì nối kính (Lead Came)
+      ctx.strokeStyle = '#1e1b4b';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(windowX, windowY + 45);
+      ctx.lineTo(windowX + windowW, windowY + 45);
+      ctx.moveTo(windowX, windowY + 105);
+      ctx.lineTo(windowX + windowW, windowY + 105);
+      ctx.stroke();
+
+      ctx.restore();
+
+      // Viền vàng bao quanh khung cửa sổ
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(windowX, windowY + windowH);
+      ctx.lineTo(windowX, windowY + 45);
+      ctx.quadraticCurveTo(windowX, windowY, cx, windowY);
+      ctx.quadraticCurveTo(windowX + windowW, windowY, windowX + windowW, windowY + 45);
+      ctx.lineTo(windowX + windowW, windowY + windowH);
+      ctx.stroke();
+
+      // 7. Biểu tượng Thiên Thần / Đại bàng vàng ở đỉnh vòm (Crown Finial)
+      ctx.fillStyle = '#facc15';
+      ctx.beginPath();
+      ctx.moveTo(cx, 40);
+      ctx.lineTo(cx - 18, 65);
+      ctx.lineTo(cx - 6, 68);
+      ctx.lineTo(cx, 88);
+      ctx.lineTo(cx + 6, 68);
+      ctx.lineTo(cx + 18, 65);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = '#fef08a';
+      ctx.beginPath();
+      ctx.arc(cx, 55, 6, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    this.cache.set(key, tex);
+    return tex;
+  }
+
+  // 12. Icons Cho 5 Tab Thanh Điều Hướng Đáy (Bottom Navigation Icons)
+  static getBottomTabIcon(tab: 'SHOP' | 'EQUIPMENT' | 'WORLD' | 'TALENT' | 'MODES', size: number = 56): Texture {
+    const key = `bottom_tab_icon_${tab}_${size}`;
+    if (this.cache.has(key)) return this.cache.get(key)!;
+
+    const tex = createHighResTexture(size, size, (ctx) => {
+      const cx = size / 2;
+      const cy = size / 2;
+
+      switch (tab) {
+        case 'SHOP': { // RƯƠNG VÀNG GACHA (Treasure Chest với ổ khóa ngọc đỏ)
+          const w = size * 0.72;
+          const h = size * 0.58;
+          const x = cx - w / 2;
+          const y = cy - h / 2 + 2;
+
+          // Thân rương vàng
+          ctx.fillStyle = '#d97706';
+          safeRoundRect(ctx, x, y + h * 0.38, w, h * 0.62, 5);
+          ctx.fill();
+
+          // Nắp rương hình bán trụ
+          ctx.fillStyle = '#f59e0b';
+          ctx.beginPath();
+          ctx.ellipse(cx, y + h * 0.38, w / 2, h * 0.38, 0, Math.PI, 0, false);
+          ctx.fill();
+
+          // Nẹp viền vàng kim
+          ctx.strokeStyle = '#fde047';
+          ctx.lineWidth = 3.5;
+          ctx.strokeRect(x + 2, y + h * 0.38, w - 4, h * 0.62 - 2);
+
+          // Bản lề và ổ khóa ruby
+          ctx.fillStyle = '#ef4444'; // Ngọc ruby đỏ
+          safeRoundRect(ctx, cx - 6, y + h * 0.28, 12, 14, 3);
+          ctx.fill();
+          ctx.strokeStyle = '#fef08a';
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+
+          // Lỗ khóa vàng
+          ctx.fillStyle = '#451a03';
+          ctx.beginPath();
+          ctx.arc(cx, y + h * 0.35, 2.5, 0, Math.PI * 2);
+          ctx.fill();
+          break;
+        }
+
+        case 'EQUIPMENT': { // GIÁP NGỰC HIỆP SĨ THÉP (Armor Chestplate)
+          const w = size * 0.70;
+          const h = size * 0.70;
+          const x = cx - w / 2;
+          const y = cy - h / 2;
+
+          // Giáp ngực thép xanh đậm
+          ctx.fillStyle = '#475569';
+          ctx.beginPath();
+          ctx.moveTo(x + 10, y + 4);
+          ctx.lineTo(x + w - 10, y + 4);
+          ctx.lineTo(x + w, y + 18);
+          ctx.lineTo(x + w - 8, y + h - 8);
+          ctx.lineTo(cx, y + h);
+          ctx.lineTo(x + 8, y + h - 8);
+          ctx.lineTo(x, y + 18);
+          ctx.closePath();
+          ctx.fill();
+
+          // Đai giáp & nẹp vàng
+          ctx.strokeStyle = '#f59e0b';
+          ctx.lineWidth = 3;
+          ctx.stroke();
+
+          // Cầu vai thép (Pauldrons)
+          ctx.fillStyle = '#64748b';
+          safeRoundRect(ctx, x - 2, y + 2, 14, 18, 4);
+          ctx.fill();
+          safeRoundRect(ctx, x + w - 12, y + 2, 14, 18, 4);
+          ctx.fill();
+
+          // Tâm ngực phát quang
+          ctx.fillStyle = '#38bdf8';
+          ctx.beginPath();
+          ctx.ellipse(cx, cy - 2, 6, 8, 0, 0, Math.PI * 2);
+          ctx.fill();
+          break;
+        }
+
+        case 'WORLD': { // BẢN ĐỒ KHO BÁU CUỘN (World Map Parchment với dấu X đỏ)
+          const w = size * 0.76;
+          const h = size * 0.65;
+          const x = cx - w / 2;
+          const y = cy - h / 2;
+
+          // Giấy da cổ màu vàng kem
+          ctx.fillStyle = '#fef3c7';
+          ctx.beginPath();
+          ctx.moveTo(x + 4, y);
+          ctx.bezierCurveTo(x + w * 0.3, y - 3, x + w * 0.7, y + 3, x + w - 4, y);
+          ctx.lineTo(x + w, y + h);
+          ctx.bezierCurveTo(x + w * 0.7, y + h - 3, x + w * 0.3, y + h + 3, x, y + h);
+          ctx.closePath();
+          ctx.fill();
+
+          // Viền giấy cháy sém
+          ctx.strokeStyle = '#b45309';
+          ctx.lineWidth = 2.5;
+          ctx.stroke();
+
+          // Đường chấm đứt nét hải trình
+          ctx.strokeStyle = '#dc2626';
+          ctx.lineWidth = 2.2;
+          ctx.setLineDash([3, 3]);
+          ctx.beginPath();
+          ctx.moveTo(x + 10, y + h - 10);
+          ctx.quadraticCurveTo(cx - 2, cy + 4, cx + 8, cy - 4);
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          // Dấu X kho báu màu đỏ rực
+          ctx.strokeStyle = '#ef4444';
+          ctx.lineWidth = 4;
+          ctx.beginPath();
+          ctx.moveTo(cx + 4, cy - 10);
+          ctx.lineTo(cx + 18, cy + 4);
+          ctx.moveTo(cx + 18, cy - 10);
+          ctx.lineTo(cx + 4, cy + 4);
+          ctx.stroke();
+          break;
+        }
+
+        case 'TALENT': { // TẤM ĐÁ LỤC GIÁC MŨI TÊN THĂNG CẤP (Talent Hexagon Up)
+          const r = size * 0.38;
+
+          // Lục giác đá xám sẫm
+          ctx.fillStyle = '#334155';
+          ctx.beginPath();
+          for (let i = 0; i < 6; i++) {
+            const angle = (i * Math.PI) / 3;
+            const px = cx + r * Math.cos(angle);
+            const py = cy + r * Math.sin(angle);
+            if (i === 0) ctx.moveTo(px, py);
+            else ctx.lineTo(px, py);
+          }
+          ctx.closePath();
+          ctx.fill();
+
+          // Viền đồng vàng dày
+          ctx.strokeStyle = '#f59e0b';
+          ctx.lineWidth = 3.5;
+          ctx.stroke();
+
+          // Mũi tên vàng chỉ lên
+          ctx.fillStyle = '#fde047';
+          ctx.beginPath();
+          ctx.moveTo(cx, cy - r * 0.55);
+          ctx.lineTo(cx + r * 0.45, cy + 2);
+          ctx.lineTo(cx + r * 0.20, cy + 2);
+          ctx.lineTo(cx + r * 0.20, cy + r * 0.52);
+          ctx.lineTo(cx - r * 0.20, cy + r * 0.52);
+          ctx.lineTo(cx - r * 0.20, cy + 2);
+          ctx.lineTo(cx - r * 0.45, cy + 2);
+          ctx.closePath();
+          ctx.fill();
+          break;
+        }
+
+        case 'MODES': { // BIA BẮN CUNG TÂM ĐỎ (Target Bullseye)
+          const maxR = size * 0.38;
+
+          // Vòng ngoài cùng đỏ
+          ctx.fillStyle = '#ef4444';
+          ctx.beginPath();
+          ctx.arc(cx, cy, maxR, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Vòng trắng
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.arc(cx, cy, maxR * 0.72, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Vòng tâm đỏ
+          ctx.fillStyle = '#ef4444';
+          ctx.beginPath();
+          ctx.arc(cx, cy, maxR * 0.44, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Điểm vàng tâm bia
+          ctx.fillStyle = '#fde047';
+          ctx.beginPath();
+          ctx.arc(cx, cy, maxR * 0.18, 0, Math.PI * 2);
+          ctx.fill();
+
+          // 2 Mũi tên bắt chéo góc sau bia
+          ctx.strokeStyle = '#38bdf8';
+          ctx.lineWidth = 3.5;
+          ctx.beginPath();
+          ctx.moveTo(cx - maxR * 1.05, cy - maxR * 1.05);
+          ctx.lineTo(cx + maxR * 1.05, cy + maxR * 1.05);
+          ctx.stroke();
+
+          ctx.fillStyle = '#0284c7';
+          ctx.beginPath();
+          ctx.moveTo(cx + maxR * 1.15, cy + maxR * 1.15);
+          ctx.lineTo(cx + maxR * 0.9, cy + maxR * 1.25);
+          ctx.lineTo(cx + maxR * 1.25, cy + maxR * 0.9);
+          ctx.closePath();
+          ctx.fill();
+          break;
+        }
+      }
+    });
+
+    this.cache.set(key, tex);
+    return tex;
+  }
+
+  // 13. Rương Kho Báu Trên Mặt Nước (Milestone Chest: Reach 50-40)
+  static getMilestoneChestTexture(w: number = 88, h: number = 74): Texture {
+    const key = `milestone_chest_${w}_${h}`;
+    if (this.cache.has(key)) return this.cache.get(key)!;
+
+    const tex = createHighResTexture(w, h, (ctx) => {
+      const cx = w / 2;
+      const cy = h / 2;
+
+      // Bóng rương dưới nước
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.45)';
+      ctx.beginPath();
+      ctx.ellipse(cx, h - 8, w * 0.42, 8, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Thân rương tím hoàng gia
+      ctx.fillStyle = '#7e22ce';
+      safeRoundRect(ctx, 8, 30, w - 16, 36, 6);
+      ctx.fill();
+
+      // Nắp rương vòm tím
+      ctx.fillStyle = '#9333ea';
+      ctx.beginPath();
+      ctx.ellipse(cx, 30, (w - 16) / 2, 20, 0, Math.PI, 0, false);
+      ctx.fill();
+
+      // Nẹp viền vàng kim loại
+      ctx.strokeStyle = '#facc15';
+      ctx.lineWidth = 4;
+      ctx.strokeRect(10, 30, w - 20, 34);
+
+      ctx.beginPath();
+      ctx.ellipse(cx, 30, (w - 20) / 2, 18, 0, Math.PI, 0, false);
+      ctx.stroke();
+
+      // Ổ khóa vàng ở chính giữa
+      ctx.fillStyle = '#fde047';
+      safeRoundRect(ctx, cx - 8, 26, 16, 18, 4);
+      ctx.fill();
+
+      ctx.fillStyle = '#3b0764';
+      ctx.beginPath();
+      ctx.arc(cx, 33, 3, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    this.cache.set(key, tex);
+    return tex;
+  }
+
+  // 14. Nút Bấm Hành Động 3D (3D Chunky Play Button, Hero Patrol, Expedition)
+  static getChunkyPlayButtonTexture(w: number = 270, h: number = 96): Texture {
+    const key = `chunky_play_btn_${w}_${h}`;
+    if (this.cache.has(key)) return this.cache.get(key)!;
+
+    const tex = createHighResTexture(w, h, (ctx) => {
+      // 1. Khối đế tối màu tạo bóng 3D dày (3D Drop extrusion)
+      ctx.fillStyle = '#92400e';
+      safeRoundRect(ctx, 0, 8, w, h - 8, 16);
+      ctx.fill();
+
+      // 2. Viền ngoài vàng cam đậm
+      ctx.fillStyle = '#b45309';
+      safeRoundRect(ctx, 0, 0, w, h - 8, 16);
+      ctx.fill();
+
+      // 3. Mặt nút vàng rực sáng (Glossy Gold Face)
+      const grad = ctx.createLinearGradient(0, 4, 0, h - 14);
+      grad.addColorStop(0, '#fde047');
+      grad.addColorStop(0.3, '#facc15');
+      grad.addColorStop(0.85, '#eab308');
+      grad.addColorStop(1, '#ca8a04');
+      ctx.fillStyle = grad;
+      safeRoundRect(ctx, 4, 4, w - 8, h - 16, 13);
+      ctx.fill();
+
+      // 4. Lớp phản chiếu ánh sáng trắng trên cùng (Top Glare)
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+      safeRoundRect(ctx, 8, 8, w - 16, (h - 24) * 0.38, 9);
+      ctx.fill();
+    });
+
+    this.cache.set(key, tex);
+    return tex;
+  }
+
+  // 15. Nút Hero Patrol & Expedition (Nút vuông bo góc có họa tiết 3D)
+  static getFeatureButtonTexture(w: number = 110, h: number = 92, theme: 'SAND' | 'MAP' | 'PURPLE' = 'SAND'): Texture {
+    const key = `feat_btn_${w}_${h}_${theme}`;
+    if (this.cache.has(key)) return this.cache.get(key)!;
+
+    const tex = createHighResTexture(w, h, (ctx) => {
+      const cx = w / 2;
+
+      // Bóng 3D đáy
+      ctx.fillStyle = '#0f172a';
+      safeRoundRect(ctx, 0, 6, w, h - 6, 12);
+      ctx.fill();
+
+      if (theme === 'SAND') {
+        // Nền xanh nước biển / sa bàn cát
+        ctx.fillStyle = '#0284c7';
+        safeRoundRect(ctx, 0, 0, w, h - 6, 12);
+        ctx.fill();
+
+        // Khối sa bàn 3D màu vàng cát ở giữa
+        ctx.fillStyle = '#eab308';
+        safeRoundRect(ctx, 12, 10, w - 24, 44, 8);
+        ctx.fill();
+        ctx.fillStyle = '#ca8a04';
+        safeRoundRect(ctx, 12, 40, w - 24, 14, 4);
+        ctx.fill();
+
+        // Các gò đồi nhỏ trên sa bàn
+        ctx.fillStyle = '#854d0e';
+        ctx.beginPath();
+        ctx.arc(cx - 16, 26, 6, 0, Math.PI * 2);
+        ctx.arc(cx + 12, 32, 8, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (theme === 'PURPLE') {
+        // Nút nâng cấp tím sẫm (Up Arrow + Demon Horns)
+        ctx.fillStyle = '#4c1d95';
+        safeRoundRect(ctx, 0, 0, w, h - 6, 12);
+        ctx.fill();
+
+        // Viền neon tím
+        ctx.strokeStyle = '#c084fc';
+        ctx.lineWidth = 3;
+        safeRoundRect(ctx, 3, 3, w - 6, h - 12, 9);
+        ctx.stroke();
+
+        // Mũi tên tím sáng chỉ lên
+        ctx.fillStyle = '#e879f9';
+        ctx.beginPath();
+        ctx.moveTo(cx, 16);
+        ctx.lineTo(cx + 16, 32);
+        ctx.lineTo(cx + 7, 32);
+        ctx.lineTo(cx + 7, 44);
+        ctx.lineTo(cx - 7, 44);
+        ctx.lineTo(cx - 7, 32);
+        ctx.lineTo(cx - 16, 32);
+        ctx.closePath();
+        ctx.fill();
+
+        // Đầu quái vật sừng tím ở dưới
+        ctx.fillStyle = '#a855f7';
+        ctx.beginPath();
+        ctx.arc(cx, 62, 12, 0, Math.PI * 2);
+        ctx.fill();
+        // Sừng
+        ctx.beginPath();
+        ctx.moveTo(cx - 12, 58);
+        ctx.lineTo(cx - 20, 48);
+        ctx.lineTo(cx - 8, 54);
+        ctx.moveTo(cx + 12, 58);
+        ctx.lineTo(cx + 20, 48);
+        ctx.lineTo(cx + 8, 54);
+        ctx.stroke();
+      } else {
+        // Nút Expedition (Bản đồ + Kính lúp)
+        ctx.fillStyle = '#0284c7';
+        safeRoundRect(ctx, 0, 0, w, h - 6, 12);
+        ctx.fill();
+
+        // Tấm bản đồ cuộn
+        ctx.fillStyle = '#fef3c7';
+        safeRoundRect(ctx, 16, 10, w - 32, 44, 6);
+        ctx.fill();
+
+        // Kính lúp đồng (Magnifying Glass)
+        ctx.strokeStyle = '#b45309';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(cx - 4, 30, 12, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(cx + 5, 38);
+        ctx.lineTo(cx + 16, 48);
+        ctx.stroke();
+
+        // Dấu X đỏ trong kính lúp
+        ctx.strokeStyle = '#ef4444';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(cx - 8, 26);
+        ctx.lineTo(cx, 34);
+        ctx.moveTo(cx, 26);
+        ctx.lineTo(cx - 8, 34);
+        ctx.stroke();
+      }
+    });
+
+    this.cache.set(key, tex);
+    return tex;
+  }
+
+  // 16. Huy Hiệu Sự Kiện Bên Cạnh Màn Hình (Side Event Badges)
+  static getSideBadgeTexture(kind: 'OCTOPUS' | 'PATROL_FLOAT' | 'ARENA' | 'QUEST' | 'DEMON' | 'WIZARD', size: number = 64): Texture {
+    const key = `side_badge_${kind}_${size}`;
+    if (this.cache.has(key)) return this.cache.get(key)!;
+
+    const tex = createHighResTexture(size, size, (ctx) => {
+      const cx = size / 2;
+      const cy = size / 2;
+      const r = size * 0.44;
+
+      switch (kind) {
+        case 'OCTOPUS': { // Bạch tuộc đỏ cam (Octopus event)
+          ctx.fillStyle = '#ea580c';
+          ctx.beginPath();
+          ctx.arc(cx, cy - 4, r * 0.72, Math.PI, 0, false);
+          ctx.lineTo(cx + r * 0.72, cy + 6);
+          // Tua rua
+          for (let i = 0; i < 4; i++) {
+            const tx = cx + (i - 1.5) * 8;
+            ctx.lineTo(tx, cy + 14);
+          }
+          ctx.lineTo(cx - r * 0.72, cy + 6);
+          ctx.closePath();
+          ctx.fill();
+
+          // 2 Mắt to
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.arc(cx - 6, cy - 4, 4, 0, Math.PI * 2);
+          ctx.arc(cx + 6, cy - 4, 4, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#0f172a';
+          ctx.beginPath();
+          ctx.arc(cx - 6, cy - 4, 2, 0, Math.PI * 2);
+          ctx.arc(cx + 6, cy - 4, 2, 0, Math.PI * 2);
+          ctx.fill();
+          break;
+        }
+
+        case 'PATROL_FLOAT': { // Hòn đảo mini bay lơ lửng (Floating Island)
+          // Khối cỏ xanh trên đảo
+          ctx.fillStyle = '#22c55e';
+          ctx.beginPath();
+          ctx.ellipse(cx, cy - 2, r * 0.85, r * 0.5, 0, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Khối đất nâu bên dưới
+          ctx.fillStyle = '#78350f';
+          ctx.beginPath();
+          ctx.moveTo(cx - r * 0.82, cy - 2);
+          ctx.lineTo(cx, cy + r * 0.95);
+          ctx.lineTo(cx + r * 0.82, cy - 2);
+          ctx.closePath();
+          ctx.fill();
+
+          // Ngôi nhà nhỏ trên đảo
+          ctx.fillStyle = '#38bdf8';
+          ctx.fillRect(cx - 6, cy - 14, 12, 10);
+          ctx.fillStyle = '#ef4444';
+          ctx.beginPath();
+          ctx.moveTo(cx - 8, cy - 14);
+          ctx.lineTo(cx, cy - 22);
+          ctx.lineTo(cx + 8, cy - 14);
+          ctx.closePath();
+          ctx.fill();
+          break;
+        }
+
+        case 'ARENA': { // Khiên tím đôi cánh vàng (Purple Winged Shield)
+          ctx.fillStyle = '#6b21a8';
+          ctx.beginPath();
+          ctx.moveTo(cx - r * 0.75, cy - r * 0.65);
+          ctx.lineTo(cx + r * 0.75, cy - r * 0.65);
+          ctx.lineTo(cx + r * 0.65, cy + r * 0.2);
+          ctx.lineTo(cx, cy + r * 0.85);
+          ctx.lineTo(cx - r * 0.65, cy + r * 0.2);
+          ctx.closePath();
+          ctx.fill();
+
+          ctx.strokeStyle = '#facc15';
+          ctx.lineWidth = 3;
+          ctx.stroke();
+
+          // Cung tên vàng ở giữa khiên
+          ctx.strokeStyle = '#fef08a';
+          ctx.lineWidth = 2.5;
+          ctx.beginPath();
+          ctx.arc(cx, cy, 10, -Math.PI * 0.6, Math.PI * 0.6);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(cx - 8, cy);
+          ctx.lineTo(cx + 8, cy);
+          ctx.stroke();
+          break;
+        }
+
+        case 'QUEST': { // Bảng kẹp nhiệm vụ (Clipboard)
+          ctx.fillStyle = '#f8fafc';
+          safeRoundRect(ctx, cx - r * 0.65, cy - r * 0.75, r * 1.3, r * 1.5, 5);
+          ctx.fill();
+
+          ctx.strokeStyle = '#38bdf8';
+          ctx.lineWidth = 2.5;
+          ctx.stroke();
+
+          // Kẹp kim loại ở trên
+          ctx.fillStyle = '#f59e0b';
+          safeRoundRect(ctx, cx - 10, cy - r * 0.88, 20, 8, 3);
+          ctx.fill();
+
+          // Các dòng chữ nhiệm vụ
+          ctx.fillStyle = '#94a3b8';
+          ctx.fillRect(cx - 12, cy - 6, 24, 3);
+          ctx.fillRect(cx - 12, cy + 2, 24, 3);
+          ctx.fillRect(cx - 12, cy + 10, 16, 3);
+          break;
+        }
+
+        case 'DEMON': { // Vương miện ác ma đen tím (Demon Lord Helm)
+          ctx.fillStyle = '#4c0519';
+          ctx.beginPath();
+          ctx.arc(cx, cy + 2, r * 0.65, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.strokeStyle = '#f43f5e';
+          ctx.lineWidth = 3;
+          ctx.stroke();
+
+          // 2 Sừng ác ma nhô cao
+          ctx.fillStyle = '#be123c';
+          ctx.beginPath();
+          ctx.moveTo(cx - 10, cy - 4);
+          ctx.lineTo(cx - 20, cy - 24);
+          ctx.lineTo(cx - 4, cy - 10);
+          ctx.closePath();
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.moveTo(cx + 10, cy - 4);
+          ctx.lineTo(cx + 20, cy - 24);
+          ctx.lineTo(cx + 4, cy - 10);
+          ctx.closePath();
+          ctx.fill();
+          break;
+        }
+
+        case 'WIZARD': { // Mèo phù thủy (Wizard Cat)
+          // Mũ phù thủy xanh
+          ctx.fillStyle = '#0284c7';
+          ctx.beginPath();
+          ctx.moveTo(cx, cy - 24);
+          ctx.lineTo(cx + 16, cy - 2);
+          ctx.lineTo(cx - 16, cy - 2);
+          ctx.closePath();
+          ctx.fill();
+
+          // Vành mũ
+          ctx.beginPath();
+          ctx.ellipse(cx, cy - 2, 22, 5, 0, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Mặt mèo vàng bên dưới
+          ctx.fillStyle = '#f59e0b';
+          ctx.beginPath();
+          ctx.arc(cx, cy + 10, 12, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Mắt mèo
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.arc(cx - 4, cy + 8, 2.5, 0, Math.PI * 2);
+          ctx.arc(cx + 4, cy + 8, 2.5, 0, Math.PI * 2);
+          ctx.fill();
+          break;
+        }
+      }
+    });
+
+    this.cache.set(key, tex);
+    return tex;
+  }
 }
+
 

@@ -4,42 +4,54 @@ import { PixelAssetManager } from './pixelArt';
 import { sound } from './audio';
 
 const DEFAULT_SAVE: UserSaveData = {
-  diamonds: 60,
-  permanentGold: 150,
-  equippedGuns: ['PISTOL', 'CROSSBOW', 'CRYO', 'FLAMER', 'SHOTGUN'],
+  saveVersion: 2,
+  diamonds: 6472,
+  permanentGold: 12118,
+  energy: 20,
+  maxEnergy: 20,
+  playerLevel: 115,
+  playerExp: 75,
+  unlockedGuns: ['PISTOL', 'CROSSBOW', 'SLINGSHOT', 'SHOTGUN', 'FLAMER'],
+  equippedGuns: ['PISTOL', 'CROSSBOW', 'SLINGSHOT', 'SHOTGUN', 'FLAMER'],
   equippedBuffs: ['DMG', 'SPEED'],
   gunLevels: {
     PISTOL: 1,
     CROSSBOW: 1,
     SLINGSHOT: 1,
-    CRYO: 1,
-    FLAMER: 1,
     SHOTGUN: 1,
-    CANNON: 1,
-    TESLA: 1,
-    SNIPER: 1,
-    MINIGUN: 1,
-    METEOR: 1,
+    FLAMER: 1,
+    CRYO: 0,
+    CANNON: 0,
+    TESLA: 0,
+    SNIPER: 0,
+    MINIGUN: 0,
+    METEOR: 0,
   },
   selectedCampaignMap: 1,
   highestCampaignStage: 1,
   highestSurvivalWave: 0,
+  talents: {
+    hpLevel: 0,
+    armorLevel: 0,
+    startGoldLevel: 0,
+    bountyLevel: 0,
+  },
 };
 
 // Phân loại Tier súng cố định (Weapon Rarity):
-// Tier 1: PISTOL, CROSSBOW, SLINGSHOT -> Vòng hollow TRẮNG
-// Tier 2: CRYO, FLAMER, SHOTGUN -> Vòng hollow XANH
-// Tier 3: CANNON, TESLA, SNIPER -> Vòng hollow TÍM
-// Tier 4: MINIGUN -> Vòng hollow VÀNG
-// Tier 5: METEOR -> Vòng hollow ĐỎ
+// Tier 1: PISTOL, CROSSBOW, SLINGSHOT, SHOTGUN, FLAMER -> Vòng hollow TRẮNG (5 súng cơ bản người chơi cầm ban đầu)
+// Tier 2: CRYO, CANNON -> Vòng hollow XANH (Roll Gacha)
+// Tier 3: TESLA, SNIPER -> Vòng hollow TÍM (Roll Gacha)
+// Tier 4: MINIGUN -> Vòng hollow VÀNG (Roll Gacha)
+// Tier 5: METEOR -> Vòng hollow ĐỎ (Roll Gacha)
 export const GUN_TIERS: Record<GunKind, number> = {
   PISTOL: 1,
   CROSSBOW: 1,
   SLINGSHOT: 1,
+  SHOTGUN: 1,
+  FLAMER: 1,
   CRYO: 2,
-  FLAMER: 2,
-  SHOTGUN: 2,
-  CANNON: 3,
+  CANNON: 2,
   TESLA: 3,
   SNIPER: 3,
   MINIGUN: 4,
@@ -148,7 +160,7 @@ export class GameEngine {
   public gameMode: GameMode = 'CAMPAIGN';
   public inMenu: boolean = true;
   private mainMenuContainer!: Container;
-  private menuTab: 'BATTLE' | 'LOADOUT' | 'WORKSHOP' = 'BATTLE';
+  private menuTab: 'SHOP' | 'EQUIPMENT' | 'WORLD' | 'TALENT' | 'MODES' = 'WORLD';
   private resultModalContainer!: Container;
 
   // Lưới lâu đài 5x5 chuẩn High-Res (720 x 1280)
@@ -863,7 +875,7 @@ export class GameEngine {
       // Chỉ xuất hiện trong danh sách 5 súng người chơi đã trang bị!
       const pool = (this.saveData.equippedGuns && this.saveData.equippedGuns.length > 0)
         ? this.saveData.equippedGuns
-        : (['PISTOL', 'CROSSBOW', 'CRYO', 'FLAMER', 'SHOTGUN'] as GunKind[]);
+        : (['PISTOL', 'CROSSBOW', 'SLINGSHOT', 'SHOTGUN', 'FLAMER'] as GunKind[]);
       const chosen = pool[Math.floor(Math.random() * pool.length)];
       emptyCell.item = this.createGun(chosen, 1);
     } else if (rollType < 0.85) {
@@ -2497,7 +2509,43 @@ export class GameEngine {
   private loadSaveData(): UserSaveData {
     try {
       const raw = localStorage.getItem('gear_gun_castle_save');
-      if (raw) return { ...DEFAULT_SAVE, ...JSON.parse(raw) };
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        const data: UserSaveData = { ...DEFAULT_SAVE, ...parsed };
+        if (!parsed.saveVersion || parsed.saveVersion < 2) {
+          data.saveVersion = 2;
+          data.unlockedGuns = ['PISTOL', 'CROSSBOW', 'SLINGSHOT', 'SHOTGUN', 'FLAMER'];
+          data.equippedGuns = ['PISTOL', 'CROSSBOW', 'SLINGSHOT', 'SHOTGUN', 'FLAMER'];
+          data.gunLevels = {
+            PISTOL: 1,
+            CROSSBOW: 1,
+            SLINGSHOT: 1,
+            SHOTGUN: 1,
+            FLAMER: 1,
+            CRYO: 0,
+            CANNON: 0,
+            TESLA: 0,
+            SNIPER: 0,
+            MINIGUN: 0,
+            METEOR: 0,
+          };
+        } else {
+          if (!data.unlockedGuns || data.unlockedGuns.length === 0) {
+            data.unlockedGuns = ['PISTOL', 'CROSSBOW', 'SLINGSHOT', 'SHOTGUN', 'FLAMER'];
+          }
+          data.equippedGuns = data.equippedGuns.filter(g => data.unlockedGuns.includes(g));
+          if (data.equippedGuns.length === 0) {
+            data.equippedGuns = ['PISTOL', 'CROSSBOW', 'SLINGSHOT', 'SHOTGUN', 'FLAMER'];
+          }
+        }
+        data.talents = data.talents || {
+          hpLevel: 0,
+          armorLevel: 0,
+          startGoldLevel: 0,
+          bountyLevel: 0,
+        };
+        return data;
+      }
     } catch (e) {}
     return { ...DEFAULT_SAVE };
   }
@@ -2524,412 +2572,1071 @@ export class GameEngine {
   private renderMainMenu() {
     this.mainMenuContainer.removeChildren();
 
-    // 1. Nền Steampunk kim loại tối
+    // 1. Nền Xanh Tối Huyền Bí / Vũ Trụ (Deep Cosmic Indigo Navy)
     const bg = new Graphics();
     bg.rect(0, 0, 720, 1280);
-    bg.fill({ color: 0x090b10 });
+    bg.fill({ color: 0x060814 });
     this.mainMenuContainer.addChild(bg);
 
-    // Họa tiết trang trí bánh răng nền
-    const decor = new Graphics();
-    decor.circle(360, 200, 260);
-    decor.stroke({ color: 0x1e293b, width: 2 });
-    decor.circle(360, 200, 180);
-    decor.stroke({ color: 0x1e293b, width: 1.5 });
-    this.mainMenuContainer.addChild(decor);
+    // Hào quang sương mù tím - xanh giữa màn hình
+    const nebula = new Graphics();
+    nebula.ellipse(360, 480, 320, 260);
+    nebula.fill({ color: 0x1e1b4b, alpha: 0.55 });
+    this.mainMenuContainer.addChild(nebula);
 
-    // 2. Header & Currency
-    const titleText = new Text({
-      text: 'GEAR GUN CASTLE',
-      style: {
-        fontFamily: this.FONT_FAMILY,
-        fontSize: 34,
-        fill: '#facc15',
-        fontWeight: 'bold',
-        stroke: { color: 0x000000, width: 4 },
-      }
+    // 2. Thanh Trạng Thái Trên Cùng (Top Status Header Bar)
+    this.renderHeaderBar();
+
+    // 3. Banner Mùa Giải Season 117 (Battle Pass Bar)
+    this.renderSeasonPassBar();
+
+    // 4. Nội Dung Từng Tab
+    if (this.menuTab === 'WORLD') {
+      this.renderWorldTab();
+    } else if (this.menuTab === 'SHOP') {
+      this.renderShopTab();
+    } else if (this.menuTab === 'EQUIPMENT') {
+      this.renderEquipmentTab();
+    } else if (this.menuTab === 'TALENT') {
+      this.renderTalentTab();
+    } else if (this.menuTab === 'MODES') {
+      this.renderModesTab();
+    }
+
+    // 5. Thanh Điều Hướng Đáy 5 Tab (Bottom Navigation Bar)
+    this.renderBottomNavigationBar();
+  }
+
+  // --- HEADER BAR TRÊN CÙNG: LEVEL 115, ENERGY ⚡ 7/20, GOLD, GEMS, MENU ☰ ---
+  private renderHeaderBar() {
+    const header = new Container();
+    header.y = 12;
+
+    // 1. Huy hiệu Level người chơi (Blue Hexagon Shield + EXP Bar)
+    const lvlShield = new Graphics();
+    const cx = 56, cy = 40, r = 24;
+    lvlShield.moveTo(cx, cy - r);
+    for (let i = 0; i < 6; i++) {
+      const a = (i * Math.PI) / 3 - Math.PI / 2;
+      lvlShield.lineTo(cx + r * Math.cos(a), cy + r * Math.sin(a));
+    }
+    lvlShield.closePath();
+    lvlShield.fill({ color: 0x0284c7 });
+    lvlShield.stroke({ color: 0x7dd3fc, width: 3.5 });
+    header.addChild(lvlShield);
+
+    const lvlNum = new Text({
+      text: `${this.saveData.playerLevel || 115}`,
+      style: { fontFamily: this.FONT_FAMILY, fontSize: 18, fill: '#ffffff', fontWeight: 'bold' }
     });
-    titleText.anchor.set(0.5);
-    titleText.x = 360;
-    titleText.y = 45;
-    this.mainMenuContainer.addChild(titleText);
+    lvlNum.anchor.set(0.5);
+    lvlNum.x = cx;
+    lvlNum.y = cy;
+    header.addChild(lvlNum);
 
-    const subText = new Text({
-      text: 'CỖ MÁY THÀNH TRÌ BÁNH RĂNG',
-      style: {
-        fontFamily: this.FONT_FAMILY,
-        fontSize: 14,
-        fill: '#38bdf8',
-        fontWeight: 'bold',
-        letterSpacing: 2,
-      }
+    // Thanh EXP cạnh Level
+    const expBar = new Graphics();
+    expBar.roundRect(84, 28, 90, 24, 6);
+    expBar.fill({ color: 0x0f172a });
+    expBar.stroke({ color: 0x0369a1, width: 2 });
+    const expFillW = Math.round(86 * ((this.saveData.playerExp || 75) / 100));
+    expBar.roundRect(86, 30, expFillW, 20, 5);
+    expBar.fill({ color: 0x38bdf8 });
+    header.addChild(expBar);
+
+    // 2. Năng lượng Sét (⚡ 7/20 + timer)
+    const energyPill = new Container();
+    energyPill.x = 188;
+    energyPill.y = 20;
+
+    const eBg = new Graphics();
+    eBg.roundRect(0, 0, 115, 40, 8);
+    eBg.fill({ color: 0x0f172a });
+    eBg.stroke({ color: 0x22c55e, width: 2 });
+    energyPill.addChild(eBg);
+
+    const eText = new Text({
+      text: `⚡ ${this.saveData.energy || 7}/${this.saveData.maxEnergy || 20}`,
+      style: { fontFamily: this.FONT_FAMILY, fontSize: 15, fill: '#ffffff', fontWeight: 'bold' }
     });
-    subText.anchor.set(0.5);
-    subText.x = 360;
-    subText.y = 80;
-    this.mainMenuContainer.addChild(subText);
+    eText.anchor.set(0.5, 0);
+    eText.x = 57;
+    eText.y = 5;
+    energyPill.addChild(eText);
 
-    // Huy hiệu tiền tệ
-    const currencyCont = new Container();
-    currencyCont.x = 360;
-    currencyCont.y = 115;
-
-    const curText = new Text({
-      text: `💎 ${this.saveData.diamonds} KIM CƯƠNG   |   💰 ${this.saveData.permanentGold}$ VÀNG`,
-      style: {
-        fontFamily: this.FONT_FAMILY,
-        fontSize: 16,
-        fill: '#f8fafc',
-        fontWeight: 'bold',
-      }
+    const eTimer = new Text({
+      text: '07:54',
+      style: { fontFamily: this.FONT_FAMILY, fontSize: 10, fill: '#86efac', fontWeight: 'bold' }
     });
-    curText.anchor.set(0.5);
-    currencyCont.addChild(curText);
-    this.mainMenuContainer.addChild(currencyCont);
+    eTimer.anchor.set(0.5, 0);
+    eTimer.x = 57;
+    eTimer.y = 23;
+    energyPill.addChild(eTimer);
+    header.addChild(energyPill);
 
-    // 3. Navigation Tabs
-    const tabs: { key: 'BATTLE' | 'LOADOUT' | 'WORKSHOP'; label: string }[] = [
-      { key: 'BATTLE', label: '🗺 BẢN ĐỒ' },
-      { key: 'LOADOUT', label: '🎒 TRANG BỊ' },
-      { key: 'WORKSHOP', label: '🎰 XƯỞNG & GACHA' },
+    // 3. Vàng Vĩnh Viễn (🏹 Gold)
+    const goldPill = new Container();
+    goldPill.x = 312;
+    goldPill.y = 20;
+
+    const gBg = new Graphics();
+    gBg.roundRect(0, 0, 160, 40, 8);
+    gBg.fill({ color: 0x0f172a });
+    gBg.stroke({ color: 0xf59e0b, width: 2 });
+    goldPill.addChild(gBg);
+
+    const gText = new Text({
+      text: `🏹 ${this.saveData.permanentGold || 121181022}`,
+      style: { fontFamily: this.FONT_FAMILY, fontSize: 14, fill: '#fde047', fontWeight: 'bold' }
+    });
+    gText.anchor.set(0.5);
+    gText.x = 80;
+    gText.y = 20;
+    goldPill.addChild(gText);
+    header.addChild(goldPill);
+
+    // 4. Kim Cương (💎 Gems)
+    const diaPill = new Container();
+    diaPill.x = 480;
+    diaPill.y = 20;
+
+    const dBg = new Graphics();
+    dBg.roundRect(0, 0, 130, 40, 8);
+    dBg.fill({ color: 0x0f172a });
+    dBg.stroke({ color: 0x10b981, width: 2 });
+    diaPill.addChild(dBg);
+
+    const dText = new Text({
+      text: `💎 ${this.saveData.diamonds || 6472}`,
+      style: { fontFamily: this.FONT_FAMILY, fontSize: 14, fill: '#6ee7b7', fontWeight: 'bold' }
+    });
+    dText.anchor.set(0.5);
+    dText.x = 65;
+    dText.y = 20;
+    diaPill.addChild(dText);
+    header.addChild(diaPill);
+
+    // 5. Nút Menu Hamburger ☰ (Góc trên cùng bên phải)
+    const menuBtn = new Container();
+    menuBtn.x = 642;
+    menuBtn.y = 18;
+    menuBtn.eventMode = 'static';
+    menuBtn.cursor = 'pointer';
+    menuBtn.hitArea = new Rectangle(0, 0, 52, 44);
+
+    const mBg = new Graphics();
+    mBg.roundRect(0, 0, 52, 44, 10);
+    mBg.fill({ color: 0x0284c7 });
+    mBg.stroke({ color: 0x38bdf8, width: 2.5 });
+    mBg.rect(10, 11, 32, 4).fill({ color: 0xffffff });
+    mBg.rect(10, 20, 32, 4).fill({ color: 0xffffff });
+    mBg.rect(10, 29, 32, 4).fill({ color: 0xffffff });
+    menuBtn.addChild(mBg);
+
+    menuBtn.on('pointerdown', () => {
+      sound.playClick();
+      alert('⚙ CÀI ĐẶT:\n• Âm thanh: Đang BẬT\n• Phiên bản: Gear Gun Castle (Archero Edition)\n• Tác giả: Antigravity Game Engine');
+    });
+    header.addChild(menuBtn);
+
+    this.mainMenuContainer.addChild(header);
+  }
+
+  // --- BANNER MÙA GIẢI SEASON 117 (BATTLE PASS BAR) ---
+  private renderSeasonPassBar() {
+    const sCont = new Container();
+    sCont.x = 360;
+    sCont.y = 100;
+
+    const w = 680, h = 50;
+
+    const sBg = new Graphics();
+    sBg.roundRect(-w / 2, -h / 2, w, h, 10);
+    sBg.fill({ color: 0x1c1917 });
+    sBg.stroke({ color: 0xb45309, width: 2.5 });
+    sCont.addChild(sBg);
+
+    const shield = new Graphics();
+    shield.roundRect(-w / 2 + 8, -h / 2 + 5, 48, 40, 6);
+    shield.fill({ color: 0xd97706 });
+    shield.stroke({ color: 0xfde047, width: 2 });
+    shield.moveTo(-w / 2 + 20, -h / 2 + 15).lineTo(-w / 2 + 44, -h / 2 + 35).stroke({ color: 0xffffff, width: 2 });
+    sCont.addChild(shield);
+
+    const sTitle = new Text({
+      text: 'Season 117',
+      style: { fontFamily: this.FONT_FAMILY, fontSize: 13, fill: '#f8fafc', fontWeight: 'bold' }
+    });
+    sTitle.anchor.set(0.5, 1);
+    sTitle.x = 0;
+    sTitle.y = -5;
+    sCont.addChild(sTitle);
+
+    const progBg = new Graphics();
+    progBg.roundRect(-160, 2, 340, 18, 6);
+    progBg.fill({ color: 0x0f172a });
+    progBg.stroke({ color: 0x0284c7, width: 1.5 });
+    progBg.roundRect(-158, 4, 260, 14, 4);
+    progBg.fill({ color: 0x0284c7 });
+    sCont.addChild(progBg);
+
+    const lvl30 = new Graphics();
+    lvl30.circle(-160, 11, 14);
+    lvl30.fill({ color: 0x7c2d12 });
+    lvl30.stroke({ color: 0xfde047, width: 2.5 });
+    sCont.addChild(lvl30);
+
+    const lvl30Txt = new Text({
+      text: '30',
+      style: { fontFamily: this.FONT_FAMILY, fontSize: 12, fill: '#ffffff', fontWeight: 'bold' }
+    });
+    lvl30Txt.anchor.set(0.5);
+    lvl30Txt.x = -160;
+    lvl30Txt.y = 11;
+    sCont.addChild(lvl30Txt);
+
+    const heroAv = new Graphics();
+    heroAv.circle(w / 2 - 35, 0, 20);
+    heroAv.fill({ color: 0x16a34a });
+    heroAv.stroke({ color: 0x4ade80, width: 2.5 });
+    sCont.addChild(heroAv);
+
+    const pinkAv = new Graphics();
+    pinkAv.circle(-w / 2 - 12, 0, 22);
+    pinkAv.fill({ color: 0xf472b6 });
+    pinkAv.stroke({ color: 0xffffff, width: 3 });
+    pinkAv.circle(-w / 2 - 2, 14, 8);
+    pinkAv.fill({ color: 0x7e22ce });
+    sCont.addChild(pinkAv);
+
+    const pinkTxt = new Text({
+      text: '9',
+      style: { fontFamily: this.FONT_FAMILY, fontSize: 10, fill: '#ffffff', fontWeight: 'bold' }
+    });
+    pinkTxt.anchor.set(0.5);
+    pinkTxt.x = -w / 2 - 2;
+    pinkTxt.y = 14;
+    sCont.addChild(pinkTxt);
+
+    this.mainMenuContainer.addChild(sCont);
+  }
+
+  // --- THANH ĐIỀU HƯỚNG ĐÁY 5 TAB CHUẨN ARCHERO (BOTTOM NAVIGATION BAR) ---
+  private renderBottomNavigationBar() {
+    const navBar = new Container();
+    navBar.y = 1155;
+
+    const barBg = new Graphics();
+    barBg.rect(0, 0, 720, 125);
+    barBg.fill({ color: 0xe2e8f0 });
+    barBg.stroke({ color: 0x94a3b8, width: 2 });
+    navBar.addChild(barBg);
+
+    const tabs: { key: 'SHOP' | 'EQUIPMENT' | 'WORLD' | 'TALENT' | 'MODES'; label: string; badge?: string }[] = [
+      { key: 'SHOP', label: 'Shop', badge: '67' },
+      { key: 'EQUIPMENT', label: 'Trang Bị', badge: 'New' },
+      { key: 'WORLD', label: 'World' },
+      { key: 'TALENT', label: 'Thiên Phú' },
+      { key: 'MODES', label: 'Chế Độ' },
     ];
 
+    const tabWidth = 720 / 5;
+
     tabs.forEach((tab, idx) => {
-      const tabBtn = new Container();
-      tabBtn.x = 24 + idx * 228;
-      tabBtn.y = 150;
-      tabBtn.eventMode = 'static';
-      tabBtn.cursor = 'pointer';
-      tabBtn.hitArea = new Rectangle(0, 0, 216, 48);
-
+      const tabCont = new Container();
       const isActive = this.menuTab === tab.key;
-      const tabBg = new Graphics();
-      tabBg.roundRect(0, 0, 216, 48, 8);
-      tabBg.fill({ color: isActive ? 0x2563eb : 0x1e293b });
-      tabBg.stroke({ color: isActive ? 0x60a5fa : 0x334155, width: 2 });
-      tabBtn.addChild(tabBg);
+      const isElevated = tab.key === 'WORLD';
 
-      const tabText = new Text({
+      tabCont.x = idx * tabWidth;
+      tabCont.y = isElevated ? -16 : 0;
+      tabCont.eventMode = 'static';
+      tabCont.cursor = 'pointer';
+      tabCont.hitArea = new Rectangle(0, 0, tabWidth, 125);
+
+      if (isElevated) {
+        const elevBg = new Graphics();
+        elevBg.roundRect(8, 0, tabWidth - 16, 115, 12);
+        elevBg.fill({ color: isActive ? 0xffedd5 : 0xf1f5f9 });
+        elevBg.stroke({ color: isActive ? 0xf97316 : 0xcbd5e1, width: 3 });
+        tabCont.addChild(elevBg);
+      }
+
+      const iconSize = isElevated ? 58 : 52;
+      const icon = new Sprite(PixelAssetManager.getBottomTabIcon(tab.key, iconSize));
+      icon.anchor.set(0.5);
+      icon.x = tabWidth / 2;
+      icon.y = isElevated ? 42 : 46;
+      tabCont.addChild(icon);
+
+      const labelTxt = new Text({
         text: tab.label,
         style: {
           fontFamily: this.FONT_FAMILY,
-          fontSize: 15,
-          fill: isActive ? '#ffffff' : '#94a3b8',
+          fontSize: isElevated ? 13 : 11,
+          fill: isActive ? '#0f172a' : '#64748b',
           fontWeight: 'bold',
         }
       });
-      tabText.anchor.set(0.5);
-      tabText.x = 108;
-      tabText.y = 24;
-      tabBtn.addChild(tabText);
+      labelTxt.anchor.set(0.5);
+      labelTxt.x = tabWidth / 2;
+      labelTxt.y = isElevated ? 82 : 86;
+      tabCont.addChild(labelTxt);
 
-      tabBtn.on('pointerdown', () => {
+      if (tab.badge) {
+        const badgeCont = new Container();
+        badgeCont.x = tabWidth / 2 + 18;
+        badgeCont.y = 20;
+
+        const badgeG = new Graphics();
+        const bw = tab.badge === 'New' ? 34 : 24;
+        badgeG.roundRect(-bw / 2, -10, bw, 20, 10);
+        badgeG.fill({ color: 0xef4444 });
+        badgeG.stroke({ color: 0xffffff, width: 2 });
+        badgeCont.addChild(badgeG);
+
+        const bText = new Text({
+          text: tab.badge,
+          style: { fontFamily: this.FONT_FAMILY, fontSize: 10, fill: '#ffffff', fontWeight: '900' }
+        });
+        bText.anchor.set(0.5);
+        badgeCont.addChild(bText);
+        tabCont.addChild(badgeCont);
+      }
+
+      tabCont.on('pointerdown', () => {
         this.menuTab = tab.key;
         sound.playClick();
         this.renderMainMenu();
       });
 
-      this.mainMenuContainer.addChild(tabBtn);
+      navBar.addChild(tabCont);
     });
 
-    // 4. Nội dung theo từng Tab
-    if (this.menuTab === 'BATTLE') {
-      this.renderBattleTab();
-    } else if (this.menuTab === 'LOADOUT') {
-      this.renderLoadoutTab();
-    } else if (this.menuTab === 'WORKSHOP') {
-      this.renderWorkshopTab();
-    }
+    this.mainMenuContainer.addChild(navBar);
   }
 
-  // --- TAB 1: BATTLE & MAP SELECT ---
-  private renderBattleTab() {
-    // Mode Buttons: Campaign vs Survival
-    const modeContainer = new Container();
-    modeContainer.x = 36;
-    modeContainer.y = 215;
+  // ================= TAB 1: WORLD (HABBY ARCHERO REPLICA) ================= //
+  private renderWorldTab() {
+    const worldCont = new Container();
 
-    const modes: { mode: GameMode; label: string }[] = [
-      { mode: 'CAMPAIGN', label: '🛡 CHIẾN DỊCH (10 Wave)' },
-      { mode: 'SURVIVAL', label: '💀 SINH TỒN (Vô Tận)' },
+    // 1. Stage Title Banner ở trên cùng (Hero50.Radiant Temple | Top Stage : 31/50)
+    const stageBanner = new Container();
+    stageBanner.x = 360;
+    stageBanner.y = 175;
+
+    const bannerW = 460, bannerH = 54;
+    const sBg = new Graphics();
+    sBg.roundRect(-bannerW / 2, -bannerH / 2, bannerW, bannerH, 12);
+    sBg.fill({ color: 0x18181b, alpha: 0.9 });
+    sBg.stroke({ color: 0xeab308, width: 2.5 });
+    stageBanner.addChild(sBg);
+
+    // Icon hộp quà 🎁 bên trái
+    const giftG = new Graphics();
+    giftG.rect(-bannerW / 2 + 16, -16, 32, 32);
+    giftG.fill({ color: 0xef4444 });
+    giftG.stroke({ color: 0xfacc15, width: 2 });
+    giftG.rect(-bannerW / 2 + 16, -3, 32, 6).fill({ color: 0xfacc15 });
+    giftG.rect(-bannerW / 2 + 29, -16, 6, 32).fill({ color: 0xfacc15 });
+    stageBanner.addChild(giftG);
+
+    // Tên Ải trung tâm
+    const stageName = new Text({
+      text: `Hero50.Radiant Temple`,
+      style: {
+        fontFamily: this.FONT_FAMILY,
+        fontSize: 19,
+        fill: '#ffffff',
+        fontWeight: 'bold',
+        stroke: { color: '#000000', width: 3 },
+      }
+    });
+    stageName.anchor.set(0.5, 1);
+    stageName.x = 8;
+    stageName.y = 1;
+    stageBanner.addChild(stageName);
+
+    // Tiến độ ải (Top Stage : 31/50)
+    const stageSub = new Text({
+      text: `Top Stage : ${this.saveData.highestCampaignStage * 10}/50`,
+      style: {
+        fontFamily: this.FONT_FAMILY,
+        fontSize: 13,
+        fill: '#94a3b8',
+        fontWeight: 'bold',
+      }
+    });
+    stageSub.anchor.set(0.5, 0);
+    stageSub.x = 8;
+    stageSub.y = 5;
+    stageBanner.addChild(stageSub);
+
+    // Nút Thông tin ℹ bên phải
+    const infoBtn = new Container();
+    infoBtn.x = bannerW / 2 - 32;
+    infoBtn.y = 0;
+    infoBtn.eventMode = 'static';
+    infoBtn.cursor = 'pointer';
+    const infoG = new Graphics();
+    infoG.circle(0, 0, 16);
+    infoG.fill({ color: 0x3b82f6 });
+    infoG.stroke({ color: 0x93c5fd, width: 2 });
+    infoBtn.addChild(infoG);
+    const infoTxt = new Text({
+      text: 'i',
+      style: { fontFamily: this.FONT_FAMILY, fontSize: 16, fill: '#ffffff', fontWeight: 'bold' }
+    });
+    infoTxt.anchor.set(0.5);
+    infoBtn.addChild(infoTxt);
+    infoBtn.on('pointerdown', () => {
+      sound.playClick();
+      alert(`📖 THÔNG TIN ẢI [Radiant Temple]:\n• Bản đồ hiện tại: Map ${this.saveData.selectedCampaignMap}\n• Ải cao nhất đã chinh phục: ${this.saveData.highestCampaignStage * 10}/50\n• Thưởng qua ải: 1000 💎 + Hòm Hoàng Gia`);
+    });
+    stageBanner.addChild(infoBtn);
+    worldCont.addChild(stageBanner);
+
+    // 2. Các Phù Hiệu Nổi Bên Trái (Left Side Floating Badges)
+    // Badge 1: Bạch tuộc tím + Đồng hồ 2H 22M
+    const octCont = new Container();
+    octCont.x = 52;
+    octCont.y = 300;
+    octCont.eventMode = 'static';
+    octCont.cursor = 'pointer';
+    const octSp = new Sprite(PixelAssetManager.getSideBadgeTexture('OCTOPUS', 56));
+    octSp.anchor.set(0.5);
+    octCont.addChild(octSp);
+
+    const octTimeG = new Graphics();
+    octTimeG.roundRect(-30, 26, 60, 18, 5);
+    octTimeG.fill({ color: 0x0284c7 });
+    octTimeG.stroke({ color: 0x7dd3fc, width: 1.5 });
+    octCont.addChild(octTimeG);
+    const octTimeTxt = new Text({
+      text: '2H 22M',
+      style: { fontFamily: this.FONT_FAMILY, fontSize: 10, fill: '#ffffff', fontWeight: 'bold' }
+    });
+    octTimeTxt.anchor.set(0.5);
+    octTimeTxt.x = 0;
+    octTimeTxt.y = 35;
+    octCont.addChild(octTimeTxt);
+    octCont.on('pointerdown', () => {
+      sound.playClick();
+      alert('🐙 SỰ KIỆN ĐẠI DƯƠNG: Săn quái nhận gấp đôi Kim Cương trong 2H 22M nữa!');
+    });
+    worldCont.addChild(octCont);
+
+    // Badge 2: Hòn đảo bay shortcut
+    const islandCont = new Container();
+    islandCont.x = 52;
+    islandCont.y = 415;
+    islandCont.eventMode = 'static';
+    islandCont.cursor = 'pointer';
+    const islSp = new Sprite(PixelAssetManager.getSideBadgeTexture('PATROL_FLOAT', 56));
+    islSp.anchor.set(0.5);
+    islandCont.addChild(islSp);
+    islandCont.on('pointerdown', () => {
+      sound.playClick();
+      alert('🏝 ĐẢO KHO BÁU BAY: Khám phá bí ẩn đảo trên không!');
+    });
+    worldCont.addChild(islandCont);
+
+    // 3. Các Phù Hiệu Nổi Bên Phải (Right Side Floating Badges)
+    const rightBadges: { kind: 'ARENA' | 'QUEST' | 'DEMON' | 'WIZARD'; y: number; timer?: string; hasDot?: boolean; label: string }[] = [
+      { kind: 'ARENA', y: 280, hasDot: true, label: 'Đấu Trường Đỉnh Cao PvP' },
+      { kind: 'QUEST', y: 370, label: 'Nhiệm Vụ Hàng Ngày (Nhận 300 💰)' },
+      { kind: 'DEMON', y: 460, timer: '4D 12H', label: 'Vương Miện Chúa Quỷ (Sự Kiện Đặc Biệt)' },
+      { kind: 'WIZARD', y: 550, timer: '4D 2H', label: 'Mèo Phù Thủy May Mắn' },
     ];
 
-    modes.forEach((m, idx) => {
-      const btn = new Container();
-      btn.x = idx * 330;
-      btn.y = 0;
-      btn.eventMode = 'static';
-      btn.cursor = 'pointer';
-      btn.hitArea = new Rectangle(0, 0, 318, 54);
-
-      const isCurrent = this.gameMode === m.mode;
-      const bg = new Graphics();
-      bg.roundRect(0, 0, 318, 54, 10);
-      bg.fill({ color: isCurrent ? 0x059669 : 0x1e293b });
-      bg.stroke({ color: isCurrent ? 0x34d399 : 0x475569, width: 2 });
-      btn.addChild(bg);
-
-      const text = new Text({
-        text: m.label,
-        style: { fontFamily: this.FONT_FAMILY, fontSize: 16, fill: '#ffffff', fontWeight: 'bold' }
-      });
-      text.anchor.set(0.5);
-      text.x = 159;
-      text.y = 27;
-      btn.addChild(text);
-
-      btn.on('pointerdown', () => {
-        this.gameMode = m.mode;
-        sound.playClick();
-        this.renderMainMenu();
-      });
-
-      modeContainer.addChild(btn);
-    });
-
-    this.mainMenuContainer.addChild(modeContainer);
-
-    // Chi tiết chế độ
-    if (this.gameMode === 'CAMPAIGN') {
-      const mapContainer = new Container();
-      mapContainer.x = 36;
-      mapContainer.y = 290;
-
-      const maps = [
-        { id: 1, name: 'Map 1: Rừng Bánh Răng', desc: '10 Wave • Độ khó chuẩn', unlocked: true },
-        { id: 2, name: 'Map 2: Thành Trì Thép', desc: '10 Wave • Quái Thiết Giáp +20% HP', unlocked: this.saveData.highestCampaignStage >= 2 },
-        { id: 3, name: 'Map 3: Núi Lửa Cơ Khí', desc: '10 Wave • Quái Nham Thạch +40% HP', unlocked: this.saveData.highestCampaignStage >= 3 },
-      ];
-
-      maps.forEach((mp, idx) => {
-        const card = new Container();
-        card.y = idx * 115;
-        card.eventMode = 'static';
-        card.cursor = mp.unlocked ? 'pointer' : 'not-allowed';
-        card.hitArea = new Rectangle(0, 0, 648, 100);
-
-        const isSelected = this.saveData.selectedCampaignMap === mp.id;
-        const bg = new Graphics();
-        bg.roundRect(0, 0, 648, 100, 12);
-        bg.fill({ color: isSelected ? 0x1e3a8a : (mp.unlocked ? 0x1e293b : 0x0f172a) });
-        bg.stroke({ color: isSelected ? 0x38bdf8 : (mp.unlocked ? 0x475569 : 0x334155), width: isSelected ? 3 : 1.5 });
-        card.addChild(bg);
-
-        const nameTxt = new Text({
-          text: mp.name + (mp.unlocked ? '' : ' 🔒 (Khóa)'),
-          style: { fontFamily: this.FONT_FAMILY, fontSize: 18, fill: mp.unlocked ? '#facc15' : '#64748b', fontWeight: 'bold' }
-        });
-        nameTxt.x = 24;
-        nameTxt.y = 20;
-        card.addChild(nameTxt);
-
-        const descTxt = new Text({
-          text: mp.desc,
-          style: { fontFamily: this.FONT_FAMILY, fontSize: 14, fill: '#94a3b8' }
-        });
-        descTxt.x = 24;
-        descTxt.y = 56;
-        card.addChild(descTxt);
-
-        if (mp.unlocked) {
-          card.on('pointerdown', () => {
-            this.saveData.selectedCampaignMap = mp.id;
-            this.saveGame();
-            sound.playClick();
-            this.renderMainMenu();
-          });
-        }
-
-        mapContainer.addChild(card);
-      });
-
-      this.mainMenuContainer.addChild(mapContainer);
-    } else {
-      // Survival Info Banner
-      const survCont = new Container();
-      survCont.x = 36;
-      survCont.y = 290;
-
-      const survBg = new Graphics();
-      survBg.roundRect(0, 0, 648, 330, 16);
-      survBg.fill({ color: 0x1e1b4b });
-      survBg.stroke({ color: 0x818cf8, width: 3 });
-      survCont.addChild(survBg);
-
-      const survTitle = new Text({
-        text: '💀 ĐẤU TRƯỜNG SINH TỒN VÔ TẬN',
-        style: { fontFamily: this.FONT_FAMILY, fontSize: 24, fill: '#facc15', fontWeight: 'bold' }
-      });
-      survTitle.anchor.set(0.5);
-      survTitle.x = 324;
-      survTitle.y = 50;
-      survCont.addChild(survTitle);
-
-      const survDesc = new Text({
-        text: '• Quái tràn ngập vô tận, cứ mỗi 10 Wave sẽ xuất hiện 1 Đại Trùm!\n• Càng sống lâu càng rơi nhiều Vàng 💰 và Kim Cương 💎!\n• Tinh hoa chiến thuật bánh răng thử thách giới hạn của bạn.',
-        style: { fontFamily: this.FONT_FAMILY, fontSize: 16, fill: '#e0e7ff', lineHeight: 28 }
-      });
-      survDesc.x = 36;
-      survDesc.y = 100;
-      survCont.addChild(survDesc);
-
-      const highWaveText = new Text({
-        text: `🏆 KỶ LỤC CỦA BẠN: WAVE ${this.saveData.highestSurvivalWave}`,
-        style: { fontFamily: this.FONT_FAMILY, fontSize: 22, fill: '#34d399', fontWeight: 'bold' }
-      });
-      highWaveText.anchor.set(0.5);
-      highWaveText.x = 324;
-      highWaveText.y = 265;
-      survCont.addChild(highWaveText);
-
-      this.mainMenuContainer.addChild(survCont);
-    }
-
-    // Preview Đội hình trang bị (5 súng & 2 buff)
-    const loadoutPreview = new Container();
-    loadoutPreview.x = 36;
-    loadoutPreview.y = 660;
-
-    const previewBg = new Graphics();
-    previewBg.roundRect(0, 0, 648, 180, 12);
-    previewBg.fill({ color: 0x0f172a });
-    previewBg.stroke({ color: 0x334155, width: 2 });
-    loadoutPreview.addChild(previewBg);
-
-    const prevTitle = new Text({
-      text: '🎒 ĐỘI HÌNH RA TRẬN (Chỉ roll ra 5 súng & 2 buff này):',
-      style: { fontFamily: this.FONT_FAMILY, fontSize: 15, fill: '#38bdf8', fontWeight: 'bold' }
-    });
-    prevTitle.x = 20;
-    prevTitle.y = 16;
-    loadoutPreview.addChild(prevTitle);
-
-    // 5 Súng
-    this.saveData.equippedGuns.forEach((g, i) => {
-      const gCont = new Container();
-      gCont.x = 24 + i * 86;
-      gCont.y = 54;
-
-      const gBg = new Graphics();
-      gBg.roundRect(0, 0, 76, 76, 8);
-      gBg.fill({ color: 0x1e293b });
-      gBg.stroke({ color: 0x60a5fa, width: 2 });
-      gCont.addChild(gBg);
-
-      const sp = new Sprite(PixelAssetManager.getGunBarrelTexture(g, 1));
-      sp.anchor.set(0.5);
-      sp.x = 38;
-      sp.y = 38;
-      gCont.addChild(sp);
-
-      const lvl = new Text({
-        text: `Lv.${this.saveData.gunLevels[g] || 1}`,
-        style: { fontFamily: this.FONT_FAMILY, fontSize: 12, fill: '#facc15', fontWeight: 'bold' }
-      });
-      lvl.anchor.set(0.5);
-      lvl.x = 38;
-      lvl.y = 62;
-      gCont.addChild(lvl);
-
-      loadoutPreview.addChild(gCont);
-    });
-
-    // 2 Buff
-    this.saveData.equippedBuffs.forEach((b, i) => {
+    rightBadges.forEach(b => {
       const bCont = new Container();
-      bCont.x = 464 + i * 86;
-      bCont.y = 54;
+      bCont.x = 668;
+      bCont.y = b.y;
+      bCont.eventMode = 'static';
+      bCont.cursor = 'pointer';
 
-      const bBg = new Graphics();
-      bBg.roundRect(0, 0, 76, 76, 8);
-      bBg.fill({ color: 0x1e293b });
-      bBg.stroke({ color: 0xfacc15, width: 2 });
-      bCont.addChild(bBg);
-
-      const sp = new Sprite(PixelAssetManager.getBuffTexture(b, 1));
+      const sp = new Sprite(PixelAssetManager.getSideBadgeTexture(b.kind, 50));
       sp.anchor.set(0.5);
-      sp.x = 38;
-      sp.y = 38;
       bCont.addChild(sp);
 
-      const bName = new Text({
-        text: b,
-        style: { fontFamily: this.FONT_FAMILY, fontSize: 12, fill: '#ffffff', fontWeight: 'bold' }
+      if (b.hasDot) {
+        const dot = new Graphics();
+        dot.circle(18, -18, 6);
+        dot.fill({ color: 0xef4444 });
+        dot.stroke({ color: 0xffffff, width: 2 });
+        bCont.addChild(dot);
+      }
+
+      if (b.timer) {
+        const tBg = new Graphics();
+        tBg.roundRect(-26, 22, 52, 16, 4);
+        tBg.fill({ color: 0x0f172a, alpha: 0.9 });
+        tBg.stroke({ color: 0x64748b, width: 1.2 });
+        bCont.addChild(tBg);
+
+        const tTxt = new Text({
+          text: b.timer,
+          style: { fontFamily: this.FONT_FAMILY, fontSize: 9, fill: '#facc15', fontWeight: 'bold' }
+        });
+        tTxt.anchor.set(0.5);
+        tTxt.x = 0;
+        tTxt.y = 30;
+        bCont.addChild(tTxt);
+      }
+
+      bCont.on('pointerdown', () => {
+        sound.playClick();
+        alert(`✨ ${b.label}!`);
       });
-      bName.anchor.set(0.5);
-      bName.x = 38;
-      bName.y = 62;
-      bCont.addChild(bName);
 
-      loadoutPreview.addChild(bCont);
+      worldCont.addChild(bCont);
     });
 
-    this.mainMenuContainer.addChild(loadoutPreview);
+    // 4. Đền Thờ 3D Trung Tâm (Radiant Temple)
+    const templeCont = new Container();
+    templeCont.x = 360;
+    templeCont.y = 520;
 
-    // Nút BẮT ĐẦU CHIẾN ĐẤU
-    const startBattleBtn = new Container();
-    startBattleBtn.x = 120;
-    startBattleBtn.y = 1080;
-    startBattleBtn.eventMode = 'static';
-    startBattleBtn.cursor = 'pointer';
-    startBattleBtn.hitArea = new Rectangle(0, 0, 480, 84);
+    // Vầng hào quang thánh đường tỏa sáng phía sau
+    const halo = new Graphics();
+    halo.ellipse(0, -20, 200, 160);
+    halo.fill({ color: 0xfef08a, alpha: 0.18 });
+    halo.ellipse(0, -20, 140, 110);
+    halo.fill({ color: 0xffffff, alpha: 0.25 });
+    templeCont.addChild(halo);
 
-    const sBtnBg = new Graphics();
-    sBtnBg.roundRect(0, 0, 480, 84, 16);
-    sBtnBg.fill({ color: 0x16a34a });
-    sBtnBg.stroke({ color: 0x4ade80, width: 4 });
-    startBattleBtn.addChild(sBtnBg);
+    const templeSp = new Sprite(PixelAssetManager.getRadiantTempleTexture(460, 370));
+    templeSp.anchor.set(0.5);
+    templeCont.addChild(templeSp);
+    worldCont.addChild(templeCont);
 
-    const sBtnText = new Text({
-      text: '⚔ BẮT ĐẦU CHIẾN ĐẤU',
-      style: { fontFamily: this.FONT_FAMILY, fontSize: 26, fill: '#ffffff', fontWeight: 'bold' }
+    // 5. Mặt nước & Rương Cột Mốc (Milestone Chest on Dark Water)
+    const waterLevel = 750;
+    const waterG = new Graphics();
+    // Vùng nước tối huyền ảo phản chiếu
+    waterG.ellipse(360, 840, 310, 120);
+    waterG.fill({ color: 0x0f172a, alpha: 0.75 });
+    // Vòng sóng nước
+    waterG.ellipse(360, 840, 260, 80);
+    waterG.stroke({ color: 0x38bdf8, width: 2, alpha: 0.4 });
+    waterG.ellipse(360, 850, 180, 50);
+    waterG.stroke({ color: 0x60a5fa, width: 1.5, alpha: 0.3 });
+    worldCont.addChild(waterG);
+
+    // Rương Cột Mốc Tím Vàng (Milestone Chest)
+    const chestCont = new Container();
+    chestCont.x = 360;
+    chestCont.y = 835;
+    chestCont.eventMode = 'static';
+    chestCont.cursor = 'pointer';
+
+    const chestSp = new Sprite(PixelAssetManager.getMilestoneChestTexture(120, 85));
+    chestSp.anchor.set(0.5);
+    chestCont.addChild(chestSp);
+
+    // Huy hiệu "Reach 50-40" dưới rương
+    const reachBadge = new Graphics();
+    reachBadge.roundRect(-60, 36, 120, 26, 8);
+    reachBadge.fill({ color: 0x4c1d95 });
+    reachBadge.stroke({ color: 0xfacc15, width: 2 });
+    chestCont.addChild(reachBadge);
+
+    const reachTxt = new Text({
+      text: 'Reach 50-40',
+      style: { fontFamily: this.FONT_FAMILY, fontSize: 13, fill: '#fef08a', fontWeight: 'bold' }
     });
-    sBtnText.anchor.set(0.5);
-    sBtnText.x = 240;
-    sBtnText.y = 42;
-    startBattleBtn.addChild(sBtnText);
+    reachTxt.anchor.set(0.5);
+    reachTxt.x = 0;
+    reachTxt.y = 49;
+    chestCont.addChild(reachTxt);
 
-    startBattleBtn.on('pointerdown', () => {
+    chestCont.on('pointerdown', () => {
+      sound.playMerge();
+      alert('🎁 RƯƠNG THẦN THOẠI CỘT MỐC:\n• Hoàn thành Wave 50-40 để mở khóa:\n  +1000 💎 Kim Cương\n  +10,000 💰 Vàng\n  +1 Vũ Khí THIÊN THẠCH (Tier 5 Mythic)!');
+    });
+    worldCont.addChild(chestCont);
+
+    // 6. Thanh Nút Thao Tác Bên Dưới (Action Buttons Bar)
+    const actionY = 1045;
+
+    // Nút 1: Hero Patrol (Bên trái)
+    const patrolCont = new Container();
+    patrolCont.x = 85;
+    patrolCont.y = actionY;
+    patrolCont.eventMode = 'static';
+    patrolCont.cursor = 'pointer';
+
+    const patrolSp = new Sprite(PixelAssetManager.getFeatureButtonTexture(100, 100, 'SAND'));
+    patrolSp.anchor.set(0.5);
+    patrolCont.addChild(patrolSp);
+
+    const patrolTxt = new Text({
+      text: 'Hero Patrol\n04:12:00',
+      style: { fontFamily: this.FONT_FAMILY, fontSize: 11, fill: '#ffffff', align: 'center', fontWeight: 'bold', lineHeight: 14 }
+    });
+    patrolTxt.anchor.set(0.5);
+    patrolTxt.x = 0;
+    patrolTxt.y = 22;
+    patrolCont.addChild(patrolTxt);
+
+    patrolCont.on('pointerdown', () => {
+      sound.playMerge();
+      const bonusGold = 250;
+      this.saveData.permanentGold += bonusGold;
+      this.saveGame();
+      this.renderMainMenu();
+      alert(`🎁 BẠN ĐÃ THU HOẠCH PHẦN THƯỞNG TUẦN TRA (HERO PATROL):\n+${bonusGold} 💰 Vàng vĩnh viễn!`);
+    });
+    worldCont.addChild(patrolCont);
+
+    // Nút 2: NÚT PLAY 3D CHUNKY KHỔNG LỒ (Chính giữa)
+    const playCont = new Container();
+    playCont.x = 330;
+    playCont.y = actionY;
+    playCont.eventMode = 'static';
+    playCont.cursor = 'pointer';
+
+    const playSp = new Sprite(PixelAssetManager.getChunkyPlayButtonTexture(255, 95));
+    playSp.anchor.set(0.5);
+    playCont.addChild(playSp);
+
+    playCont.on('pointerdown', () => {
+      if (this.saveData.energy < 5) {
+        sound.playHit();
+        alert('⚡ Không đủ Năng lượng! Cần ít nhất 5 ⚡ để xuất trận. Hãy chờ hồi phục.');
+        return;
+      }
+
+      this.saveData.energy -= 5;
+      this.saveGame();
       sound.playMerge();
       this.startBattle();
     });
+    worldCont.addChild(playCont);
 
-    this.mainMenuContainer.addChild(startBattleBtn);
+    // Nút 3: Nút Demon Tím Nhanh (Right-Center)
+    const demonBtnCont = new Container();
+    demonBtnCont.x = 515;
+    demonBtnCont.y = actionY;
+    demonBtnCont.eventMode = 'static';
+    demonBtnCont.cursor = 'pointer';
+
+    const demonSp = new Sprite(PixelAssetManager.getFeatureButtonTexture(72, 95, 'PURPLE'));
+    demonSp.anchor.set(0.5);
+    demonBtnCont.addChild(demonSp);
+
+    demonBtnCont.on('pointerdown', () => {
+      sound.playClick();
+      alert('⚡ TÍNH NĂNG TĂNG TỐC: Tự động ghép súng thần tốc!');
+    });
+    worldCont.addChild(demonBtnCont);
+
+    // Nút 4: Nút Viễn Chinh Expedition (Bên Phải)
+    const expCont = new Container();
+    expCont.x = 635;
+    expCont.y = actionY;
+    expCont.eventMode = 'static';
+    expCont.cursor = 'pointer';
+
+    const expSp = new Sprite(PixelAssetManager.getFeatureButtonTexture(100, 100, 'MAP'));
+    expSp.anchor.set(0.5);
+    expCont.addChild(expSp);
+
+    const expTxt = new Text({
+      text: 'Expedition',
+      style: { fontFamily: this.FONT_FAMILY, fontSize: 11, fill: '#ffffff', align: 'center', fontWeight: 'bold' }
+    });
+    expTxt.anchor.set(0.5);
+    expTxt.x = 0;
+    expTxt.y = 24;
+    expCont.addChild(expTxt);
+
+    expCont.on('pointerdown', () => {
+      sound.playClick();
+      alert('🧭 VIỄN CHINH (EXPEDITION):\nChế độ leo tháp 500 tầng đang mở, nhận thần khí bánh răng!');
+    });
+    worldCont.addChild(expCont);
+
+    this.mainMenuContainer.addChild(worldCont);
   }
 
-  // --- TAB 2: LOADOUT (CHỌN 5 SÚNG & 2 BUFF) ---
-  private renderLoadoutTab() {
+  // ================= TAB 2: SHOP & GACHA CHESTS ================= //
+  private renderShopTab() {
     const cont = new Container();
     cont.x = 36;
-    cont.y = 210;
+    cont.y = 175;
 
     const title = new Text({
-      text: `CHỌN 5 LOẠI SÚNG VÀ 2 LOẠI BUFF RA TRẬN\n(Đã chọn: ${this.saveData.equippedGuns.length}/5 Súng  |  ${this.saveData.equippedBuffs.length}/2 Buff)`,
-      style: { fontFamily: this.FONT_FAMILY, fontSize: 16, fill: '#facc15', fontWeight: 'bold', align: 'center', lineHeight: 24 }
+      text: '🎰 CỬA HÀNG VẬT PHẨM & RÚT HÒM GACHA',
+      style: { fontFamily: this.FONT_FAMILY, fontSize: 22, fill: '#facc15', fontWeight: 'bold' }
     });
-    title.anchor.set(0.5, 0);
-    title.x = 324;
-    title.y = 0;
     cont.addChild(title);
 
+    const sub = new Text({
+      text: 'Mở hòm để MỞ KHÓA các loại súng Tier 2 -> Tier 5 và nhận Vàng/Kim Cương vĩnh viễn!',
+      style: { fontFamily: this.FONT_FAMILY, fontSize: 13, fill: '#94a3b8' }
+    });
+    sub.y = 30;
+    cont.addChild(sub);
+
+    // 1. Hòm Chiến Binh Bạc (Common Gear Chest - 200 Gold)
+    const commonCard = new Container();
+    commonCard.y = 65;
+
+    const cBg = new Graphics();
+    cBg.roundRect(0, 0, 648, 205, 14);
+    cBg.fill({ color: 0x1e293b });
+    cBg.stroke({ color: 0x38bdf8, width: 2.5 });
+    commonCard.addChild(cBg);
+
+    const cTitle = new Text({
+      text: '📦 HÒM BÁNH RĂNG CHIẾN BINH (200 💰)',
+      style: { fontFamily: this.FONT_FAMILY, fontSize: 18, fill: '#38bdf8', fontWeight: 'bold' }
+    });
+    cTitle.x = 24;
+    cTitle.y = 18;
+    commonCard.addChild(cTitle);
+
+    const cDesc = new Text({
+      text: '• Cơ hội mở khóa súng Tier 2 (Súng Băng CRYO, Đại Bác CANNON)!\n• Hoặc nâng cấp vĩnh viễn +1 Cấp cho súng bạn đang sở hữu.\n• Nhận 100 - 300 Vàng thưởng.',
+      style: { fontFamily: this.FONT_FAMILY, fontSize: 13, fill: '#cbd5e1', lineHeight: 22 }
+    });
+    cDesc.x = 24;
+    cDesc.y = 52;
+    commonCard.addChild(cDesc);
+
+    const cBtn = new Container();
+    cBtn.x = 24;
+    cBtn.y = 138;
+    cBtn.eventMode = 'static';
+    cBtn.cursor = 'pointer';
+    cBtn.hitArea = new Rectangle(0, 0, 260, 48);
+
+    const cBtnBg = new Graphics();
+    cBtnBg.roundRect(0, 0, 260, 48, 8);
+    cBtnBg.fill({ color: this.saveData.permanentGold >= 200 ? 0x0284c7 : 0x475569 });
+    cBtnBg.stroke({ color: 0x7dd3fc, width: 2 });
+    cBtn.addChild(cBtnBg);
+
+    const cBtnTxt = new Text({
+      text: 'MỞ HÒM (200 💰)',
+      style: { fontFamily: this.FONT_FAMILY, fontSize: 15, fill: '#ffffff', fontWeight: 'bold' }
+    });
+    cBtnTxt.anchor.set(0.5);
+    cBtnTxt.x = 130;
+    cBtnTxt.y = 24;
+    cBtn.addChild(cBtnTxt);
+
+    cBtn.on('pointerdown', () => {
+      this.rollGachaReward('COMMON');
+    });
+    commonCard.addChild(cBtn);
+    cont.addChild(commonCard);
+
+    // 2. Hòm Hoàng Gia Thần Thoại (Royal Mythic Chest - 60 Gems)
+    const royalCard = new Container();
+    royalCard.y = 290;
+
+    const rBg = new Graphics();
+    rBg.roundRect(0, 0, 648, 225, 14);
+    rBg.fill({ color: 0x2e1065 });
+    rBg.stroke({ color: 0xfacc15, width: 3 });
+    royalCard.addChild(rBg);
+
+    const rTitle = new Text({
+      text: '👑 HÒM HOÀNG GIA THẦN THOẠI (60 💎)',
+      style: { fontFamily: this.FONT_FAMILY, fontSize: 18, fill: '#facc15', fontWeight: 'bold' }
+    });
+    rTitle.x = 24;
+    rTitle.y = 18;
+    royalCard.addChild(rTitle);
+
+    const rDesc = new Text({
+      text: '• CHẮC CHẮN MỞ KHÓA SÚNG CAO CẤP TIER 2 - 5!\n  (Súng Sét TESLA, Bắn Tỉa SNIPER, Minigun, Thiên Thạch METEOR)\n• Nếu đã mở hết, nhận ngay Nâng Cấp +2 Cấp cho súng huyền thoại!\n• Nhận thêm 1,000 💰 Vàng vĩnh viễn.',
+      style: { fontFamily: this.FONT_FAMILY, fontSize: 13, fill: '#f3e8ff', lineHeight: 22 }
+    });
+    rDesc.x = 24;
+    rDesc.y = 52;
+    royalCard.addChild(rDesc);
+
+    const rBtn = new Container();
+    rBtn.x = 24;
+    rBtn.y = 158;
+    rBtn.eventMode = 'static';
+    rBtn.cursor = 'pointer';
+    rBtn.hitArea = new Rectangle(0, 0, 260, 48);
+
+    const rBtnBg = new Graphics();
+    rBtnBg.roundRect(0, 0, 260, 48, 8);
+    rBtnBg.fill({ color: this.saveData.diamonds >= 60 ? 0x9333ea : 0x475569 });
+    rBtnBg.stroke({ color: 0xfde047, width: 2 });
+    rBtn.addChild(rBtnBg);
+
+    const rBtnTxt = new Text({
+      text: 'MỞ HÒM (60 💎)',
+      style: { fontFamily: this.FONT_FAMILY, fontSize: 15, fill: '#ffffff', fontWeight: 'bold' }
+    });
+    rBtnTxt.anchor.set(0.5);
+    rBtnTxt.x = 130;
+    rBtnTxt.y = 24;
+    rBtn.addChild(rBtnTxt);
+
+    rBtn.on('pointerdown', () => {
+      this.rollGachaReward('ROYAL');
+    });
+    royalCard.addChild(rBtn);
+    cont.addChild(royalCard);
+
+    // 3. Quà Tặng Miễn Phí Mỗi Ngày (Daily Supply)
+    const dailyCard = new Container();
+    dailyCard.y = 535;
+
+    const dBg = new Graphics();
+    dBg.roundRect(0, 0, 648, 140, 14);
+    dBg.fill({ color: 0x064e3b });
+    dBg.stroke({ color: 0x34d399, width: 2 });
+    dailyCard.addChild(dBg);
+
+    const dTitle = new Text({
+      text: '🎁 TIẾP TẾ CHIẾN ĐẤU MỖI NGÀY (MIỄN PHÍ)',
+      style: { fontFamily: this.FONT_FAMILY, fontSize: 17, fill: '#34d399', fontWeight: 'bold' }
+    });
+    dTitle.x = 24;
+    dTitle.y = 16;
+    dailyCard.addChild(dTitle);
+
+    const dDesc = new Text({
+      text: 'Nhận ngay +50 💎 Kim Cương và +500 💰 Vàng để tiếp sức người chơi!',
+      style: { fontFamily: this.FONT_FAMILY, fontSize: 13, fill: '#a7f3d0' }
+    });
+    dDesc.x = 24;
+    dDesc.y = 48;
+    dailyCard.addChild(dDesc);
+
+    const dBtn = new Container();
+    dBtn.x = 24;
+    dBtn.y = 80;
+    dBtn.eventMode = 'static';
+    dBtn.cursor = 'pointer';
+    dBtn.hitArea = new Rectangle(0, 0, 260, 42);
+
+    const dBtnBg = new Graphics();
+    dBtnBg.roundRect(0, 0, 260, 42, 8);
+    dBtnBg.fill({ color: 0x059669 });
+    dBtnBg.stroke({ color: 0x6ee7b7, width: 2 });
+    dBtn.addChild(dBtnBg);
+
+    const dBtnTxt = new Text({
+      text: 'NHẬN QUÀ MIỄN PHÍ',
+      style: { fontFamily: this.FONT_FAMILY, fontSize: 14, fill: '#ffffff', fontWeight: 'bold' }
+    });
+    dBtnTxt.anchor.set(0.5);
+    dBtnTxt.x = 130;
+    dBtnTxt.y = 21;
+    dBtn.addChild(dBtnTxt);
+
+    dBtn.on('pointerdown', () => {
+      this.saveData.diamonds += 50;
+      this.saveData.permanentGold += 500;
+      this.saveGame();
+      sound.playMerge();
+      alert('🎉 BẠN ĐÃ NHẬN THÀNH CÔNG:\n+50 💎 Kim Cương\n+500 💰 Vàng Vĩnh Viễn!');
+      this.renderMainMenu();
+    });
+    dailyCard.addChild(dBtn);
+    cont.addChild(dailyCard);
+
+    this.mainMenuContainer.addChild(cont);
+  }
+
+  // Hàm xử lý Roll Gacha mở khóa súng & nâng cấp
+  private rollGachaReward(type: 'COMMON' | 'ROYAL') {
+    if (type === 'COMMON') {
+      if (this.saveData.permanentGold < 200) {
+        sound.playHit();
+        alert('Không đủ Vàng vĩnh viễn (Cần 200 💰)! Hãy vượt các Wave để thu thập thêm.');
+        return;
+      }
+      this.saveData.permanentGold -= 200;
+    } else {
+      if (this.saveData.diamonds < 60) {
+        sound.playHit();
+        alert('Không đủ Kim Cương (Cần 60 💎)!');
+        return;
+      }
+      this.saveData.diamonds -= 60;
+    }
+
     const allGuns: GunKind[] = [
-      'PISTOL', 'CROSSBOW', 'SLINGSHOT', 'CRYO', 'FLAMER',
-      'SHOTGUN', 'CANNON', 'TESLA', 'SNIPER', 'MINIGUN', 'METEOR'
+      'PISTOL', 'CROSSBOW', 'SLINGSHOT', 'SHOTGUN', 'FLAMER',
+      'CRYO', 'CANNON', 'TESLA', 'SNIPER', 'MINIGUN', 'METEOR'
     ];
 
-    const gunNames: Record<GunKind, string> = {
-      PISTOL: 'Súng Lục',
-      CROSSBOW: 'Nỏ Thép',
-      SLINGSHOT: 'Ná Cao Su',
-      CRYO: 'Súng Băng',
-      FLAMER: 'Súng Lửa',
-      SHOTGUN: 'Shotgun',
-      CANNON: 'Đại Bác',
-      TESLA: 'Súng Sét',
-      SNIPER: 'Súng Ngắm',
-      MINIGUN: 'Minigun',
-      METEOR: 'Thiên Thạch',
-    };
+    const lockedGuns = allGuns.filter(g => !this.saveData.unlockedGuns.includes(g));
+    const unlockChance = type === 'ROYAL' ? 0.9 : 0.45;
+
+    if (lockedGuns.length > 0 && Math.random() < unlockChance) {
+      // Ưu tiên mở súng cao cấp khi roll Royal
+      let pickedGun: GunKind;
+      if (type === 'ROYAL') {
+        const highTierLocked = lockedGuns.filter(g => GUN_TIERS[g] >= 3);
+        pickedGun = highTierLocked.length > 0
+          ? highTierLocked[Math.floor(Math.random() * highTierLocked.length)]
+          : lockedGuns[Math.floor(Math.random() * lockedGuns.length)];
+      } else {
+        pickedGun = lockedGuns[Math.floor(Math.random() * lockedGuns.length)];
+      }
+
+      this.saveData.unlockedGuns.push(pickedGun);
+      this.saveData.gunLevels[pickedGun] = 1;
+      const tier = GUN_TIERS[pickedGun];
+      const rarity = RARITY_CONFIGS[tier];
+
+      sound.playMerge();
+      alert(`🎉 CHÚC MỪNG BẠN ĐÃ MỞ KHÓA SÚNG MỚI!\n\n[${GUN_NAMES[pickedGun]}]\n• Phẩm chất: Tier ${tier} (${rarity.name})\n• Đã thêm vào Kho Súng Trang Bị!`);
+    } else {
+      // Nâng cấp cấp độ súng đã sở hữu
+      const myGuns = this.saveData.unlockedGuns;
+      const g = myGuns[Math.floor(Math.random() * myGuns.length)];
+      const bonusLvl = type === 'ROYAL' ? 2 : 1;
+      this.saveData.gunLevels[g] = (this.saveData.gunLevels[g] || 1) + bonusLvl;
+      const bonusGold = type === 'ROYAL' ? 1000 : 200;
+      this.saveData.permanentGold += bonusGold;
+
+      sound.playMerge();
+      alert(`🎉 PHẦN THƯỞNG HÒM GACHA:\n• Nâng cấp [${GUN_NAMES[g]}] +${bonusLvl} Cấp (Hiện Lv.${this.saveData.gunLevels[g]})!\n• Tặng kèm +${bonusGold} 💰 Vàng vĩnh viễn!`);
+    }
+
+    this.saveGame();
+    this.renderMainMenu();
+  }
+
+  // ================= TAB 3: EQUIPMENT (TRANG BỊ 5 SÚNG & KHO SÚNG) ================= //
+  private renderEquipmentTab() {
+    const cont = new Container();
+    cont.x = 36;
+    cont.y = 175;
+
+    // 1. Tiêu đề Đội hình ra trận
+    const title = new Text({
+      text: `🎒 ĐỘI HÌNH RA TRẬN (${this.saveData.equippedGuns.length}/5 Súng  |  ${this.saveData.equippedBuffs.length}/2 Buff)`,
+      style: { fontFamily: this.FONT_FAMILY, fontSize: 18, fill: '#facc15', fontWeight: 'bold' }
+    });
+    cont.addChild(title);
+
+    const sub = new Text({
+      text: 'Trong trận chiến, Bánh Răng & Roll chỉ xuất hiện 5 Súng & 2 Buff này!',
+      style: { fontFamily: this.FONT_FAMILY, fontSize: 13, fill: '#94a3b8' }
+    });
+    sub.y = 26;
+    cont.addChild(sub);
+
+    // 2. Hàng 5 Súng Đã Trang Bị
+    const equippedRow = new Container();
+    equippedRow.y = 55;
+
+    for (let i = 0; i < 5; i++) {
+      const slot = new Container();
+      slot.x = i * 86;
+
+      const gKind = this.saveData.equippedGuns[i];
+      const tier = gKind ? GUN_TIERS[gKind] : 1;
+      const rar = RARITY_CONFIGS[tier];
+
+      const sBg = new Graphics();
+      sBg.roundRect(0, 0, 80, 80, 10);
+      sBg.fill({ color: gKind ? 0x1e293b : 0x0f172a });
+      sBg.stroke({ color: gKind ? rar.color : 0x334155, width: 2.5 });
+      slot.addChild(sBg);
+
+      if (gKind) {
+        const sp = new Sprite(PixelAssetManager.getGunBarrelTexture(gKind, this.saveData.gunLevels[gKind] || 1));
+        sp.anchor.set(0.5);
+        sp.x = 40;
+        sp.y = 38;
+        slot.addChild(sp);
+
+        const lvlTxt = new Text({
+          text: `Lv.${this.saveData.gunLevels[gKind] || 1}`,
+          style: { fontFamily: this.FONT_FAMILY, fontSize: 11, fill: '#facc15', fontWeight: 'bold' }
+        });
+        lvlTxt.anchor.set(0.5);
+        lvlTxt.x = 40;
+        lvlTxt.y = 65;
+        slot.addChild(lvlTxt);
+
+        slot.eventMode = 'static';
+        slot.cursor = 'pointer';
+        slot.on('pointerdown', () => {
+          if (this.saveData.equippedGuns.length > 1) {
+            this.saveData.equippedGuns.splice(i, 1);
+            this.saveGame();
+            sound.playClick();
+            this.renderMainMenu();
+          } else {
+            alert('Bạn phải giữ lại ít nhất 1 loại súng ra trận!');
+          }
+        });
+      } else {
+        const emptyTxt = new Text({
+          text: '+\nTrống',
+          style: { fontFamily: this.FONT_FAMILY, fontSize: 12, fill: '#64748b', align: 'center', fontWeight: 'bold' }
+        });
+        emptyTxt.anchor.set(0.5);
+        emptyTxt.x = 40;
+        emptyTxt.y = 40;
+        slot.addChild(emptyTxt);
+      }
+
+      equippedRow.addChild(slot);
+    }
+
+    // 2 Buff Đã Trang Bị (Góc Phải)
+    for (let b = 0; b < 2; b++) {
+      const bSlot = new Container();
+      bSlot.x = 470 + b * 86;
+
+      const bKind = this.saveData.equippedBuffs[b];
+      const bBg = new Graphics();
+      bBg.roundRect(0, 0, 80, 80, 10);
+      bBg.fill({ color: bKind ? 0x312e81 : 0x0f172a });
+      bBg.stroke({ color: bKind ? 0xfacc15 : 0x334155, width: 2.5 });
+      bSlot.addChild(bBg);
+
+      if (bKind) {
+        const sp = new Sprite(PixelAssetManager.getBuffTexture(bKind, 1));
+        sp.anchor.set(0.5);
+        sp.x = 40;
+        sp.y = 36;
+        bSlot.addChild(sp);
+
+        const bTxt = new Text({
+          text: bKind,
+          style: { fontFamily: this.FONT_FAMILY, fontSize: 11, fill: '#ffffff', fontWeight: 'bold' }
+        });
+        bTxt.anchor.set(0.5);
+        bTxt.x = 40;
+        bTxt.y = 65;
+        bSlot.addChild(bTxt);
+      }
+
+      equippedRow.addChild(bSlot);
+    }
+
+    cont.addChild(equippedRow);
+
+    // 3. Kho Súng Tổng Thể (Inventory: 11 Loại Súng)
+    const invTitle = new Text({
+      text: `📦 BỘ SƯU TẬP SÚNG (${this.saveData.unlockedGuns.length}/11 Đã Mở Khóa):`,
+      style: { fontFamily: this.FONT_FAMILY, fontSize: 16, fill: '#38bdf8', fontWeight: 'bold' }
+    });
+    invTitle.y = 155;
+    cont.addChild(invTitle);
+
+    const allGuns: GunKind[] = [
+      'PISTOL', 'CROSSBOW', 'SLINGSHOT', 'SHOTGUN', 'FLAMER',
+      'CRYO', 'CANNON', 'TESLA', 'SNIPER', 'MINIGUN', 'METEOR'
+    ];
 
     allGuns.forEach((g, idx) => {
       const col = idx % 2;
@@ -2937,103 +3644,145 @@ export class GameEngine {
 
       const card = new Container();
       card.x = col * 330;
-      card.y = 60 + row * 92;
-      card.eventMode = 'static';
-      card.cursor = 'pointer';
-      card.hitArea = new Rectangle(0, 0, 318, 80);
+      card.y = 190 + row * 82;
+      card.hitArea = new Rectangle(0, 0, 318, 74);
 
+      const isUnlocked = this.saveData.unlockedGuns.includes(g);
       const isEquipped = this.saveData.equippedGuns.includes(g);
+      const tier = GUN_TIERS[g];
+      const rar = RARITY_CONFIGS[tier];
+      const lvl = this.saveData.gunLevels[g] || 1;
+
       const bg = new Graphics();
-      bg.roundRect(0, 0, 318, 80, 10);
-      bg.fill({ color: isEquipped ? 0x14532d : 0x1e293b });
-      bg.stroke({ color: isEquipped ? 0x4ade80 : 0x475569, width: isEquipped ? 3 : 1.5 });
+      bg.roundRect(0, 0, 318, 74, 10);
+      bg.fill({ color: isUnlocked ? (isEquipped ? 0x14532d : 0x1e293b) : 0x0f172a });
+      bg.stroke({ color: isUnlocked ? rar.color : 0x334155, width: isEquipped ? 3 : 1.5 });
       card.addChild(bg);
 
-      const icon = new Sprite(PixelAssetManager.getGunBarrelTexture(g, 1));
+      // Icon súng
+      const icon = new Sprite(PixelAssetManager.getGunBarrelTexture(g, lvl));
       icon.anchor.set(0.5);
-      icon.x = 42;
-      icon.y = 40;
+      icon.x = 40;
+      icon.y = 37;
+      if (!isUnlocked) icon.alpha = 0.4;
       card.addChild(icon);
 
+      // Tên súng & Tier
       const nameTxt = new Text({
-        text: `${gunNames[g]} (Lv.${this.saveData.gunLevels[g] || 1})`,
-        style: { fontFamily: this.FONT_FAMILY, fontSize: 15, fill: '#ffffff', fontWeight: 'bold' }
+        text: `${GUN_NAMES[g]} ${isUnlocked ? `Lv.${lvl}` : '🔒'}`,
+        style: { fontFamily: this.FONT_FAMILY, fontSize: 14, fill: isUnlocked ? rar.hex : '#64748b', fontWeight: 'bold' }
       });
-      nameTxt.x = 88;
-      nameTxt.y = 16;
+      nameTxt.x = 80;
+      nameTxt.y = 12;
       card.addChild(nameTxt);
 
-      const statusTxt = new Text({
-        text: isEquipped ? '✔ ĐÃ TRANG BỊ' : '+ BẤM ĐỂ CHỌN',
-        style: { fontFamily: this.FONT_FAMILY, fontSize: 13, fill: isEquipped ? '#86efac' : '#94a3b8' }
+      const tierTxt = new Text({
+        text: `Tier ${tier} [${rar.name}]`,
+        style: { fontFamily: this.FONT_FAMILY, fontSize: 11, fill: isUnlocked ? '#94a3b8' : '#475569' }
       });
-      statusTxt.x = 88;
-      statusTxt.y = 44;
-      card.addChild(statusTxt);
+      tierTxt.x = 80;
+      tierTxt.y = 32;
+      card.addChild(tierTxt);
 
-      card.on('pointerdown', () => {
-        if (isEquipped) {
-          if (this.saveData.equippedGuns.length > 1) {
-            this.saveData.equippedGuns = this.saveData.equippedGuns.filter(item => item !== g);
-          }
-        } else {
-          if (this.saveData.equippedGuns.length < 5) {
-            this.saveData.equippedGuns.push(g);
+      if (isUnlocked) {
+        // Nút Trang Bị / Tháo Gỡ
+        const eqBtn = new Container();
+        eqBtn.x = 210;
+        eqBtn.y = 16;
+        eqBtn.eventMode = 'static';
+        eqBtn.cursor = 'pointer';
+        eqBtn.hitArea = new Rectangle(0, 0, 95, 42);
+
+        const btnBg = new Graphics();
+        btnBg.roundRect(0, 0, 95, 42, 6);
+        btnBg.fill({ color: isEquipped ? 0x16a34a : 0x0284c7 });
+        btnBg.stroke({ color: isEquipped ? 0x4ade80 : 0x38bdf8, width: 1.5 });
+        eqBtn.addChild(btnBg);
+
+        const btnTxt = new Text({
+          text: isEquipped ? 'ĐANG DÙNG\n(Gỡ)' : '+ TRANG BỊ',
+          style: { fontFamily: this.FONT_FAMILY, fontSize: 11, fill: '#ffffff', align: 'center', fontWeight: 'bold' }
+        });
+        btnTxt.anchor.set(0.5);
+        btnTxt.x = 47;
+        btnTxt.y = 21;
+        eqBtn.addChild(btnTxt);
+
+        eqBtn.on('pointerdown', () => {
+          if (isEquipped) {
+            if (this.saveData.equippedGuns.length > 1) {
+              this.saveData.equippedGuns = this.saveData.equippedGuns.filter(item => item !== g);
+            } else {
+              alert('Cần ít nhất 1 súng trong đội hình!');
+              return;
+            }
           } else {
-            // Thay thế súng cuối
-            this.saveData.equippedGuns.shift();
-            this.saveData.equippedGuns.push(g);
+            if (this.saveData.equippedGuns.length < 5) {
+              this.saveData.equippedGuns.push(g);
+            } else {
+              this.saveData.equippedGuns.shift();
+              this.saveData.equippedGuns.push(g);
+            }
           }
-        }
-        this.saveGame();
-        sound.playClick();
-        this.renderMainMenu();
-      });
+          this.saveGame();
+          sound.playClick();
+          this.renderMainMenu();
+        });
+
+        card.addChild(eqBtn);
+      } else {
+        const lockTxt = new Text({
+          text: '🔒 Quay Gacha\nđể mở khóa',
+          style: { fontFamily: this.FONT_FAMILY, fontSize: 11, fill: '#ef4444', align: 'center', fontWeight: 'bold' }
+        });
+        lockTxt.x = 210;
+        lockTxt.y = 18;
+        card.addChild(lockTxt);
+      }
 
       cont.addChild(card);
     });
 
-    // 4 Buffs
-    const buffCont = new Container();
-    buffCont.y = 660;
+    // 4. Chọn 2 Buff bên dưới
+    const buffSection = new Container();
+    buffSection.y = 695;
 
-    const buffTitle = new Text({
-      text: 'CHỌN 2 LOẠI BUFF:',
-      style: { fontFamily: this.FONT_FAMILY, fontSize: 16, fill: '#38bdf8', fontWeight: 'bold' }
+    const bTitle = new Text({
+      text: '✨ CHỌN 2 LOẠI BUFF RA TRẬN:',
+      style: { fontFamily: this.FONT_FAMILY, fontSize: 15, fill: '#facc15', fontWeight: 'bold' }
     });
-    buffTitle.x = 0;
-    buffCont.addChild(buffTitle);
+    buffSection.addChild(bTitle);
 
     const allBuffs: BuffKind[] = ['DMG', 'SPEED', 'FILL', 'CRIT'];
-    const buffNames: Record<BuffKind, string> = {
-      DMG: 'Buff DMG',
-      SPEED: 'Buff Tốc',
-      FILL: 'Buff Nạp',
-      CRIT: 'Buff Crit',
+    const bNames: Record<BuffKind, string> = {
+      DMG: 'Buff Sát Thương',
+      SPEED: 'Buff Tốc Độ Cò',
+      FILL: 'Buff Nạp Năng Lượng',
+      CRIT: 'Buff Bạo Kích',
     };
 
     allBuffs.forEach((b, i) => {
       const bCard = new Container();
       bCard.x = i * 164;
-      bCard.y = 36;
+      bCard.y = 30;
       bCard.eventMode = 'static';
       bCard.cursor = 'pointer';
-      bCard.hitArea = new Rectangle(0, 0, 154, 76);
+      bCard.hitArea = new Rectangle(0, 0, 154, 60);
 
       const isEquipped = this.saveData.equippedBuffs.includes(b);
       const bBg = new Graphics();
-      bBg.roundRect(0, 0, 154, 76, 8);
+      bBg.roundRect(0, 0, 154, 60, 8);
       bBg.fill({ color: isEquipped ? 0x713f12 : 0x1e293b });
-      bBg.stroke({ color: isEquipped ? 0xfacc15 : 0x475569, width: isEquipped ? 3 : 1.5 });
+      bBg.stroke({ color: isEquipped ? 0xfacc15 : 0x475569, width: isEquipped ? 2.5 : 1.5 });
       bCard.addChild(bBg);
 
       const bTxt = new Text({
-        text: `${buffNames[b]}\n${isEquipped ? '✔ DÙNG' : '+ CHỌN'}`,
-        style: { fontFamily: this.FONT_FAMILY, fontSize: 14, fill: '#ffffff', align: 'center', fontWeight: 'bold', lineHeight: 20 }
+        text: `${bNames[b]}\n${isEquipped ? '✔ ĐÃ CHỌN' : '+ DÙNG'}`,
+        style: { fontFamily: this.FONT_FAMILY, fontSize: 12, fill: '#ffffff', align: 'center', fontWeight: 'bold', lineHeight: 18 }
       });
       bTxt.anchor.set(0.5);
       bTxt.x = 77;
-      bTxt.y = 38;
+      bTxt.y = 30;
       bCard.addChild(bTxt);
 
       bCard.on('pointerdown', () => {
@@ -3054,174 +3803,336 @@ export class GameEngine {
         this.renderMainMenu();
       });
 
-      buffCont.addChild(bCard);
+      buffSection.addChild(bCard);
     });
 
-    cont.addChild(buffCont);
+    cont.addChild(buffSection);
     this.mainMenuContainer.addChild(cont);
   }
 
-  // --- TAB 3: WORKSHOP & GACHA ---
-  private renderWorkshopTab() {
+  // ================= TAB 4: TALENT (THIÊN PHÚ THÀNH TRÌ) ================= //
+  private renderTalentTab() {
     const cont = new Container();
     cont.x = 36;
-    cont.y = 215;
+    cont.y = 175;
 
-    // 1. Gacha Machine Card
-    const gachaCard = new Container();
-    const gBg = new Graphics();
-    gBg.roundRect(0, 0, 648, 170, 14);
-    gBg.fill({ color: 0x312e81 });
-    gBg.stroke({ color: 0x818cf8, width: 3 });
-    gachaCard.addChild(gBg);
-
-    const gTitle = new Text({
-      text: '🎰 VÒNG QUAY BÁNH RĂNG THẦN BÍ (25 💎)',
-      style: { fontFamily: this.FONT_FAMILY, fontSize: 20, fill: '#facc15', fontWeight: 'bold' }
+    const title = new Text({
+      text: '🏛 THIÊN PHÚ THÀNH TRÌ (TALENT TREE)',
+      style: { fontFamily: this.FONT_FAMILY, fontSize: 22, fill: '#facc15', fontWeight: 'bold' }
     });
-    gTitle.x = 24;
-    gTitle.y = 20;
-    gachaCard.addChild(gTitle);
+    cont.addChild(title);
 
-    const gDesc = new Text({
-      text: 'Quay ngẫu nhiên: Nhận 100 - 350$ Vàng vĩnh viễn hoặc Nâng Cấp Miễn Phí 1 Súng!',
-      style: { fontFamily: this.FONT_FAMILY, fontSize: 14, fill: '#c7d2fe' }
+    const sub = new Text({
+      text: 'Nâng cấp vĩnh viễn sức mạnh Thành Trì và Kinh tế bằng Vàng vĩnh viễn 💰',
+      style: { fontFamily: this.FONT_FAMILY, fontSize: 13, fill: '#94a3b8' }
     });
-    gDesc.x = 24;
-    gDesc.y = 56;
-    gachaCard.addChild(gDesc);
+    sub.y = 30;
+    cont.addChild(sub);
 
-    // Nút Gacha
-    const gBtn = new Container();
-    gBtn.x = 24;
-    gBtn.y = 96;
-    gBtn.eventMode = 'static';
-    gBtn.cursor = 'pointer';
-    gBtn.hitArea = new Rectangle(0, 0, 240, 50);
+    const talents = this.saveData.talents || {
+      hpLevel: 0,
+      armorLevel: 0,
+      startGoldLevel: 0,
+      bountyLevel: 0,
+    };
 
-    const gBtnBg = new Graphics();
-    gBtnBg.roundRect(0, 0, 240, 50, 8);
-    gBtnBg.fill({ color: 0x4f46e5 });
-    gBtnBg.stroke({ color: 0xa5b4fc, width: 2 });
-    gBtn.addChild(gBtnBg);
-
-    const gBtnTxt = new Text({
-      text: 'QUAY NGAY (25 💎)',
-      style: { fontFamily: this.FONT_FAMILY, fontSize: 16, fill: '#ffffff', fontWeight: 'bold' }
-    });
-    gBtnTxt.anchor.set(0.5);
-    gBtnTxt.x = 120;
-    gBtnTxt.y = 25;
-    gBtn.addChild(gBtnTxt);
-
-    gBtn.on('pointerdown', () => {
-      if (this.saveData.diamonds < 25) {
-        sound.playHit();
-        alert('Không đủ Kim Cương! Hãy chiến thắng các ván để nhận thêm Kim Cương.');
-        return;
-      }
-
-      this.saveData.diamonds -= 25;
-      const isUpgrade = Math.random() < 0.4;
-
-      if (isUpgrade) {
-        const allGuns: GunKind[] = [
-          'PISTOL', 'CROSSBOW', 'SLINGSHOT', 'CRYO', 'FLAMER',
-          'SHOTGUN', 'CANNON', 'TESLA', 'SNIPER', 'MINIGUN', 'METEOR'
-        ];
-        const g = allGuns[Math.floor(Math.random() * allGuns.length)];
-        this.saveData.gunLevels[g] = (this.saveData.gunLevels[g] || 1) + 1;
-        sound.playMerge();
-        alert(`🎉 CHÚC MỪNG: Bạn nhận được nâng cấp vĩnh viễn cho [${g}] lên Lv.${this.saveData.gunLevels[g]}!`);
-      } else {
-        const rewardGold = 100 + Math.floor(Math.random() * 250);
-        this.saveData.permanentGold += rewardGold;
-        sound.playMerge();
-        alert(`🎉 CHÚC MỪNG: Bạn trúng thưởng +${rewardGold}$ Vàng vĩnh viễn!`);
-      }
-
-      this.saveGame();
-      this.renderMainMenu();
-    });
-
-    gachaCard.addChild(gBtn);
-    cont.addChild(gachaCard);
-
-    // 2. Danh sách nâng cấp súng
-    const upTitle = new Text({
-      text: '🔧 NÂNG CẤP SỨNG VĨNH VIỄN (+15% SÁT THƯƠNG / CẤP):',
-      style: { fontFamily: this.FONT_FAMILY, fontSize: 16, fill: '#38bdf8', fontWeight: 'bold' }
-    });
-    upTitle.y = 195;
-    cont.addChild(upTitle);
-
-    const allGuns: GunKind[] = [
-      'PISTOL', 'CROSSBOW', 'SLINGSHOT', 'CRYO', 'FLAMER',
-      'SHOTGUN', 'CANNON', 'TESLA', 'SNIPER', 'MINIGUN', 'METEOR'
+    const talentList: {
+      key: keyof typeof talents;
+      title: string;
+      desc: (lvl: number) => string;
+      cost: (lvl: number) => number;
+      maxLvl: number;
+    }[] = [
+      {
+        key: 'hpLevel',
+        title: '❤️ MÁU THÀNH TRÌ (FORTRESS HP)',
+        desc: (lvl) => `Tăng +50 Máu tối đa mỗi cấp (Hiện tại: +${lvl * 50} HP)`,
+        cost: (lvl) => (lvl + 1) * 80,
+        maxLvl: 20,
+      },
+      {
+        key: 'armorLevel',
+        title: '🛡 GIÁP THÉP KIÊN CỐ (ARMOR)',
+        desc: (lvl) => `Giảm 5% sát thương nhận vào từ quái mỗi cấp (Hiện tại: -${lvl * 5}%)`,
+        cost: (lvl) => (lvl + 1) * 100,
+        maxLvl: 10,
+      },
+      {
+        key: 'startGoldLevel',
+        title: '💰 NGÂN KHỐ KHỞI ĐIỂM (STARTING GOLD)',
+        desc: (lvl) => `Tăng +5 Vàng mỗi khi bắt đầu ván mới (Hiện tại: +${lvl * 5} Vàng)`,
+        cost: (lvl) => (lvl + 1) * 120,
+        maxLvl: 10,
+      },
+      {
+        key: 'bountyLevel',
+        title: '🎯 THỢ SĂN TIỀN THƯỞNG (BOUNTY)',
+        desc: (lvl) => `Tăng +10% Vàng rơi ra khi hạ gục quái (Hiện tại: +${lvl * 10}%)`,
+        cost: (lvl) => (lvl + 1) * 150,
+        maxLvl: 10,
+      },
     ];
 
-    allGuns.forEach((g, idx) => {
-      const row = idx;
-      const uCard = new Container();
-      uCard.y = 230 + row * 62;
+    talentList.forEach((t, idx) => {
+      const card = new Container();
+      card.y = 65 + idx * 135;
+
+      const lvl = talents[t.key] || 0;
+      const isMax = lvl >= t.maxLvl;
+      const cost = t.cost(lvl);
+      const canAfford = this.saveData.permanentGold >= cost && !isMax;
 
       const bg = new Graphics();
-      bg.roundRect(0, 0, 648, 54, 8);
+      bg.roundRect(0, 0, 648, 120, 14);
       bg.fill({ color: 0x1e293b });
-      bg.stroke({ color: 0x334155, width: 1.5 });
-      uCard.addChild(bg);
+      bg.stroke({ color: 0x475569, width: 2 });
+      card.addChild(bg);
 
-      const lvl = this.saveData.gunLevels[g] || 1;
-      const cost = lvl * 30;
-
-      const nameTxt = new Text({
-        text: `${g} (Cấp ${lvl}) • +${(lvl - 1) * 15}% DMG`,
-        style: { fontFamily: this.FONT_FAMILY, fontSize: 15, fill: '#ffffff', fontWeight: 'bold' }
+      const tTitle = new Text({
+        text: `${t.title} [Cấp ${lvl}/${t.maxLvl}]`,
+        style: { fontFamily: this.FONT_FAMILY, fontSize: 16, fill: '#38bdf8', fontWeight: 'bold' }
       });
-      nameTxt.x = 20;
-      nameTxt.y = 16;
-      uCard.addChild(nameTxt);
+      tTitle.x = 20;
+      tTitle.y = 16;
+      card.addChild(tTitle);
 
+      const tDesc = new Text({
+        text: t.desc(lvl),
+        style: { fontFamily: this.FONT_FAMILY, fontSize: 13, fill: '#cbd5e1' }
+      });
+      tDesc.x = 20;
+      tDesc.y = 44;
+      card.addChild(tDesc);
+
+      // Thanh tiến trình nhỏ
+      const barBg = new Graphics();
+      barBg.roundRect(20, 75, 360, 18, 5);
+      barBg.fill({ color: 0x0f172a });
+      const fillW = Math.round(360 * (lvl / t.maxLvl));
+      if (fillW > 0) {
+        barBg.roundRect(20, 75, fillW, 18, 5);
+        barBg.fill({ color: 0x22c55e });
+      }
+      card.addChild(barBg);
+
+      // Nút Nâng Cấp
       const upBtn = new Container();
       upBtn.x = 440;
-      upBtn.y = 8;
+      upBtn.y = 35;
       upBtn.eventMode = 'static';
-      upBtn.cursor = 'pointer';
-      upBtn.hitArea = new Rectangle(0, 0, 190, 38);
+      upBtn.cursor = canAfford ? 'pointer' : 'not-allowed';
+      upBtn.hitArea = new Rectangle(0, 0, 190, 52);
 
-      const canBuy = this.saveData.permanentGold >= cost;
-      const btnBg = new Graphics();
-      btnBg.roundRect(0, 0, 190, 38, 6);
-      btnBg.fill({ color: canBuy ? 0x16a34a : 0x475569 });
-      upBtn.addChild(btnBg);
+      const uBg = new Graphics();
+      uBg.roundRect(0, 0, 190, 52, 10);
+      uBg.fill({ color: isMax ? 0x334155 : (canAfford ? 0x16a34a : 0x475569) });
+      uBg.stroke({ color: isMax ? 0x64748b : (canAfford ? 0x4ade80 : 0x64748b), width: 2 });
+      upBtn.addChild(uBg);
 
-      const btnTxt = new Text({
-        text: `NÂNG (${cost}$)`,
-        style: { fontFamily: this.FONT_FAMILY, fontSize: 13, fill: '#ffffff', fontWeight: 'bold' }
+      const uTxt = new Text({
+        text: isMax ? 'TỐI ĐA' : `NÂNG (${cost} 💰)`,
+        style: { fontFamily: this.FONT_FAMILY, fontSize: 14, fill: '#ffffff', fontWeight: 'bold' }
       });
-      btnTxt.anchor.set(0.5);
-      btnTxt.x = 95;
-      btnTxt.y = 19;
-      upBtn.addChild(btnTxt);
+      uTxt.anchor.set(0.5);
+      uTxt.x = 95;
+      uTxt.y = 26;
+      upBtn.addChild(uTxt);
 
-      upBtn.on('pointerdown', () => {
-        if (this.saveData.permanentGold < cost) {
-          sound.playHit();
-          alert('Không đủ Vàng vĩnh viễn!');
-          return;
-        }
+      if (canAfford) {
+        upBtn.on('pointerdown', () => {
+          this.saveData.permanentGold -= cost;
+          if (!this.saveData.talents) {
+            this.saveData.talents = { hpLevel: 0, armorLevel: 0, startGoldLevel: 0, bountyLevel: 0 };
+          }
+          this.saveData.talents[t.key] = lvl + 1;
+          this.saveGame();
+          sound.playMerge();
+          this.renderMainMenu();
+        });
+      }
 
-        this.saveData.permanentGold -= cost;
-        this.saveData.gunLevels[g] = lvl + 1;
-        this.saveGame();
-        sound.playMerge();
+      card.addChild(upBtn);
+      cont.addChild(card);
+    });
+
+    this.mainMenuContainer.addChild(cont);
+  }
+
+  // ================= TAB 5: MODES (CHỌN CHẾ ĐỘ & BẢN ĐỒ CHIẾN ĐẤU) ================= //
+  private renderModesTab() {
+    const cont = new Container();
+    cont.x = 36;
+    cont.y = 175;
+
+    // Chuyển đổi giữa Chiến Dịch & Sinh Tồn
+    const modeTabs: { mode: GameMode; label: string }[] = [
+      { mode: 'CAMPAIGN', label: '🛡 CHIẾN DỊCH (10 Wave)' },
+      { mode: 'SURVIVAL', label: '💀 SINH TỒN (Vô Tận)' },
+    ];
+
+    modeTabs.forEach((m, idx) => {
+      const btn = new Container();
+      btn.x = idx * 330;
+      btn.y = 0;
+      btn.eventMode = 'static';
+      btn.cursor = 'pointer';
+      btn.hitArea = new Rectangle(0, 0, 318, 52);
+
+      const isCurrent = this.gameMode === m.mode;
+      const bg = new Graphics();
+      bg.roundRect(0, 0, 318, 52, 10);
+      bg.fill({ color: isCurrent ? 0x059669 : 0x1e293b });
+      bg.stroke({ color: isCurrent ? 0x34d399 : 0x475569, width: 2 });
+      btn.addChild(bg);
+
+      const text = new Text({
+        text: m.label,
+        style: { fontFamily: this.FONT_FAMILY, fontSize: 15, fill: '#ffffff', fontWeight: 'bold' }
+      });
+      text.anchor.set(0.5);
+      text.x = 159;
+      text.y = 26;
+      btn.addChild(text);
+
+      btn.on('pointerdown', () => {
+        this.gameMode = m.mode;
+        sound.playClick();
         this.renderMainMenu();
       });
 
-      uCard.addChild(upBtn);
-      cont.addChild(uCard);
+      cont.addChild(btn);
     });
 
+    // Danh sách bản đồ
+    if (this.gameMode === 'CAMPAIGN') {
+      const mapContainer = new Container();
+      mapContainer.y = 75;
+
+      const maps = [
+        { id: 1, name: 'Map 1: Rừng Bánh Răng', desc: '10 Wave • Độ khó chuẩn • Quái cơ bản', unlocked: true },
+        { id: 2, name: 'Map 2: Thành Trì Thép', desc: '10 Wave • Quái Thiết Giáp +20% HP', unlocked: this.saveData.highestCampaignStage >= 2 },
+        { id: 3, name: 'Map 3: Núi Lửa Cơ Khí', desc: '10 Wave • Quái Nham Thạch +40% HP & Boss Lửa', unlocked: this.saveData.highestCampaignStage >= 3 },
+      ];
+
+      maps.forEach((mp, idx) => {
+        const card = new Container();
+        card.y = idx * 115;
+        card.eventMode = 'static';
+        card.cursor = mp.unlocked ? 'pointer' : 'not-allowed';
+        card.hitArea = new Rectangle(0, 0, 648, 100);
+
+        const isSelected = this.saveData.selectedCampaignMap === mp.id;
+        const bg = new Graphics();
+        bg.roundRect(0, 0, 648, 100, 12);
+        bg.fill({ color: isSelected ? 0x1e3a8a : (mp.unlocked ? 0x1e293b : 0x0f172a) });
+        bg.stroke({ color: isSelected ? 0x38bdf8 : (mp.unlocked ? 0x475569 : 0x334155), width: isSelected ? 3 : 1.5 });
+        card.addChild(bg);
+
+        const nameTxt = new Text({
+          text: mp.name + (mp.unlocked ? (isSelected ? ' (ĐANG CHỌN)' : '') : ' 🔒 (Khóa)'),
+          style: { fontFamily: this.FONT_FAMILY, fontSize: 17, fill: mp.unlocked ? '#facc15' : '#64748b', fontWeight: 'bold' }
+        });
+        nameTxt.x = 24;
+        nameTxt.y = 20;
+        card.addChild(nameTxt);
+
+        const descTxt = new Text({
+          text: mp.desc,
+          style: { fontFamily: this.FONT_FAMILY, fontSize: 13, fill: '#94a3b8' }
+        });
+        descTxt.x = 24;
+        descTxt.y = 56;
+        card.addChild(descTxt);
+
+        if (mp.unlocked) {
+          card.on('pointerdown', () => {
+            this.saveData.selectedCampaignMap = mp.id;
+            this.saveGame();
+            sound.playClick();
+            this.renderMainMenu();
+          });
+        }
+
+        mapContainer.addChild(card);
+      });
+
+      cont.addChild(mapContainer);
+    } else {
+      // Survival info card
+      const survCont = new Container();
+      survCont.y = 75;
+
+      const survBg = new Graphics();
+      survBg.roundRect(0, 0, 648, 330, 16);
+      survBg.fill({ color: 0x1e1b4b });
+      survBg.stroke({ color: 0x818cf8, width: 3 });
+      survCont.addChild(survBg);
+
+      const survTitle = new Text({
+        text: '💀 ĐẤU TRƯỜNG SINH TỒN VÔ TẬN',
+        style: { fontFamily: this.FONT_FAMILY, fontSize: 22, fill: '#facc15', fontWeight: 'bold' }
+      });
+      survTitle.anchor.set(0.5);
+      survTitle.x = 324;
+      survTitle.y = 45;
+      survCont.addChild(survTitle);
+
+      const survDesc = new Text({
+        text: '• Quái tràn ngập vô tận, cứ mỗi 10 Wave sẽ xuất hiện 1 Đại Trùm!\n• Càng sống lâu càng rơi nhiều Vàng 💰 và Kim Cương 💎!\n• Tinh hoa chiến thuật bánh răng thử thách giới hạn của bạn.',
+        style: { fontFamily: this.FONT_FAMILY, fontSize: 15, fill: '#e0e7ff', lineHeight: 28 }
+      });
+      survDesc.x = 36;
+      survDesc.y = 90;
+      survCont.addChild(survDesc);
+
+      const highWaveText = new Text({
+        text: `🏆 KỶ LỤC CỦA BẠN: WAVE ${this.saveData.highestSurvivalWave}`,
+        style: { fontFamily: this.FONT_FAMILY, fontSize: 20, fill: '#34d399', fontWeight: 'bold' }
+      });
+      highWaveText.anchor.set(0.5);
+      highWaveText.x = 324;
+      highWaveText.y = 265;
+      survCont.addChild(highWaveText);
+
+      cont.addChild(survCont);
+    }
+
+    // Nút Bắt Đầu Xuất Trận
+    const startBtn = new Container();
+    startBtn.x = 84;
+    startBtn.y = 520;
+    startBtn.eventMode = 'static';
+    startBtn.cursor = 'pointer';
+    startBtn.hitArea = new Rectangle(0, 0, 480, 72);
+
+    const sBtnBg = new Graphics();
+    sBtnBg.roundRect(0, 0, 480, 72, 14);
+    sBtnBg.fill({ color: 0x16a34a });
+    sBtnBg.stroke({ color: 0x4ade80, width: 3 });
+    startBtn.addChild(sBtnBg);
+
+    const sBtnTxt = new Text({
+      text: '⚔ XUẤT TRẬN NGAY (⚡ x5)',
+      style: { fontFamily: this.FONT_FAMILY, fontSize: 22, fill: '#ffffff', fontWeight: 'bold' }
+    });
+    sBtnTxt.anchor.set(0.5);
+    sBtnTxt.x = 240;
+    sBtnTxt.y = 36;
+    startBtn.addChild(sBtnTxt);
+
+    startBtn.on('pointerdown', () => {
+      if (this.saveData.energy < 5) {
+        sound.playHit();
+        alert('⚡ Không đủ Năng lượng! Cần ít nhất 5 ⚡.');
+        return;
+      }
+      this.saveData.energy -= 5;
+      this.saveGame();
+      sound.playMerge();
+      this.startBattle();
+    });
+
+    cont.addChild(startBtn);
     this.mainMenuContainer.addChild(cont);
   }
 
@@ -3238,8 +4149,9 @@ export class GameEngine {
 
     this.wave = 1;
     this.maxWave = this.gameMode === 'CAMPAIGN' ? 10 : 999;
+    this.maxCastleHp = 100 + (this.saveData.talents?.hpLevel || 0) * 50;
     this.castleHp = this.maxCastleHp;
-    this.gold = 15;
+    this.gold = 15 + (this.saveData.talents?.startGoldLevel || 0) * 5;
     this.rollCount = 0;
     this.rollPrice = 2;
 

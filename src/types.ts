@@ -140,12 +140,24 @@ export interface FloatingText {
 export type GameMode = 'CAMPAIGN' | 'SURVIVAL';
 
 export interface UserSaveData {
+  saveVersion?: number;
   diamonds: number;
   permanentGold: number;
+  energy: number;
+  maxEnergy: number;
+  playerLevel: number;
+  playerExp: number;
+  unlockedGuns: GunKind[];
   equippedGuns: GunKind[]; // Tối đa 5 súng
   equippedBuffs: BuffKind[]; // Tối đa 2 buff
-  gunLevels: Record<GunKind, number>; // Level nâng cấp vĩnh viễn (1-10)
+  gunLevels: Record<GunKind, number>; // Level nâng cấp vĩnh viễn (0 = Chưa mở khóa, 1-10)
   selectedCampaignMap: number; // 1, 2, 3
   highestCampaignStage: number;
   highestSurvivalWave: number;
+  talents?: {
+    hpLevel: number;
+    armorLevel: number;
+    startGoldLevel: number;
+    bountyLevel: number;
+  };
 }

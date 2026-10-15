@@ -1,4 +1,4 @@
-// Định nghĩa kiểu dữ liệu cho Gear Gun Castle
+// Định nghĩa kiểu dữ liệu cho Gear Gun Castle (High-Res 720x1280)
 
 export type ItemType = 'TRIGGER' | 'GUN' | 'BUFF' | 'RANDOM';
 
@@ -18,12 +18,13 @@ export interface GridItem {
   fillPerHit: number;
   damage: number;
   rangeType: 'LANE' | 'SPREAD' | 'GLOBAL' | 'SHORT';
-  recoilOffset: number; // Visual juice
+  recoilOffset: number;
+  turretAngle: number; // Góc xoay của nòng súng (Radian) chĩa thẳng vào quái
 
   // Dành riêng cho TRIGGER (Cò)
   angle: number; // Góc hiện tại (độ: 0 - 360)
-  rotationSpeed: number; // Vòng / giây (ví dụ 1.5)
-  lastHitAngle: number[]; // Lưu các mốc đã trigger
+  rotationSpeed: number; // Vòng / giây
+  lastHitAngle: number[];
 
   // Dành riêng cho BUFF
   buffKind?: BuffKind;
@@ -50,13 +51,15 @@ export interface Bullet {
   element: 'NORMAL' | 'ICE' | 'FIRE' | 'ELECTRIC' | 'EXPLOSIVE';
   active: boolean;
   radius: number;
+  angle: number;
 }
 
 export interface Enemy {
   id: number;
   x: number;
   y: number;
-  lane: number; // 0 to 4
+  targetX: number;
+  targetY: number;
   maxHp: number;
   hp: number;
   speed: number;

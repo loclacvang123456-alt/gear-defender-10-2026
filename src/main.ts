@@ -6,33 +6,31 @@ async function bootstrap() {
 
   const app = new Application();
   await app.init({
-    width: 360,
-    height: 640,
+    width: 720,
+    height: 1280,
     backgroundColor: 0x090a0f,
     resolution: Math.min(window.devicePixelRatio || 1, 2),
     autoDensity: true,
-    antialias: false,
+    antialias: true, // Mịn màng sắc nét
   });
 
   container.appendChild(app.canvas);
 
-  // Resize canvas giữ đúng tỉ lệ 9:16 trên mọi kích thước màn hình
+  // Resize canvas giữ đúng tỉ lệ 9:16 sắc nét trên mọi thiết bị
   function resizeGame() {
     const windowWidth = window.innerWidth;
     const windowHeight = window.innerHeight;
 
-    const targetRatio = 360 / 640;
+    const targetRatio = 720 / 1280;
     const windowRatio = windowWidth / windowHeight;
 
     let finalW: number;
     let finalH: number;
 
     if (windowRatio > targetRatio) {
-      // Màn hình rộng (PC / Tablet ngang)
       finalH = windowHeight;
       finalW = finalH * targetRatio;
     } else {
-      // Màn hình hẹp (Điện thoại dọc)
       finalW = windowWidth;
       finalH = finalW / targetRatio;
     }

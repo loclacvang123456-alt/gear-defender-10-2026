@@ -162,6 +162,8 @@ export class GameEngine {
   private gridContainer: Container;
   private gridBgLayer!: Container;
   private gridItemsLayer!: Container;
+  private gridHighlightLayer!: Container;
+  private animTime: number = 0;
   private enemyContainer: Container;
   private bulletContainer: Container;
   private fxContainer: Container;
@@ -321,8 +323,10 @@ export class GameEngine {
     this.gridBgLayer = new Container();
     this.gridItemsLayer = new Container();
     this.gridItemsLayer.sortableChildren = true; // Cò nẫy vươn dài (zIndex 10) luôn vẽ trên bánh răng và súng
+    this.gridHighlightLayer = new Container(); // Layer viền nổi trên cùng, không bị che khuất bởi súng hay bánh răng
     this.gridContainer.addChild(this.gridBgLayer);
     this.gridContainer.addChild(this.gridItemsLayer);
+    this.gridContainer.addChild(this.gridHighlightLayer);
 
     for (let r = 0; r < this.ROWS; r++) {
       this.grid[r] = [];
@@ -356,17 +360,37 @@ export class GameEngine {
         highlightG.visible = false;
         slotCont.addChild(highlightG);
 
-        // VIỀN VÀNG PHÁT SÁNG CHO NHỮNG Ô CÓ THỂ MERGE ĐƯỢC
+        // VIỀN VÀNG PHÁT SÁNG CHO NHỮNG Ô CÓ THỂ MERGE ĐƯỢC (Nổi trên cùng, viền sáng rực rỡ, không bị khuất)
         const mergeHighlightG = new Graphics();
-        mergeHighlightG.rect(2, 2, 92, 92);
-        mergeHighlightG.stroke({ color: 0xfacc15, width: 4 });
-        // 4 góc tam giác viền vàng kim
-        mergeHighlightG.rect(2, 2, 14, 14).fill({ color: 0xfef08a, alpha: 0.8 });
-        mergeHighlightG.rect(80, 2, 14, 14).fill({ color: 0xfef08a, alpha: 0.8 });
-        mergeHighlightG.rect(2, 80, 14, 14).fill({ color: 0xfef08a, alpha: 0.8 });
-        mergeHighlightG.rect(80, 80, 14, 14).fill({ color: 0xfef08a, alpha: 0.8 });
+        mergeHighlightG.x = cellX;
+        mergeHighlightG.y = cellY;
+        mergeHighlightG.eventMode = 'none';
+
+        // 1. Ánh sáng vàng dịu phủ kín ô (Soft amber glow fill)
+        mergeHighlightG.roundRect(4, 4, 88, 88, 6).fill({ color: 0xfef08a, alpha: 0.22 });
+
+        // 2. Viền hào quang vàng neon tỏa rộng (Vibrant gold outer glow)
+        mergeHighlightG.roundRect(2, 2, 92, 92, 6).stroke({ color: 0xfde047, width: 6, alpha: 0.75 });
+
+        // 3. Viền neon trắng - vàng kim sắc nét (Crisp white/gold inner line)
+        mergeHighlightG.roundRect(3, 3, 90, 90, 5).stroke({ color: 0xffffff, width: 2.5, alpha: 0.95 });
+
+        // 4. Bốn góc L-Bracket dày và sáng rực rỡ kèm chốt sáng
+        // Góc trên - trái
+        mergeHighlightG.moveTo(2, 22).lineTo(2, 2).lineTo(22, 2).stroke({ color: 0xffffff, width: 4.5 });
+        mergeHighlightG.rect(2, 2, 7, 7).fill({ color: 0xfffbeb });
+        // Góc trên - phải
+        mergeHighlightG.moveTo(74, 2).lineTo(94, 2).lineTo(94, 22).stroke({ color: 0xffffff, width: 4.5 });
+        mergeHighlightG.rect(87, 2, 7, 7).fill({ color: 0xfffbeb });
+        // Góc dưới - trái
+        mergeHighlightG.moveTo(2, 74).lineTo(2, 94).lineTo(22, 94).stroke({ color: 0xffffff, width: 4.5 });
+        mergeHighlightG.rect(2, 87, 7, 7).fill({ color: 0xfffbeb });
+        // Góc dưới - phải
+        mergeHighlightG.moveTo(74, 94).lineTo(94, 94).lineTo(94, 74).stroke({ color: 0xffffff, width: 4.5 });
+        mergeHighlightG.rect(87, 87, 7, 7).fill({ color: 0xfffbeb });
+
         mergeHighlightG.visible = false;
-        slotCont.addChild(mergeHighlightG);
+        this.gridHighlightLayer.addChild(mergeHighlightG);
 
         // VÒNG HOLLOW VUÔNG THỂ HIỆN TIER CỦA SÚNG (1 Trắng, 2 Xanh, 3 Tím, 4 Vàng, 5 Đỏ)
         const tierFrameG = new Graphics();
@@ -1205,12 +1229,17 @@ export class GameEngine {
   }
 
   private updateSlotAnimations(dt: number) {
+    this.animTime += dt;
+    const mergePulse = 0.82 + 0.18 * Math.sin(this.animTime * 10);
     for (let r = 0; r < this.ROWS; r++) {
       for (let c = 0; c < this.COLS; c++) {
         const view = this.slotViews[r][c];
         if (view.popScale > 1.0) {
           view.popScale = Math.max(1.0, view.popScale - 3.2 * dt);
           view.itemContainer.scale.set(view.popScale);
+        }
+        if (view.mergeHighlightG.visible) {
+          view.mergeHighlightG.alpha = mergePulse;
         }
       }
     }

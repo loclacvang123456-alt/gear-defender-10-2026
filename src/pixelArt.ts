@@ -218,23 +218,28 @@ export class PixelAssetManager {
   // 3. Đế Súng (BÁNH RĂNG CÔNG NGHIỆP 10 RĂNG BẢN TO) 96x96 - ASSET CHUYỂN MÀU THEO LEVEL 1 -> 5
   static getGunBaseTexture(level: number = 1): Texture {
     const lvl = Math.min(5, Math.max(1, level));
-    const key = `gun_base_gear_dark_v1_${lvl}`;
+    const key = `gun_base_gear_v2_${lvl}`;
     if (this.cache.has(key)) return this.cache.get(key)!;
 
     const tex = createHighResTexture(96, 96, (ctx) => {
       const cx = 48, cy = 48;
 
-      // Bảng màu Đế Bánh Răng Tối (Tạo độ tương phản cao, làm nòng súng nổi bật, không bị lẫn màu)
-      const gearMainColors = ['#1e293b', '#0f172a', '#1a0c2e', '#231508', '#220808'];
-      const gearRimColors = ['#334155', '#1e3a8a', '#4c1d95', '#78350f', '#7f1d1d'];
-      const gearInnerColors = ['#0f172a', '#020617', '#0c0514', '#0f0a04', '#0f0202'];
-      const gearGrooveColors = ['#475569', '#1d4ed8', '#6b21a8', '#b45309', '#991b1b'];
+      // Bảng màu Đế Bánh Răng: Tông kim loại máy móc vừa vặn (không quá tối làm khó nhìn, không quá sáng làm lẫn màu súng)
+      // Viền kim loại và đỉnh răng sáng bóng (viền sáng hơn) giúp các răng bánh răng nổi bật rõ nét khi xoay
+      const gearMainColors = ['#475569', '#2d4564', '#4a3861', '#6b522b', '#663232'];
+      const gearRimColors = ['#94a3b8', '#60a5fa', '#c084fc', '#fde047', '#f87171'];
+      const gearInnerColors = ['#334155', '#1e3048', '#332446', '#4d391b', '#481e1e'];
+      const gearGrooveColors = ['#64748b', '#3b82f6', '#a855f7', '#f59e0b', '#ef4444'];
+      const gearCrestColors = ['#cbd5e1', '#93c5fd', '#e9d5ff', '#fef08a', '#fca5a5'];
+      const gearOutlineColors = ['#1e293b', '#111c2e', '#1e122b', '#2a1b08', '#2a0c0c'];
 
       const colorIdx = lvl - 1;
       const mainCol = gearMainColors[colorIdx];
       const rimCol = gearRimColors[colorIdx];
       const innerCol = gearInnerColors[colorIdx];
       const grooveCol = gearGrooveColors[colorIdx];
+      const crestCol = gearCrestColors[colorIdx];
+      const outlineCol = gearOutlineColors[colorIdx];
 
       const numTeeth = 10;
       const rRoot = 32;
@@ -272,8 +277,25 @@ export class PixelAssetManager {
       ctx.fill();
 
       // Viền kim loại nổi sắc nét quanh các răng
-      ctx.strokeStyle = '#0f172a';
-      ctx.lineWidth = 2.5;
+      ctx.strokeStyle = outlineCol;
+      ctx.lineWidth = 1.8;
+      ctx.stroke();
+
+      // Viền đỉnh răng sáng rực (Tooth Crest Highlights) giúp nhận diện rõ từng răng bánh răng
+      ctx.strokeStyle = crestCol;
+      ctx.lineWidth = 2.4;
+      ctx.beginPath();
+      for (let i = 0; i < numTeeth; i++) {
+        const theta = (i * 2 * Math.PI) / numTeeth;
+        const aCrestLeft = theta - 0.12;
+        const aCrestRight = theta + 0.12;
+        const p1x = cx + Math.cos(aCrestLeft) * rOuter;
+        const p1y = cy + Math.sin(aCrestLeft) * rOuter;
+        const p2x = cx + Math.cos(aCrestRight) * rOuter;
+        const p2y = cy + Math.sin(aCrestRight) * rOuter;
+        ctx.moveTo(p1x, p1y);
+        ctx.lineTo(p2x, p2y);
+      }
       ctx.stroke();
 
       // 2. Vành tròn thân bánh răng (đồng tâm cx, cy)
@@ -283,7 +305,7 @@ export class PixelAssetManager {
       ctx.fill();
 
       ctx.strokeStyle = rimCol;
-      ctx.lineWidth = 1.5;
+      ctx.lineWidth = 2.0;
       ctx.stroke();
 
       // 3. Vành rãnh kim loại đồng tâm nổi màu Rarity
@@ -293,8 +315,8 @@ export class PixelAssetManager {
       ctx.arc(cx, cy, 25, 0, Math.PI * 2);
       ctx.stroke();
 
-      // Viền tương phản cho rãnh bạc
-      ctx.strokeStyle = '#0f172a';
+      // Viền sáng tương phản nổi cho rãnh kim loại
+      ctx.strokeStyle = rimCol;
       ctx.lineWidth = 1.2;
       ctx.beginPath();
       ctx.arc(cx, cy, 27.5, 0, Math.PI * 2);
@@ -305,24 +327,24 @@ export class PixelAssetManager {
       ctx.stroke();
 
       // 4. Lỗ rỗng xuyên tâm lớn (Center Bore) ở giữa (đồng tâm cx, cy)
-      ctx.fillStyle = '#090d16';
+      ctx.fillStyle = '#111827';
       ctx.beginPath();
       ctx.arc(cx, cy, 15, 0, Math.PI * 2);
       ctx.fill();
 
-      ctx.strokeStyle = '#1e293b';
-      ctx.lineWidth = 2.5;
+      ctx.strokeStyle = rimCol;
+      ctx.lineWidth = 2.0;
       ctx.stroke();
 
-      // Vòng bạc nhỏ trong lòng lỗ tâm
-      ctx.strokeStyle = '#475569';
+      // Vòng bạc nhỏ sáng trong lòng lỗ tâm
+      ctx.strokeStyle = crestCol;
       ctx.lineWidth = 1.2;
       ctx.beginPath();
       ctx.arc(cx, cy, 11, 0, Math.PI * 2);
       ctx.stroke();
 
       // Khớp trục xoay ở giữa
-      ctx.fillStyle = '#1e293b';
+      ctx.fillStyle = mainCol;
       ctx.beginPath();
       ctx.arc(cx, cy, 6, 0, Math.PI * 2);
       ctx.fill();

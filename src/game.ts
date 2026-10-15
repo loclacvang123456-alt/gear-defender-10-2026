@@ -26,17 +26,67 @@ const DEFAULT_SAVE: UserSaveData = {
   highestSurvivalWave: 0,
 };
 
+// Bảng màu chuẩn Rarity Gaming trên mạng:
+// 1: Trắng (Common) | 2: Xanh (Rare) | 3: Tím (Epic) | 4: Vàng (Legendary) | 5: Đỏ (Mythic)
+export interface RarityConfig {
+  tier: number;
+  name: string;
+  color: number;
+  hex: string;
+  barrelTint: number;
+}
+
+export const RARITY_CONFIGS: Record<number, RarityConfig> = {
+  1: {
+    tier: 1,
+    name: 'THƯỜNG',
+    color: 0xf8fafc,
+    hex: '#f8fafc',
+    barrelTint: 0xffffff,
+  },
+  2: {
+    tier: 2,
+    name: 'HIẾM',
+    color: 0x3b82f6,
+    hex: '#38bdf8',
+    barrelTint: 0x93c5fd,
+  },
+  3: {
+    tier: 3,
+    name: 'SỬ THI',
+    color: 0xa855f7,
+    hex: '#c084fc',
+    barrelTint: 0xd8b4fe,
+  },
+  4: {
+    tier: 4,
+    name: 'HUYỀN THOẠI',
+    color: 0xfacc15,
+    hex: '#facc15',
+    barrelTint: 0xfde047,
+  },
+  5: {
+    tier: 5,
+    name: 'THẦN THOẠI',
+    color: 0xef4444,
+    hex: '#ef4444',
+    barrelTint: 0xfca5a5,
+  },
+};
+
 // Quản lý View cố định cho từng ô 96x96 (Zero Allocation)
 interface GridSlotView {
   container: Container;
   cellSprite: Sprite;
   highlightG: Graphics;
   mergeHighlightG: Graphics; // Viền vàng kim phát sáng khi có thể MERGE
+  tierFrameG: Graphics; // Vòng hollow vuông thể hiện Tier súng (1 Trắng, 2 Xanh, 3 Tím, 4 Vàng, 5 Đỏ)
   itemContainer: Container;
   baseSprite: Sprite; // Đế bánh răng kim loại xoay khi Cò gõ
   barrelSprite: Sprite; // Nòng súng xoay 360 độ tự động ngắm quái
   fillG: Graphics;
   lvlText: Text;
+  popScale: number; // Scale nảy nổ bung khi merge súng (1.38 -> 1.0)
 }
 
 interface EnemyView {
@@ -300,11 +350,16 @@ export class GameEngine {
         mergeHighlightG.visible = false;
         slotCont.addChild(mergeHighlightG);
 
+        // VÒNG HOLLOW VUÔNG THỂ HIỆN TIER CỦA SÚNG (1 Trắng, 2 Xanh, 3 Tím, 4 Vàng, 5 Đỏ)
+        const tierFrameG = new Graphics();
+        tierFrameG.visible = false;
+        slotCont.addChild(tierFrameG);
+
         this.gridBgLayer.addChild(slotCont);
 
         const itemContainer = new Container();
-        itemContainer.x = cellX + 8;
-        itemContainer.y = cellY + 8;
+        itemContainer.pivot.set(40, 40);
+        itemContainer.position.set(cellX + 48, cellY + 48);
         itemContainer.visible = false;
         itemContainer.eventMode = 'none';
 
@@ -358,11 +413,13 @@ export class GameEngine {
           cellSprite,
           highlightG,
           mergeHighlightG,
+          tierFrameG,
           itemContainer,
           baseSprite,
           barrelSprite,
           fillG,
           lvlText,
+          popScale: 1.0,
         };
       }
     }
@@ -766,11 +823,34 @@ export class GameEngine {
 
     if (!item) {
       view.itemContainer.visible = false;
+      view.tierFrameG.visible = false;
       return;
     }
 
     view.itemContainer.visible = true;
     view.itemContainer.alpha = 1.0;
+
+    const tier = Math.min(5, Math.max(1, item.level));
+    const rarity = RARITY_CONFIGS[tier];
+
+    // VÒNG HOLLOW VUÔNG THỂ HIỆN TIER CỦA SÚNG (1: Trắng, 2: Xanh, 3: Tím, 4: Vàng, 5: Đỏ)
+    view.tierFrameG.visible = true;
+    view.tierFrameG.clear();
+
+    // 1. Khung hollow vuông bo góc nhẹ 6px bao quanh toàn bộ ô
+    view.tierFrameG.roundRect(4, 4, 88, 88, 6);
+    view.tierFrameG.stroke({ width: 3.5, color: rarity.color, alpha: 0.95 });
+
+    // 2. Lớp phát quang mỏng theo màu Rarity bên trong ô
+    view.tierFrameG.roundRect(6, 6, 84, 84, 5);
+    view.tierFrameG.fill({ color: rarity.color, alpha: 0.08 });
+
+    // 3. 4 Chấu góc vuông cơ khí (Corner Brackets) sáng trắng sắc nét
+    view.tierFrameG.moveTo(2, 16); view.tierFrameG.lineTo(2, 2); view.tierFrameG.lineTo(16, 2);
+    view.tierFrameG.moveTo(80, 2); view.tierFrameG.lineTo(94, 2); view.tierFrameG.lineTo(94, 16);
+    view.tierFrameG.moveTo(2, 80); view.tierFrameG.lineTo(2, 94); view.tierFrameG.lineTo(16, 94);
+    view.tierFrameG.moveTo(80, 94); view.tierFrameG.lineTo(94, 94); view.tierFrameG.lineTo(94, 80);
+    view.tierFrameG.stroke({ width: 2, color: 0xffffff, alpha: 0.75 });
 
     if (item.type === 'TRIGGER') {
       view.itemContainer.zIndex = 10; // Cò nẫy luôn nằm trên bánh răng
@@ -783,25 +863,26 @@ export class GameEngine {
       view.barrelSprite.visible = false;
       view.fillG.visible = false;
       view.lvlText.text = `x${item.level}`;
-      view.lvlText.style.fill = '#fef08a';
+      view.lvlText.style.fill = rarity.hex;
     } else if (item.type === 'GUN') {
-      // ĐẾ BÁNH RĂNG CÔNG NGHIỆP 10 RĂNG
+      // ĐẾ BÁNH RĂNG CÔNG NGHIỆP 10 RĂNG ĐỔI MÀU THEO TIER RARITY (Trắng -> Xanh -> Tím -> Vàng -> Đỏ)
       view.itemContainer.zIndex = 5;
-      view.baseSprite.texture = PixelAssetManager.getGunBaseTexture(item.tier);
+      view.baseSprite.texture = PixelAssetManager.getGunBaseTexture(tier);
       view.baseSprite.anchor.set(0.5);
       view.baseSprite.x = 40;
       view.baseSprite.y = 40;
       view.baseSprite.scale.set(1.0);
       view.baseSprite.rotation = item.gearAngle || 0;
 
-      // NÒNG SÚNG XOAY 360 ĐỘ
+      // NÒNG SÚNG XOAY 360 ĐỘ NHUỘM MÀU TOÀN BỘ THEO TIER RARITY (TẠO CẢM GIÁC KÍCH THÍCH KHI MERGE)
       view.barrelSprite.visible = true;
       view.barrelSprite.texture = PixelAssetManager.getGunBarrelTexture(item.gunKind!, item.level);
       view.barrelSprite.rotation = item.turretAngle;
+      view.barrelSprite.tint = rarity.barrelTint;
 
       view.fillG.visible = true;
       view.lvlText.text = `${item.level}`;
-      view.lvlText.style.fill = '#ffffff';
+      view.lvlText.style.fill = rarity.hex;
     } else if (item.type === 'BUFF') {
       view.itemContainer.zIndex = 5;
       view.baseSprite.texture = PixelAssetManager.getBuffTexture(item.buffKind!, item.level);
@@ -813,7 +894,7 @@ export class GameEngine {
       view.barrelSprite.visible = false;
       view.fillG.visible = false;
       view.lvlText.text = `${item.level}`;
-      view.lvlText.style.fill = '#ffffff';
+      view.lvlText.style.fill = rarity.hex;
     }
   }
 
@@ -934,24 +1015,19 @@ export class GameEngine {
                  (dest.type === 'TRIGGER'));
 
               if (canMerge) {
+                const nextLevel = dest.level + 1;
                 if (dest.type === 'GUN') {
-                  targetCell.item = this.createGun(dest.gunKind!, dest.level + 1);
+                  targetCell.item = this.createGun(dest.gunKind!, nextLevel);
                 } else if (dest.type === 'TRIGGER') {
-                  targetCell.item = this.createTrigger(dest.level + 1);
+                  targetCell.item = this.createTrigger(nextLevel);
                 } else if (dest.type === 'BUFF') {
-                  targetCell.item = this.createBuff(dest.buffKind!, dest.level + 1);
+                  targetCell.item = this.createBuff(dest.buffKind!, nextLevel);
                 }
 
                 sourceCell.item = null;
                 this.syncSlotView(dropCol, dropRow);
                 this.syncSlotView(origCol, origRow);
-                sound.playMerge();
-                this.addFloatingText(
-                  this.GRID_X + dropCol * this.CELL_SIZE + 48,
-                  this.GRID_Y + dropRow * this.CELL_SIZE + 48,
-                  `MERGE Lv${targetCell.item!.level}!`,
-                  '#facc15'
-                );
+                this.triggerUpgradeFX(dropCol, dropRow, nextLevel, dest.gunKind || dest.type);
               } else {
                 targetCell.item = drag;
                 sourceCell.item = dest;
@@ -1026,7 +1102,9 @@ export class GameEngine {
       sp.rotation = (item.angle * Math.PI) / 180;
       cont.addChild(sp);
     } else if (item.type === 'GUN') {
-      const base = new Sprite(PixelAssetManager.getGunBaseTexture(item.tier));
+      const tier = Math.min(5, Math.max(1, item.level));
+      const rarity = RARITY_CONFIGS[tier];
+      const base = new Sprite(PixelAssetManager.getGunBaseTexture(tier));
       base.anchor.set(0.5);
       base.x = 40;
       base.y = 40;
@@ -1038,6 +1116,7 @@ export class GameEngine {
       barrel.x = 40;
       barrel.y = 40;
       barrel.rotation = item.turretAngle;
+      barrel.tint = rarity.barrelTint;
       cont.addChild(barrel);
     } else if (item.type === 'BUFF') {
       const sp = new Sprite(PixelAssetManager.getBuffTexture(item.buffKind!, item.level));
@@ -1048,6 +1127,57 @@ export class GameEngine {
     }
     cont.alpha = 0.88;
     return cont;
+  }
+
+  // ================= HIỆU ỨNG VFX / SFX THĂNG CẤP MERGE TIER CỰC ĐỈNH ================= //
+
+  private triggerUpgradeFX(col: number, row: number, nextLevel: number, label: string) {
+    const tier = Math.min(5, Math.max(1, nextLevel));
+    const rarity = RARITY_CONFIGS[tier];
+    const centerX = this.GRID_X + col * this.CELL_SIZE + 48;
+    const centerY = this.GRID_Y + row * this.CELL_SIZE + 48;
+
+    // 1. Pop scale animation on slot view (bung to 1.38x rồi co lại tạo cảm giác đã tay)
+    this.slotViews[row][col].popScale = 1.38;
+
+    // 2. Shockwaves mở rộng theo màu Rarity
+    this.addShockwave(centerX, centerY, 80, rarity.color);
+    this.addShockwave(centerX, centerY, 48, 0xffffff);
+
+    // 3. Pháo hoa pháo sáng mảnh vỡ tung tóe
+    this.addSparks(centerX, centerY, 28, rarity.color, 240);
+    this.addSparks(centerX, centerY, 14, 0xffffff, 180);
+
+    // 4. Lóe sáng viền nòng Muzzle Flash tại tâm
+    this.addMuzzleFlash(centerX, centerY, rarity.color);
+
+    // 5. Rung chấn màn hình theo độ hiếm
+    this.trauma = Math.min(1.0, this.trauma + 0.10 * tier);
+
+    // 6. Floating Text siêu kích thích
+    const tierTitles: Record<number, string> = {
+      2: '★ TIER 2: HIẾM ★',
+      3: '★ TIER 3: SỬ THI ★',
+      4: '★ TIER 4: HUYỀN THOẠI ★',
+      5: '★ TIER 5: THẦN THOẠI ★',
+    };
+    const title = tierTitles[tier] || `TIER ${tier}`;
+    this.addFloatingText(centerX, centerY - 32, title, rarity.hex);
+
+    // 7. SFX âm thanh thăng cấp theo bậc Tier kích thích
+    sound.playMerge(tier);
+  }
+
+  private updateSlotAnimations(dt: number) {
+    for (let r = 0; r < this.ROWS; r++) {
+      for (let c = 0; c < this.COLS; c++) {
+        const view = this.slotViews[r][c];
+        if (view.popScale > 1.0) {
+          view.popScale = Math.max(1.0, view.popScale - 3.2 * dt);
+          view.itemContainer.scale.set(view.popScale);
+        }
+      }
+    }
   }
 
   // ================= TOOLTIP BÊN CẠNH SÚNG (KHÔNG OVERLAY, TỰ TRÁNH BỊ KHUẤT) ================= //
@@ -1072,10 +1202,13 @@ export class GameEngine {
     this.tooltipContainer.x = targetX;
     this.tooltipContainer.y = targetY;
 
+    const tier = Math.min(5, Math.max(1, item.level));
+    const rarity = RARITY_CONFIGS[tier];
+
     this.tooltipCard.clear();
     this.tooltipCard.roundRect(0, 0, tipW, tipH, 10);
     this.tooltipCard.fill({ color: 0x13151f, alpha: 0.96 });
-    this.tooltipCard.stroke({ color: 0x38bdf8, width: 2 });
+    this.tooltipCard.stroke({ color: rarity.color, width: 2.5 });
 
     let name = '';
     let stats = '';
@@ -1100,7 +1233,7 @@ export class GameEngine {
         MINIGUN: 'MINIGUN 6 NÒNG',
         METEOR: 'BÁNH RĂNG THIÊN THẠCH',
       };
-      name = `${names[item.gunKind!]} Lv${item.level}`;
+      name = `[${rarity.name}] ${names[item.gunKind!]} Tier ${tier}`;
       const hitsNeeded = Math.ceil(1.0 / item.fillPerHit);
       stats = `• Sát thương: ${item.damage} DMG\n• Cần nạp: ${hitsNeeded} lần gõ (1 viên)\n• Xoay 360° tự động ngắm quái`;
 
@@ -1125,7 +1258,7 @@ export class GameEngine {
         FILL: 'BUFF SIÊU NẠP',
         CRIT: 'BUFF CHÍ MẠNG',
       };
-      name = `${buffNames[item.buffKind!]} Lv${item.level}`;
+      name = `[${rarity.name}] ${buffNames[item.buffKind!]} Tier ${tier}`;
       if (item.buffKind === 'DMG') stats = `• Tăng +${item.level * 20}% Sát thương súng kề`;
       if (item.buffKind === 'SPEED') stats = `• Tăng +${item.level * 20}% Tốc độ xoay Cò kề`;
       if (item.buffKind === 'FILL') stats = `• Tăng +${item.level * 15}% Tốc độ nạp súng kề`;
@@ -1134,6 +1267,7 @@ export class GameEngine {
     }
 
     this.tooltipTitleText.text = name;
+    this.tooltipTitleText.style.fill = rarity.hex;
     this.tooltipStatsText.text = stats;
     this.tooltipDescText.text = desc;
 
@@ -1155,6 +1289,7 @@ export class GameEngine {
 
     this.updateTriggers(dt);
     this.updateGunsAndAim(dt);
+    this.updateSlotAnimations(dt);
 
     if (this.isWaveActive) {
       this.updateWave(dt);
@@ -2147,11 +2282,7 @@ export class GameEngine {
     const upgradeMult = 1 + (permanentLvl - 1) * 0.15;
     const dmg = Math.round(baseDamageMap[kind] * upgradeMult * Math.pow(1.8, level - 1));
 
-    let tier = 2;
-    if (kind === 'PISTOL' || kind === 'CROSSBOW' || kind === 'SLINGSHOT') tier = 1;
-    else if (kind === 'CANNON' || kind === 'TESLA' || kind === 'SNIPER') tier = 3;
-    else if (kind === 'MINIGUN') tier = 4;
-    else if (kind === 'METEOR') tier = 5;
+    const tier = Math.min(5, Math.max(1, level));
 
     return {
       id: `gun_${Date.now()}_${Math.random()}`,
@@ -2174,11 +2305,12 @@ export class GameEngine {
   }
 
   public createTrigger(level: number): GridItem {
+    const tier = Math.min(5, Math.max(1, level));
     return {
       id: `trigger_${Date.now()}_${Math.random()}`,
       type: 'TRIGGER',
       level,
-      tier: 1,
+      tier,
       angle: 0,
       rotationSpeed: 0.8,
       lastHitAngle: [],
@@ -2194,11 +2326,12 @@ export class GameEngine {
   }
 
   public createBuff(kind: BuffKind, level: number): GridItem {
+    const tier = Math.min(5, Math.max(1, level));
     return {
       id: `buff_${Date.now()}_${Math.random()}`,
       type: 'BUFF',
       level,
-      tier: 2,
+      tier,
       buffKind: kind,
       angle: 0,
       rotationSpeed: 0,

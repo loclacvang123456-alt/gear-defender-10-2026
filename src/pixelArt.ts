@@ -217,21 +217,23 @@ export class PixelAssetManager {
 
   // 3. Đế Súng (BÁNH RĂNG CÔNG NGHIỆP 10 RĂNG BẢN TO) 96x96 - HOÀN TOÀN ĐỒNG TÂM 100%
   static getGunBaseTexture(tier: number): Texture {
-    const key = `gun_base_gear_hires_v3_${tier}`;
+    const key = `gun_base_gear_hires_v4_${tier}`;
     if (this.cache.has(key)) return this.cache.get(key)!;
 
     const tex = createHighResTexture(96, 96, (ctx) => {
       const cx = 48, cy = 48;
 
-      // Bảng màu bánh răng công nghiệp
-      const gearMainColors = ['#346596', '#2563eb', '#6d28d9', '#b45309', '#be123c'];
-      const gearRimColors = ['#5b8bb8', '#60a5fa', '#a78bfa', '#fbbf24', '#fb7185'];
-      const gearInnerColors = ['#1e3b5c', '#1e3a8a', '#4c1d95', '#78350f', '#881337'];
+      // Bảng màu chuẩn Rarity Gaming: 1 Trắng, 2 Xanh, 3 Tím, 4 Vàng, 5 Đỏ
+      const gearMainColors = ['#94a3b8', '#2563eb', '#7e22ce', '#d97706', '#dc2626'];
+      const gearRimColors = ['#f8fafc', '#60a5fa', '#c084fc', '#fde047', '#f87171'];
+      const gearInnerColors = ['#475569', '#1d4ed8', '#581c87', '#92400e', '#991b1b'];
+      const gearGrooveColors = ['#ffffff', '#93c5fd', '#e9d5ff', '#fef08a', '#fecaca'];
 
-      const colorIdx = Math.min(tier - 1, 4);
+      const colorIdx = Math.min(Math.max(0, tier - 1), 4);
       const mainCol = gearMainColors[colorIdx];
       const rimCol = gearRimColors[colorIdx];
       const innerCol = gearInnerColors[colorIdx];
+      const grooveCol = gearGrooveColors[colorIdx];
 
       const numTeeth = 10;
       const rRoot = 32;
@@ -283,8 +285,8 @@ export class PixelAssetManager {
       ctx.lineWidth = 1.5;
       ctx.stroke();
 
-      // 3. Vành rãnh bạc kim loại đồng tâm (Chuẩn ảnh thiết kế, đồng tâm cx, cy)
-      ctx.strokeStyle = '#e2e8f0';
+      // 3. Vành rãnh kim loại đồng tâm nổi màu Rarity
+      ctx.strokeStyle = grooveCol;
       ctx.lineWidth = 4;
       ctx.beginPath();
       ctx.arc(cx, cy, 25, 0, Math.PI * 2);

@@ -340,29 +340,144 @@ class SoundController {
     osc.stop(this.ctx.currentTime + 0.07);
   }
 
-  // Tiếng ghép súng MERGE "ting ting!"
-  playMerge() {
+  // Tiếng ghép súng MERGE thăng cấp cực kỳ kích thích theo bậc Tier Rarity
+  playMerge(tier: number = 2) {
     if (!this.enabled) return;
     this.initCtx();
     if (!this.ctx) return;
 
-    const now = this.ctx.currentTime;
-    [523.25, 659.25, 783.99].forEach((freq, i) => {
+    const t = this.ctx.currentTime;
+    const clampedTier = Math.min(5, Math.max(2, tier));
+
+    // 1. TIER 2: HIẾM (Xanh) - Chuông ngọc thánh thót 3 nốt
+    if (clampedTier === 2) {
+      [523.25, 659.25, 783.99].forEach((freq, i) => {
+        if (!this.ctx) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, t + i * 0.05);
+        gain.gain.setValueAtTime(0.2, t + i * 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + i * 0.05 + 0.16);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(t + i * 0.05);
+        osc.stop(t + i * 0.05 + 0.18);
+      });
+      return;
+    }
+
+    // 2. TIER 3: SỬ THI (Tím) - Hợp âm huyền bí 4 nốt vang vọng
+    if (clampedTier === 3) {
+      [523.25, 659.25, 783.99, 1046.5].forEach((freq, i) => {
+        if (!this.ctx) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, t + i * 0.045);
+        gain.gain.setValueAtTime(0.24, t + i * 0.045);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + i * 0.045 + 0.22);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(t + i * 0.045);
+        osc.stop(t + i * 0.045 + 0.24);
+
+        // Hài âm lấp lánh (Shimmer overtone)
+        const shimmer = this.ctx.createOscillator();
+        const sGain = this.ctx.createGain();
+        shimmer.type = 'sine';
+        shimmer.frequency.setValueAtTime(freq * 2, t + i * 0.045);
+        sGain.gain.setValueAtTime(0.08, t + i * 0.045);
+        sGain.gain.exponentialRampToValueAtTime(0.001, t + i * 0.045 + 0.18);
+        shimmer.connect(sGain);
+        sGain.connect(this.ctx.destination);
+        shimmer.start(t + i * 0.045);
+        shimmer.stop(t + i * 0.045 + 0.2);
+      });
+      return;
+    }
+
+    // 3. TIER 4: HUYỀN THOẠI (Vàng Kim) - Kèn đồng hoàng gia 5 nốt + Sub Kick
+    if (clampedTier === 4) {
+      // Sub-punch khai màn
+      const sub = this.ctx.createOscillator();
+      const sGain = this.ctx.createGain();
+      sub.type = 'triangle';
+      sub.frequency.setValueAtTime(90, t);
+      sub.frequency.exponentialRampToValueAtTime(30, t + 0.2);
+      sGain.gain.setValueAtTime(0.35, t);
+      sGain.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+      sub.connect(sGain);
+      sGain.connect(this.ctx.destination);
+      sub.start(t);
+      sub.stop(t + 0.22);
+
+      // Fanfare vàng rực rỡ
+      [523.25, 659.25, 783.99, 1046.5, 1318.51].forEach((freq, i) => {
+        if (!this.ctx) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(freq, t + i * 0.04);
+        gain.gain.setValueAtTime(0.2, t + i * 0.04);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + i * 0.04 + 0.28);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(t + i * 0.04);
+        osc.stop(t + i * 0.04 + 0.3);
+
+        const bell = this.ctx.createOscillator();
+        const bGain = this.ctx.createGain();
+        bell.type = 'sine';
+        bell.frequency.setValueAtTime(freq * 1.5, t + i * 0.04);
+        bGain.gain.setValueAtTime(0.12, t + i * 0.04);
+        bGain.gain.exponentialRampToValueAtTime(0.001, t + i * 0.04 + 0.25);
+        bell.connect(bGain);
+        bGain.connect(this.ctx.destination);
+        bell.start(t + i * 0.04);
+        bell.stop(t + i * 0.04 + 0.26);
+      });
+      return;
+    }
+
+    // 4. TIER 5: THẦN THOẠI (Đỏ) - Khúc khải hoàn tối thượng cực đỉnh chấn động
+    // Sub-bass rung màn hình
+    const sub = this.ctx.createOscillator();
+    const sGain = this.ctx.createGain();
+    sub.type = 'sawtooth';
+    sub.frequency.setValueAtTime(120, t);
+    sub.frequency.exponentialRampToValueAtTime(25, t + 0.35);
+    sGain.gain.setValueAtTime(0.45, t);
+    sGain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+    sub.connect(sGain);
+    sGain.connect(this.ctx.destination);
+    sub.start(t);
+    sub.stop(t + 0.38);
+
+    // 6 Nốt Arpeggio thần thánh
+    [523.25, 659.25, 783.99, 1046.5, 1318.51, 1567.98].forEach((freq, i) => {
       if (!this.ctx) return;
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
-
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(freq, now + i * 0.06);
-
-      gain.gain.setValueAtTime(0.18, now + i * 0.06);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.06 + 0.12);
-
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(freq, t + i * 0.045);
+      gain.gain.setValueAtTime(0.24, t + i * 0.045);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + i * 0.045 + 0.4);
       osc.connect(gain);
       gain.connect(this.ctx.destination);
+      osc.start(t + i * 0.045);
+      osc.stop(t + i * 0.045 + 0.42);
 
-      osc.start(now + i * 0.06);
-      osc.stop(now + i * 0.06 + 0.14);
+      const sparkle = this.ctx.createOscillator();
+      const spGain = this.ctx.createGain();
+      sparkle.type = 'triangle';
+      sparkle.frequency.setValueAtTime(freq * 2, t + i * 0.045);
+      spGain.gain.setValueAtTime(0.15, t + i * 0.045);
+      spGain.gain.exponentialRampToValueAtTime(0.001, t + i * 0.045 + 0.35);
+      sparkle.connect(spGain);
+      spGain.connect(this.ctx.destination);
+      sparkle.start(t + i * 0.045);
+      sparkle.stop(t + i * 0.045 + 0.38);
     });
   }
 

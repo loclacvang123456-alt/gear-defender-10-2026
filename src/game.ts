@@ -61,6 +61,8 @@ export class GameEngine {
   private bgContainer: Container;
   private wallContainer: Container;
   private gridContainer: Container;
+  private gridBgLayer!: Container;
+  private gridItemsLayer!: Container;
   private enemyContainer: Container;
   private bulletContainer: Container;
   private fxContainer: Container;
@@ -198,6 +200,12 @@ export class GameEngine {
 
   // Khởi tạo Lưới 5x5 cố định (96x96 per cell)
   private initGrid() {
+    this.gridBgLayer = new Container();
+    this.gridItemsLayer = new Container();
+    this.gridItemsLayer.sortableChildren = true; // Cò nẫy vươn dài (zIndex 10) luôn vẽ trên bánh răng và súng
+    this.gridContainer.addChild(this.gridBgLayer);
+    this.gridContainer.addChild(this.gridItemsLayer);
+
     for (let r = 0; r < this.ROWS; r++) {
       this.grid[r] = [];
       this.slotViews[r] = [];
@@ -242,10 +250,13 @@ export class GameEngine {
         mergeHighlightG.visible = false;
         slotCont.addChild(mergeHighlightG);
 
+        this.gridBgLayer.addChild(slotCont);
+
         const itemContainer = new Container();
-        itemContainer.x = 8;
-        itemContainer.y = 8;
+        itemContainer.x = cellX + 8;
+        itemContainer.y = cellY + 8;
         itemContainer.visible = false;
+        itemContainer.eventMode = 'none';
 
         // Bệ tháp bánh răng xoay quanh tâm (anchor 0.5)
         const baseSprite = new Sprite();
@@ -280,8 +291,7 @@ export class GameEngine {
         lvlText.eventMode = 'none';
         itemContainer.addChild(lvlText);
 
-        slotCont.addChild(itemContainer);
-        this.gridContainer.addChild(slotCont);
+        this.gridItemsLayer.addChild(itemContainer);
 
         slotCont.on('pointerdown', (e: FederatedPointerEvent) => {
           e.stopPropagation();
@@ -710,21 +720,25 @@ export class GameEngine {
     view.itemContainer.alpha = 1.0;
 
     if (item.type === 'TRIGGER') {
+      view.itemContainer.zIndex = 10; // Cò nẫy luôn nằm trên bánh răng
       view.baseSprite.texture = PixelAssetManager.getTriggerTexture(item.level);
       view.baseSprite.anchor.set(0.5);
       view.baseSprite.x = 40;
       view.baseSprite.y = 40;
+      view.baseSprite.scale.set(1.0);
       view.baseSprite.rotation = (item.angle * Math.PI) / 180;
       view.barrelSprite.visible = false;
       view.fillG.visible = false;
       view.lvlText.text = `x${item.level}`;
       view.lvlText.style.fill = '#fef08a';
     } else if (item.type === 'GUN') {
-      // ĐẾ BÁNH RĂNG KIM LOẠI
+      // ĐẾ BÁNH RĂNG CÔNG NGHIỆP 10 RĂNG
+      view.itemContainer.zIndex = 5;
       view.baseSprite.texture = PixelAssetManager.getGunBaseTexture(item.tier);
       view.baseSprite.anchor.set(0.5);
       view.baseSprite.x = 40;
       view.baseSprite.y = 40;
+      view.baseSprite.scale.set(1.0);
       view.baseSprite.rotation = item.gearAngle || 0;
 
       // NÒNG SÚNG XOAY 360 ĐỘ
@@ -736,10 +750,12 @@ export class GameEngine {
       view.lvlText.text = `${item.level}`;
       view.lvlText.style.fill = '#ffffff';
     } else if (item.type === 'BUFF') {
+      view.itemContainer.zIndex = 5;
       view.baseSprite.texture = PixelAssetManager.getBuffTexture(item.buffKind!, item.level);
       view.baseSprite.anchor.set(0.5);
       view.baseSprite.x = 40;
       view.baseSprite.y = 40;
+      view.baseSprite.scale.set(1.0);
       view.baseSprite.rotation = 0;
       view.barrelSprite.visible = false;
       view.fillG.visible = false;
@@ -1076,6 +1092,7 @@ export class GameEngine {
     const dt = Math.min(rawDt, 0.1) * this.gameSpeed;
 
     this.updateTriggers(dt);
+    this.updateGearRotations(dt);
     this.updateGunsAndAim(dt);
 
     if (this.isWaveActive) {
@@ -1090,6 +1107,33 @@ export class GameEngine {
     this.hpText.text = `HP THÀNH: ${this.castleHp}/${this.maxCastleHp}`;
 
     this.renderActiveEntities();
+  }
+
+  // Animation xoay bánh răng đế súng mượt mà với quán tính và ma sát cơ học
+  private updateGearRotations(dt: number) {
+    for (let r = 0; r < this.ROWS; r++) {
+      for (let c = 0; c < this.COLS; c++) {
+        const item = this.grid[r][c].item;
+        if (!item || item.type !== 'GUN') continue;
+
+        const baseSprite = this.slotViews[r][c].baseSprite;
+
+        // Phục hồi độ nảy đàn hồi sau khi nẫy gõ
+        if (baseSprite.scale.x > 1.0) {
+          const nextScale = Math.max(1.0, baseSprite.scale.x - 1.5 * dt);
+          baseSprite.scale.set(nextScale);
+        }
+
+        // Bánh răng xoay tít mượt mà ở 60fps
+        if (item.gearSpinVelocity > 0.05) {
+          item.gearAngle = (item.gearAngle + item.gearSpinVelocity * dt) % (Math.PI * 2);
+          item.gearSpinVelocity = Math.max(0, item.gearSpinVelocity - 24.0 * dt);
+          baseSprite.rotation = item.gearAngle;
+        } else if (item.gearSpinVelocity > 0) {
+          item.gearSpinVelocity = 0;
+        }
+      }
+    }
   }
 
   private updateTriggers(dt: number) {
@@ -1144,7 +1188,7 @@ export class GameEngine {
     }
   }
 
-  // Khi Cò chạm vào súng: ĐẾ BÁNH RĂNG CỦA SÚNG CŨNG XOAY ĂN KHỚP
+  // Khi Cò chạm vào súng: TRUYỀN XUNG LỰC QUÁN TÍNH ĐỂ BÁNH RĂNG XOAY TÍT MƯỢT MÀ
   private triggerHit(targetCol: number, targetRow: number) {
     if (targetCol < 0 || targetCol >= this.COLS || targetRow < 0 || targetRow >= this.ROWS) return;
 
@@ -1164,9 +1208,10 @@ export class GameEngine {
       item.fill += item.fillPerHit * fillMultiplier;
       item.recoilOffset = 6;
 
-      // ĐẾ BÁNH RĂNG CỦA SÚNG XOAY 30 ĐỘ MỖI LẦN CÒ GÕ!
-      item.gearAngle = (item.gearAngle + Math.PI / 6) % (Math.PI * 2);
-      this.slotViews[targetRow][targetCol].baseSprite.rotation = item.gearAngle;
+      // ANIMATION XOAY BÁNH RĂNG CÔNG NGHIỆP MƯỢT MÀ:
+      // Truyền gia tốc góc để bánh răng xoay tít theo nhịp cơ học có quán tính và ma sát
+      item.gearSpinVelocity = Math.min((item.gearSpinVelocity || 0) + 16.0, 32.0);
+      this.slotViews[targetRow][targetCol].baseSprite.scale.set(1.15); // Hiệu ứng nảy ăn khớp bánh răng
 
       sound.playClick();
 
@@ -1646,7 +1691,8 @@ export class GameEngine {
       rangeType: rangeTypeMap[kind],
       recoilOffset: 0,
       turretAngle: -Math.PI / 2,
-      gearAngle: 0, // Đế bánh răng súng xoay khi cò gõ
+      gearAngle: 0,
+      gearSpinVelocity: 0, // Vận tốc góc để animation xoay bánh răng mượt mà
       angle: 0,
       rotationSpeed: 0,
       lastHitAngle: [],
@@ -1669,6 +1715,7 @@ export class GameEngine {
       recoilOffset: 0,
       turretAngle: 0,
       gearAngle: 0,
+      gearSpinVelocity: 0,
     };
   }
 
@@ -1689,6 +1736,7 @@ export class GameEngine {
       recoilOffset: 0,
       turretAngle: 0,
       gearAngle: 0,
+      gearSpinVelocity: 0,
     };
   }
 }

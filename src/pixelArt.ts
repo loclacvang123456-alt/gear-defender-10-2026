@@ -87,77 +87,123 @@ export class PixelAssetManager {
     return tex;
   }
 
-  // 2. Bánh Răng Cò (Trigger Gear) 80x80 - Thiết kế dạng CÁI NẪY BÁNH RĂNG (Ratchet / Pawl Lever)
+  // 2. Bánh Răng Cò (Trigger Pawl Lever) 150x150 - Cánh nẫy cơ khí to lớn, vươn dài 62px chạm khít vào bánh răng kề
   static getTriggerTexture(level: number): Texture {
-    const key = `trigger_hires_${level}`;
+    const key = `trigger_hires_v2_${level}`;
     if (this.cache.has(key)) return this.cache.get(key)!;
 
-    const tex = createHighResTexture(80, 80, (ctx) => {
-      const cx = 40, cy = 40;
+    const tex = createHighResTexture(150, 150, (ctx) => {
+      const cx = 75, cy = 75;
 
-      // Các mỏ nẫy bánh răng cơ khí (Pawls)
+      // Các tay nẫy cơ khí vươn dài (Pawl Arms)
       for (let i = 0; i < level; i++) {
         const rad = (i * (360 / level) * Math.PI) / 180;
         ctx.save();
         ctx.translate(cx, cy);
         ctx.rotate(rad);
 
-        // Cánh nẫy cong dạng mỏ móc cơ học
-        ctx.fillStyle = '#b45309';
-        ctx.beginPath();
-        ctx.moveTo(12, -4);
-        ctx.lineTo(26, -9);
-        ctx.lineTo(38, -3); // Đỉnh mỏ nẫy nhô ra ngoài
-        ctx.lineTo(34, 4);
-        ctx.lineTo(20, 5);
-        ctx.lineTo(12, 4);
-        ctx.closePath();
-        ctx.fill();
-
-        const pawlGrad = ctx.createLinearGradient(12, 0, 38, 0);
-        pawlGrad.addColorStop(0, '#f59e0b');
-        pawlGrad.addColorStop(1, '#fef08a');
-        ctx.fillStyle = pawlGrad;
-        ctx.beginPath();
-        ctx.moveTo(14, -2);
-        ctx.lineTo(25, -7);
-        ctx.lineTo(36, -2);
-        ctx.lineTo(32, 2);
-        ctx.lineTo(18, 3);
-        ctx.closePath();
-        ctx.fill();
-
-        // Đinh tán chốt khớp nẫy
+        // Thân cánh tay nẫy bằng đồng thau dày dặn, vươn dài từ r=16 ra r=62
+        // Bản ngoài (Shadow & Outline)
         ctx.fillStyle = '#78350f';
         ctx.beginPath();
-        ctx.arc(22, 0, 2.5, 0, Math.PI * 2);
+        ctx.moveTo(14, -8);
+        ctx.lineTo(44, -12);
+        ctx.lineTo(62, -4); // Mỏ nẫy vát nhọn chạm khít vào răng của bánh răng kề!
+        ctx.lineTo(58, 8);
+        ctx.lineTo(42, 10);
+        ctx.lineTo(14, 8);
+        ctx.closePath();
+        ctx.fill();
+
+        // Mặt trên cánh nẫy (Gradient kim loại mạ vàng đồng)
+        const armGrad = ctx.createLinearGradient(16, 0, 62, 0);
+        armGrad.addColorStop(0, '#d97706');
+        armGrad.addColorStop(0.5, '#f59e0b');
+        armGrad.addColorStop(0.9, '#fef08a');
+        armGrad.addColorStop(1, '#ffffff');
+
+        ctx.fillStyle = armGrad;
+        ctx.beginPath();
+        ctx.moveTo(16, -6);
+        ctx.lineTo(43, -9);
+        ctx.lineTo(59, -3); // Mỏ gạt cơ học
+        ctx.lineTo(55, 6);
+        ctx.lineTo(41, 7);
+        ctx.lineTo(16, 6);
+        ctx.closePath();
+        ctx.fill();
+
+        // Rãnh dẫn hướng gia cường lực đẩy trên cánh nẫy
+        ctx.strokeStyle = '#b45309';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(22, 0);
+        ctx.lineTo(48, 0);
+        ctx.stroke();
+
+        // 2 Đinh tán thép gia cường tại khớp nối
+        ctx.fillStyle = '#451a03';
+        ctx.beginPath();
+        ctx.arc(30, 0, 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#fef08a';
+        ctx.beginPath();
+        ctx.arc(29, -1, 1, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#451a03';
+        ctx.beginPath();
+        ctx.arc(46, 0, 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#fef08a';
+        ctx.beginPath();
+        ctx.arc(45, -1, 1, 0, Math.PI * 2);
         ctx.fill();
 
         ctx.restore();
       }
 
-      // Đĩa xoay trung tâm của bộ nẫy
-      const discGrad = ctx.createRadialGradient(cx, cy, 6, cx, cy, 22);
-      discGrad.addColorStop(0, '#d97706');
-      discGrad.addColorStop(0.8, '#78350f');
-      discGrad.addColorStop(1, '#b45309');
+      // Đĩa xoay trung tâm chịu lực (Central Flywheel Disc)
+      const discGrad = ctx.createRadialGradient(cx, cy, 6, cx, cy, 26);
+      discGrad.addColorStop(0, '#f59e0b');
+      discGrad.addColorStop(0.7, '#b45309');
+      discGrad.addColorStop(1, '#78350f');
       ctx.fillStyle = discGrad;
       ctx.beginPath();
-      ctx.arc(cx, cy, 20, 0, Math.PI * 2);
+      ctx.arc(cx, cy, 24, 0, Math.PI * 2);
       ctx.fill();
 
-      // Vòng đệm kim loại mạ vàng
+      // Vành đệm kim loại nổi
       ctx.strokeStyle = '#fef08a';
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 3;
       ctx.beginPath();
-      ctx.arc(cx, cy, 18, 0, Math.PI * 2);
+      ctx.arc(cx, cy, 22, 0, Math.PI * 2);
       ctx.stroke();
 
-      // Tâm trục ổ bi
+      // 4 Đinh tán đối xứng trên đĩa trung tâm
+      for (let j = 0; j < 4; j++) {
+        const da = (j * Math.PI) / 2;
+        const dx = cx + Math.cos(da) * 16;
+        const dy = cy + Math.sin(da) * 16;
+        ctx.fillStyle = '#451a03';
+        ctx.beginPath();
+        ctx.arc(dx, dy, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#fef08a';
+        ctx.beginPath();
+        ctx.arc(dx - 0.7, dy - 0.7, 0.9, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Trục ổ bi thép ở giữa
       ctx.fillStyle = '#0f172a';
       ctx.beginPath();
-      ctx.arc(cx, cy, 9, 0, Math.PI * 2);
+      ctx.arc(cx, cy, 10, 0, Math.PI * 2);
       ctx.fill();
+
+      ctx.strokeStyle = '#64748b';
+      ctx.lineWidth = 2;
+      ctx.stroke();
 
       ctx.fillStyle = '#38bdf8';
       ctx.beginPath();
@@ -169,84 +215,117 @@ export class PixelAssetManager {
     return tex;
   }
 
-  // 3. Đế Súng (BÁNH RĂNG KIM LOẠI 12 RĂNG CƯA) 80x80
+  // 3. Đế Súng (BÁNH RĂNG CÔNG NGHIỆP 10 RĂNG BẢN TO - CHUẨN ẢNH THIẾT KẾ) 96x96
   static getGunBaseTexture(tier: number): Texture {
-    const key = `gun_base_gear_hires_${tier}`;
+    const key = `gun_base_gear_hires_v2_${tier}`;
     if (this.cache.has(key)) return this.cache.get(key)!;
 
-    const tex = createHighResTexture(80, 80, (ctx) => {
-      const cx = 40, cy = 40;
+    const tex = createHighResTexture(96, 96, (ctx) => {
+      const cx = 48, cy = 48;
 
-      const baseColors = ['#475569', '#1e3a8a', '#581c87', '#78350f', '#831843'];
-      const gearRimColors = ['#94a3b8', '#38bdf8', '#c084fc', '#facc15', '#fb7185'];
-      const innerColors = ['#334155', '#172554', '#3b0764', '#451a03', '#4c0519'];
+      // Bảng màu bánh răng công nghiệp (Slate-Blue chuẩn ảnh người dùng cung cấp)
+      const gearMainColors = ['#346596', '#2563eb', '#6d28d9', '#b45309', '#be123c'];
+      const gearShadowColors = ['#1e3b5c', '#1e3a8a', '#4c1d95', '#78350f', '#881337'];
+      const gearHighlightColors = ['#5b8bb8', '#60a5fa', '#a78bfa', '#fbbf24', '#fb7185'];
 
       const colorIdx = Math.min(tier - 1, 4);
+      const mainCol = gearMainColors[colorIdx];
+      const shadowCol = gearShadowColors[colorIdx];
+      const lightCol = gearHighlightColors[colorIdx];
 
-      // Vẽ Bánh Răng 12 răng cưa cơ khí
-      const numTeeth = 12;
-      const rInner = 28;
-      const rOuter = 37;
+      const numTeeth = 10; // Đúng 10 răng bản to như ảnh mẫu!
+      const rRoot = 32;   // Bán kính chân răng
+      const rOuter = 42;  // Bán kính đỉnh răng bản to
 
-      ctx.fillStyle = baseColors[colorIdx];
+      // 1. Vẽ chu vi 10 răng bản to (Trapezoidal Cogwheel Teeth)
+      ctx.fillStyle = mainCol;
       ctx.beginPath();
       for (let i = 0; i < numTeeth; i++) {
-        const a0 = (i * 2 * Math.PI) / numTeeth;
-        const a1 = a0 + Math.PI / numTeeth * 0.35;
-        const a2 = a0 + Math.PI / numTeeth * 0.65;
-        const a3 = ((i + 1) * 2 * Math.PI) / numTeeth;
+        const theta = (i * 2 * Math.PI) / numTeeth;
+        const aRootLeft = theta - 0.22;
+        const aCrestLeft = theta - 0.12;
+        const aCrestRight = theta + 0.12;
+        const aRootRight = theta + 0.22;
 
-        // Điểm chân răng
-        const x0 = cx + Math.cos(a0) * rInner;
-        const y0 = cy + Math.sin(a0) * rInner;
-        // Điểm đỉnh răng 1
-        const x1 = cx + Math.cos(a1) * rOuter;
-        const y1 = cy + Math.sin(a1) * rOuter;
-        // Điểm đỉnh răng 2
-        const x2 = cx + Math.cos(a2) * rOuter;
-        const y2 = cy + Math.sin(a2) * rOuter;
-        // Điểm chân răng kế
-        const x3 = cx + Math.cos(a3) * rInner;
-        const y3 = cy + Math.sin(a3) * rInner;
+        const p0x = cx + Math.cos(aRootLeft) * rRoot;
+        const p0y = cy + Math.sin(aRootLeft) * rRoot;
 
-        if (i === 0) ctx.moveTo(x0, y0);
-        else ctx.lineTo(x0, y0);
-        ctx.lineTo(x1, y1);
-        ctx.lineTo(x2, y2);
-        ctx.lineTo(x3, y3);
+        const p1x = cx + Math.cos(aCrestLeft) * rOuter;
+        const p1y = cy + Math.sin(aCrestLeft) * rOuter;
+
+        const p2x = cx + Math.cos(aCrestRight) * rOuter;
+        const p2y = cy + Math.sin(aCrestRight) * rOuter;
+
+        const p3x = cx + Math.cos(aRootRight) * rRoot;
+        const p3y = cy + Math.sin(aRootRight) * rRoot;
+
+        if (i === 0) ctx.moveTo(p0x, p0y);
+        else ctx.lineTo(p0x, p0y);
+        ctx.lineTo(p1x, p1y);
+        ctx.lineTo(p2x, p2y);
+        ctx.lineTo(p3x, p3y);
       }
       ctx.closePath();
       ctx.fill();
 
-      // Viền kim loại nổi
-      ctx.strokeStyle = gearRimColors[colorIdx];
-      ctx.lineWidth = 2;
+      // 2. Đổ bóng 3D phía dưới-phải (giống ảnh mẫu người dùng)
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(cx, cy, rOuter + 2, 0, Math.PI * 2);
+      ctx.clip();
+
+      ctx.fillStyle = shadowCol;
+      ctx.beginPath();
+      ctx.arc(cx + 4, cy + 4, 34, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      // 3. Viền kim loại nổi bọc quanh toàn bộ bánh răng
+      ctx.strokeStyle = '#0f172a';
+      ctx.lineWidth = 2.5;
       ctx.stroke();
 
-      // Vành trong bánh răng
-      ctx.fillStyle = innerColors[colorIdx];
+      // 4. Vòng tròn rãnh bạc kim loại đồng tâm (Đặc trưng như ảnh mẫu)
+      ctx.strokeStyle = '#e2e8f0';
+      ctx.lineWidth = 4.5;
       ctx.beginPath();
-      ctx.arc(cx, cy, 24, 0, Math.PI * 2);
+      ctx.arc(cx, cy, 26, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Viền đen nhấn cho rãnh bạc
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.arc(cx, cy, 28.5, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(cx, cy, 23.5, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // 5. Lỗ rỗng xuyên tâm lớn ở giữa (Center Bore) như ảnh mẫu
+      ctx.fillStyle = '#090d16';
+      ctx.beginPath();
+      ctx.arc(cx, cy, 15, 0, Math.PI * 2);
       ctx.fill();
 
-      // 4 Lỗ khoét giảm trọng lượng cơ khí
-      for (let j = 0; j < 4; j++) {
-        const holeAngle = (j * Math.PI) / 2;
-        const hx = cx + Math.cos(holeAngle) * 16;
-        const hy = cy + Math.sin(holeAngle) * 16;
-        ctx.fillStyle = '#0f172a';
-        ctx.beginPath();
-        ctx.arc(hx, hy, 4, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = gearRimColors[colorIdx];
-        ctx.lineWidth = 1;
-        ctx.stroke();
-      }
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.arc(cx, cy, 15, 0, Math.PI * 2);
+      ctx.stroke();
 
-      // Trục xoay nòng súng ở giữa
+      // Vòng bạc nhỏ trong lòng lỗ tâm
+      ctx.strokeStyle = '#475569';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.arc(cx, cy, 11, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Khớp trục gắn nòng súng
       ctx.fillStyle = '#1e293b';
       ctx.beginPath();
-      ctx.arc(cx, cy, 10, 0, Math.PI * 2);
+      ctx.arc(cx, cy, 6, 0, Math.PI * 2);
       ctx.fill();
     });
 

@@ -20,7 +20,8 @@ export interface GridItem {
   rangeType: 'LANE' | 'SPREAD' | 'GLOBAL' | 'SHORT';
   recoilOffset: number;
   turretAngle: number; // Góc xoay của nòng súng (Radian) chĩa thẳng vào quái
-  gearAngle: number; // Góc xoay của đế bánh răng súng khi nhận hit cơ học (Radian)
+  gearAngle: number; // Góc xoay của đế bánh răng súng (Radian)
+  gearSpinVelocity: number; // Vận tốc góc để tạo animation xoay bánh răng mượt mà (rad/s)
 
   // Dành riêng cho TRIGGER (Cò)
   angle: number; // Góc hiện tại (độ: 0 - 360)

@@ -1,4 +1,4 @@
-import { Container, Graphics, Sprite, Text, TextStyle } from 'pixi.js';
+import { Container, Graphics, Sprite, Text, TextStyle, Rectangle, FederatedPointerEvent } from 'pixi.js';
 import { GridCell, GridItem, Bullet, Enemy, FloatingText, GunKind, BuffKind } from './types';
 import { PixelAssetManager } from './pixelArt';
 import { sound } from './audio';
@@ -10,9 +10,9 @@ export class GameEngine {
   public readonly COLS = 5;
   public readonly ROWS = 5;
   public readonly CELL_SIZE = 48;
-  public readonly GRID_X = 60; // (360 - 240) / 2
+  public readonly GRID_X = 60; // (360 - 5 * 48) / 2 = 60
   public readonly GRID_Y = 264;
-  public readonly WALL_Y = 260;
+  public readonly WALL_Y = 258;
 
   public grid: GridCell[][] = [];
 
@@ -27,23 +27,26 @@ export class GameEngine {
   private gridContainer: Container;
   private enemyContainer: Container;
   private bulletContainer: Container;
-  private uiContainer: Container;
   private fxContainer: Container;
+  private uiContainer: Container;
+  private dragContainer: Container;
 
   // Kéo thả
   private draggedItem: GridItem | null = null;
   private dragOriginCol: number = -1;
   private dragOriginRow: number = -1;
-  private dragSprite: Container | null = null;
+  private dragGhost: Container | null = null;
+  private hoverCol: number = -1;
+  private hoverRow: number = -1;
 
   // Kinh tế & Tiến trình
-  public gold: number = 10;
+  public gold: number = 12; // Khởi đầu 12$ thoải mái roll
   public castleHp: number = 100;
   public maxCastleHp: number = 100;
   public wave: number = 1;
   public maxWave: number = 10;
-  public isWaveActive: boolean = false;
-  public waveTimer: number = 0;
+  public isWaveActive: boolean = false; // Bắt đầu ở Prep Phase!
+  public prepPhase: boolean = true;
   public spawnTimer: number = 0;
   public enemiesToSpawn: number = 0;
   public rollPrice: number = 2;
@@ -55,24 +58,31 @@ export class GameEngine {
   // Screen shake
   public trauma: number = 0;
 
-  // UI Texts
+  // UI Components
   private goldText!: Text;
   private waveText!: Text;
   private hpText!: Text;
   private rollBtnText!: Text;
+  private gearBtnText!: Text;
+  private startWaveBtn!: Graphics;
+  private startWaveBtnText!: Text;
   private speedBtnText!: Text;
+  private tipText!: Text;
 
   // Pooling ID
   private nextId: number = 1;
 
   constructor() {
     this.stage = new Container();
+    this.stage.eventMode = 'static';
+    this.stage.hitArea = new Rectangle(0, 0, 360, 640);
 
     this.bgContainer = new Container();
-    this.wallContainer = new Container();
-    this.gridContainer = new Container();
     this.enemyContainer = new Container();
+    this.wallContainer = new Container();
     this.bulletContainer = new Container();
+    this.gridContainer = new Container();
+    this.dragContainer = new Container();
     this.fxContainer = new Container();
     this.uiContainer = new Container();
 
@@ -81,6 +91,7 @@ export class GameEngine {
     this.stage.addChild(this.wallContainer);
     this.stage.addChild(this.bulletContainer);
     this.stage.addChild(this.gridContainer);
+    this.stage.addChild(this.dragContainer);
     this.stage.addChild(this.fxContainer);
     this.stage.addChild(this.uiContainer);
 
@@ -88,13 +99,13 @@ export class GameEngine {
     this.initGrid();
     this.initWall();
     this.initUI();
-    this.startWave(1);
+    this.initGlobalDragListeners();
   }
 
-  // Khởi tạo nền chiến trường quái và pháo đài
+  // Khởi tạo nền
   private initBackground() {
     const bg = new Graphics();
-    // Vùng quái phía trên (đất tối, đường rãnh)
+    // Vùng quái phía trên
     bg.rect(0, 0, 360, this.WALL_Y);
     bg.fill({ color: 0x111318 });
 
@@ -104,7 +115,6 @@ export class GameEngine {
       bg.rect(lx, 0, this.CELL_SIZE, this.WALL_Y);
       bg.fill({ color: i % 2 === 0 ? 0x141822 : 0x181c26 });
 
-      // Đường kẻ chỉ làn mờ
       bg.rect(lx, 0, 1, this.WALL_Y);
       bg.fill({ color: 0x242a38, alpha: 0.6 });
     }
@@ -116,15 +126,14 @@ export class GameEngine {
     this.bgContainer.addChild(bg);
   }
 
-  // Khởi tạo bức tường thành
+  // Khởi tạo tường thành
   private initWall() {
     const wall = new Graphics();
     wall.rect(0, this.WALL_Y - 8, 360, 10);
-    wall.fill({ color: 0x475569 }); // Bờ thành đá
+    wall.fill({ color: 0x475569 });
     wall.rect(0, this.WALL_Y - 12, 360, 4);
-    wall.fill({ color: 0x94a3b8 }); // Gờ thành
+    wall.fill({ color: 0x94a3b8 });
 
-    // Răng cưa bảo vệ
     for (let x = 0; x < 360; x += 24) {
       wall.rect(x, this.WALL_Y - 16, 12, 6);
       wall.fill({ color: 0x64748b });
@@ -133,40 +142,22 @@ export class GameEngine {
     this.wallContainer.addChild(wall);
   }
 
-  // Khởi tạo lưới 5x5
+  // Khởi tạo lưới 5x5: MỞ HẾT TẤT CẢ 25 Ô!
   private initGrid() {
     for (let r = 0; r < this.ROWS; r++) {
       this.grid[r] = [];
       for (let c = 0; c < this.COLS; c++) {
-        // Mở sẵn 9 ô trung tâm (r: 1..3, c: 1..3)
-        const isUnlocked = r >= 1 && r <= 3 && c >= 1 && c <= 3;
         this.grid[r][c] = {
           col: c,
           row: r,
-          unlocked: isUnlocked,
+          unlocked: true, // Không khóa ô nào hết!
           item: null,
         };
       }
     }
 
-    // Đặt sẵn 1 Cò Lv1 ở chính giữa (2, 2)
-    this.grid[2][2].item = {
-      id: `trigger_init`,
-      type: 'TRIGGER',
-      level: 1,
-      tier: 1,
-      angle: 0,
-      rotationSpeed: 1.5,
-      lastHitAngle: [],
-      fill: 0,
-      fillPerHit: 0,
-      damage: 0,
-      rangeType: 'LANE',
-      recoilOffset: 0,
-    };
-
-    // Đặt sẵn 1 Súng Pistol Lv1 ở trên Cò (2, 1)
-    this.grid[1][2].item = this.createGun('PISTOL', 1);
+    // ĐẦU GAME CHỈ CÓ ĐÚNG 1 CÒ Ở CHÍNH GIỮA (2, 2) - KHÔNG CÓ SÚNG SẴN
+    this.grid[2][2].item = this.createTrigger(1);
   }
 
   // Tạo súng theo định nghĩa cân bằng
@@ -182,7 +173,7 @@ export class GameEngine {
     };
 
     const fillPerHitMap: Record<GunKind, number> = {
-      PISTOL: 0.50, // 2 hit là bắn
+      PISTOL: 0.50,
       CROSSBOW: 0.34,
       CRYO: 0.34,
       FLAMER: 0.34,
@@ -220,7 +211,6 @@ export class GameEngine {
     };
   }
 
-  // Tạo Cò
   public createTrigger(level: number): GridItem {
     return {
       id: `trigger_${Date.now()}_${Math.random()}`,
@@ -238,7 +228,6 @@ export class GameEngine {
     };
   }
 
-  // Tạo Buff
   public createBuff(kind: BuffKind, level: number): GridItem {
     return {
       id: `buff_${Date.now()}_${Math.random()}`,
@@ -257,7 +246,7 @@ export class GameEngine {
     };
   }
 
-  // Khởi tạo HUD & Nút điều khiển
+  // Khởi tạo HUD & Điều khiển
   private initUI() {
     const textStyle = new TextStyle({
       fontFamily: 'monospace',
@@ -266,37 +255,37 @@ export class GameEngine {
       fontWeight: 'bold',
     });
 
-    // 1. HUD đỉnh màn hình
+    // 1. Top HUD
     const topBar = new Graphics();
     topBar.rect(0, 0, 360, 34);
     topBar.fill({ color: 0x090a0f, alpha: 0.95 });
     this.uiContainer.addChild(topBar);
 
-    this.waveText = new Text({ text: 'WAVE 1/10', style: textStyle });
-    this.waveText.x = 12;
+    this.waveText = new Text({ text: 'WAVE 1/10 (CHUẨN BỊ)', style: { ...textStyle, fontSize: 11, fill: '#60a5fa' } });
+    this.waveText.x = 8;
     this.waveText.y = 10;
     this.uiContainer.addChild(this.waveText);
 
     this.hpText = new Text({ text: 'HP: 100/100', style: { ...textStyle, fill: '#4ade80' } });
-    this.hpText.x = 135;
+    this.hpText.x = 180;
     this.hpText.y = 10;
     this.uiContainer.addChild(this.hpText);
 
-    this.goldText = new Text({ text: '$: 10', style: { ...textStyle, fill: '#facc15' } });
-    this.goldText.x = 290;
+    this.goldText = new Text({ text: '$: 12', style: { ...textStyle, fill: '#facc15' } });
+    this.goldText.x = 295;
     this.goldText.y = 10;
     this.uiContainer.addChild(this.goldText);
 
-    // 2. Thanh điều khiển dưới (Vùng 3: y = 520 -> 640)
+    // 2. Bottom Controls (y = 515 -> 640)
     const botBar = new Graphics();
-    botBar.rect(0, 520, 360, 120);
+    botBar.rect(0, 515, 360, 125);
     botBar.fill({ color: 0x0d0e15 });
     this.uiContainer.addChild(botBar);
 
-    // Nút ROLL
+    // Nút ROLL (x = 10, w = 96)
     const rollBtn = new Graphics();
-    rollBtn.roundRect(14, 535, 100, 46, 6);
-    rollBtn.fill({ color: 0x2563eb });
+    rollBtn.roundRect(10, 525, 96, 48, 6);
+    rollBtn.fill({ color: 0x1d4ed8 });
     rollBtn.stroke({ color: 0x60a5fa, width: 2 });
     rollBtn.eventMode = 'static';
     rollBtn.cursor = 'pointer';
@@ -304,43 +293,44 @@ export class GameEngine {
     this.uiContainer.addChild(rollBtn);
 
     this.rollBtnText = new Text({ text: '🎲 ROLL\n  2$', style: { ...textStyle, fontSize: 11, align: 'center' } });
-    this.rollBtnText.x = 34;
-    this.rollBtnText.y = 542;
+    this.rollBtnText.x = 30;
+    this.rollBtnText.y = 533;
     this.uiContainer.addChild(this.rollBtnText);
 
-    // Nút MUA CÒ (+GEAR)
+    // Nút +CÒ (x = 114, w = 96)
     const gearBtn = new Graphics();
-    gearBtn.roundRect(130, 535, 100, 46, 6);
-    gearBtn.fill({ color: 0xd97706 });
+    gearBtn.roundRect(114, 525, 96, 48, 6);
+    gearBtn.fill({ color: 0xb45309 });
     gearBtn.stroke({ color: 0xfbbf24, width: 2 });
     gearBtn.eventMode = 'static';
     gearBtn.cursor = 'pointer';
     gearBtn.on('pointerdown', () => this.onAddTriggerClicked());
     this.uiContainer.addChild(gearBtn);
 
-    const gearBtnText = new Text({ text: '⚙ +CÒ\n  15$', style: { ...textStyle, fontSize: 11, align: 'center' } });
-    gearBtnText.x = 155;
-    gearBtnText.y = 542;
-    this.uiContainer.addChild(gearBtnText);
+    this.gearBtnText = new Text({ text: '⚙ +CÒ\n 15$', style: { ...textStyle, fontSize: 11, align: 'center' } });
+    this.gearBtnText.x = 138;
+    this.gearBtnText.y = 533;
+    this.uiContainer.addChild(this.gearBtnText);
 
-    // Nút MỞ THÊM Ô (+CELL)
-    const unlockBtn = new Graphics();
-    unlockBtn.roundRect(246, 535, 100, 46, 6);
-    unlockBtn.fill({ color: 0x059669 });
-    unlockBtn.stroke({ color: 0x34d399, width: 2 });
-    unlockBtn.eventMode = 'static';
-    unlockBtn.cursor = 'pointer';
-    unlockBtn.on('pointerdown', () => this.onUnlockCellClicked());
-    this.uiContainer.addChild(unlockBtn);
+    // Nút BẮT ĐẦU VÁN (START WAVE) (x = 218, w = 132)
+    this.startWaveBtn = new Graphics();
+    this.drawStartWaveBtn(true);
+    this.startWaveBtn.eventMode = 'static';
+    this.startWaveBtn.cursor = 'pointer';
+    this.startWaveBtn.on('pointerdown', () => this.onStartWaveClicked());
+    this.uiContainer.addChild(this.startWaveBtn);
 
-    const unlockBtnText = new Text({ text: '🔓 MỞ Ô\n  10$', style: { ...textStyle, fontSize: 11, align: 'center' } });
-    unlockBtnText.x = 268;
-    unlockBtnText.y = 542;
-    this.uiContainer.addChild(unlockBtnText);
+    this.startWaveBtnText = new Text({
+      text: '⚔ BẮT ĐẦU\n  VÁN 1',
+      style: { ...textStyle, fontSize: 12, fill: '#ffffff', align: 'center', fontWeight: 'bold' }
+    });
+    this.startWaveBtnText.x = 238;
+    this.startWaveBtnText.y = 533;
+    this.uiContainer.addChild(this.startWaveBtnText);
 
-    // Nút TUA NHANH x1 / x2
+    // Nút TUA NHANH x1 / x2 (x = 10, y = 582)
     const speedBtn = new Graphics();
-    speedBtn.roundRect(14, 592, 90, 32, 4);
+    speedBtn.roundRect(10, 582, 85, 30, 4);
     speedBtn.fill({ color: 0x334155 });
     speedBtn.stroke({ color: 0x64748b, width: 1 });
     speedBtn.eventMode = 'static';
@@ -352,31 +342,65 @@ export class GameEngine {
     });
     this.uiContainer.addChild(speedBtn);
 
-    this.speedBtnText = new Text({ text: 'TỐC: x1', style: { ...textStyle, fontSize: 11 } });
-    this.speedBtnText.x = 26;
-    this.speedBtnText.y = 600;
+    this.speedBtnText = new Text({ text: 'TỐC: x1', style: { ...textStyle, fontSize: 10 } });
+    this.speedBtnText.x = 20;
+    this.speedBtnText.y = 589;
     this.uiContainer.addChild(this.speedBtnText);
 
-    // Dòng hướng dẫn ngắn gọn cho người chơi
-    const tipText = new Text({
-      text: 'Kéo đè 2 món giống nhau = MERGE tăng sao',
-      style: { ...textStyle, fontSize: 10, fill: '#94a3b8' }
+    // Dòng thông báo hướng dẫn
+    this.tipText = new Text({
+      text: 'Set up súng quanh Cò rồi bấm BẮT ĐẦU',
+      style: { ...textStyle, fontSize: 9.5, fill: '#facc15' }
     });
-    tipText.x = 115;
-    tipText.y = 602;
-    this.uiContainer.addChild(tipText);
+    this.tipText.x = 104;
+    this.tipText.y = 590;
+    this.uiContainer.addChild(this.tipText);
   }
 
-  // Xử lý nút Roll
+  private drawStartWaveBtn(isActive: boolean) {
+    this.startWaveBtn.clear();
+    this.startWaveBtn.roundRect(218, 525, 132, 48, 6);
+    if (isActive) {
+      this.startWaveBtn.fill({ color: 0x16a34a });
+      this.startWaveBtn.stroke({ color: 0x4ade80, width: 2 });
+    } else {
+      this.startWaveBtn.fill({ color: 0x3f3f46 });
+      this.startWaveBtn.stroke({ color: 0x71717a, width: 1 });
+    }
+  }
+
+  // ================= BẮT ĐẦU VÁN ================= //
+
+  public onStartWaveClicked() {
+    if (this.isWaveActive) return; // Đang đánh thì không ấn lại
+
+    this.prepPhase = false;
+    this.isWaveActive = true;
+    this.enemiesToSpawn = 8 + this.wave * 4;
+    this.spawnTimer = 0;
+
+    this.drawStartWaveBtn(false);
+    this.startWaveBtnText.text = `ĐANG CHIẾN\nWAVE ${this.wave}`;
+    this.tipText.text = 'Kéo đè 2 món giống nhau = MERGE';
+    this.tipText.style.fill = '#94a3b8';
+    this.waveText.text = `WAVE ${this.wave}/${this.maxWave}`;
+    this.waveText.style.fill = '#f8fafc';
+
+    sound.playMerge();
+    this.addFloatingText(180, 100, `WAVE ${this.wave} BẮT ĐẦU!`, '#4ade80');
+  }
+
+  // ================= ROLL & MUA CÒ ================= //
+
   public onRollClicked() {
     if (this.gold < this.rollPrice) {
-      this.addFloatingText(70, 520, 'Không đủ vàng!', '#ef4444');
+      this.addFloatingText(58, 515, 'Không đủ vàng!', '#ef4444');
       return;
     }
 
     const emptyCell = this.getRandomEmptyUnlockedCell();
     if (!emptyCell) {
-      this.addFloatingText(70, 520, 'Hết ô trống!', '#ef4444');
+      this.addFloatingText(58, 515, 'Hết ô trống!', '#ef4444');
       return;
     }
 
@@ -385,15 +409,13 @@ export class GameEngine {
     this.rollPrice = Math.min(2 + Math.floor(this.rollCount * 0.7), 12);
     this.rollBtnText.text = `🎲 ROLL\n  ${this.rollPrice}$`;
 
-    // Roll ra ngẫu nhiên Súng hoặc Buff
+    // Roll ra ngẫu nhiên súng hoặc buff
     const rollType = Math.random();
-    if (rollType < 0.7) {
-      // 70% ra súng
+    if (rollType < 0.75) {
       const guns: GunKind[] = ['PISTOL', 'CROSSBOW', 'CRYO', 'FLAMER', 'SHOTGUN'];
       const chosen = guns[Math.floor(Math.random() * guns.length)];
       emptyCell.item = this.createGun(chosen, 1);
     } else {
-      // 30% ra buff
       const buffs: BuffKind[] = ['DMG', 'SPEED', 'FILL', 'CRIT'];
       const chosen = buffs[Math.floor(Math.random() * buffs.length)];
       emptyCell.item = this.createBuff(chosen, 1);
@@ -408,17 +430,16 @@ export class GameEngine {
     );
   }
 
-  // Mua thêm Cò
   public onAddTriggerClicked() {
     const price = 15;
     if (this.gold < price) {
-      this.addFloatingText(180, 520, 'Cần 15$!', '#ef4444');
+      this.addFloatingText(160, 515, 'Cần 15$!', '#ef4444');
       return;
     }
 
     const emptyCell = this.getRandomEmptyUnlockedCell();
     if (!emptyCell) {
-      this.addFloatingText(180, 520, 'Hết ô trống!', '#ef4444');
+      this.addFloatingText(160, 515, 'Hết ô trống!', '#ef4444');
       return;
     }
 
@@ -433,47 +454,6 @@ export class GameEngine {
     );
   }
 
-  // Mở thêm ô bị khóa
-  public onUnlockCellClicked() {
-    const lockedCells: GridCell[] = [];
-    for (let r = 0; r < this.ROWS; r++) {
-      for (let c = 0; c < this.COLS; c++) {
-        if (!this.grid[r][c].unlocked) {
-          lockedCells.push(this.grid[r][c]);
-        }
-      }
-    }
-
-    if (lockedCells.length === 0) {
-      this.addFloatingText(290, 520, 'Đã mở hết ô!', '#22c55e');
-      return;
-    }
-
-    const price = 10;
-    if (this.gold < price) {
-      this.addFloatingText(290, 520, 'Cần 10$!', '#ef4444');
-      return;
-    }
-
-    this.gold -= price;
-    // Mở ô gần trung tâm nhất
-    lockedCells.sort((a, b) => {
-      const distA = Math.hypot(a.col - 2, a.row - 2);
-      const distB = Math.hypot(b.col - 2, b.row - 2);
-      return distA - distB;
-    });
-
-    lockedCells[0].unlocked = true;
-    sound.playMerge();
-    this.addFloatingText(
-      this.GRID_X + lockedCells[0].col * this.CELL_SIZE + 24,
-      this.GRID_Y + lockedCells[0].row * this.CELL_SIZE + 24,
-      'MỞ Ô!',
-      '#34d399'
-    );
-  }
-
-  // Tìm ngẫu nhiên một ô trống đã mở
   private getRandomEmptyUnlockedCell(): GridCell | null {
     const available: GridCell[] = [];
     for (let r = 0; r < this.ROWS; r++) {
@@ -487,60 +467,168 @@ export class GameEngine {
     return available[Math.floor(Math.random() * available.length)];
   }
 
-  // Bắt đầu Wave mới
-  public startWave(waveNumber: number) {
-    this.wave = waveNumber;
-    this.isWaveActive = true;
-    this.enemiesToSpawn = 8 + waveNumber * 4;
-    this.spawnTimer = 0;
-    this.waveText.text = `WAVE ${this.wave}/${this.maxWave}`;
-    sound.playMerge();
-    this.addFloatingText(180, 100, `WAVE ${this.wave} BẮT ĐẦU!`, '#facc15');
+  // ================= HỆ THỐNG KÉO THẢ PIXI NATIVE CHUẨN XÁC 100% ================= //
+
+  private initGlobalDragListeners() {
+    this.stage.on('pointermove', (e: FederatedPointerEvent) => {
+      if (!this.draggedItem || !this.dragGhost) return;
+
+      // Cập nhật vị trí ghost theo tọa độ Pixi Stage chuẩn (0..360, 0..640)
+      this.dragGhost.x = e.global.x - 20;
+      this.dragGhost.y = e.global.y - 20;
+
+      // Tính ô đang hover
+      const col = Math.floor((e.global.x - this.GRID_X) / this.CELL_SIZE);
+      const row = Math.floor((e.global.y - this.GRID_Y) / this.CELL_SIZE);
+      if (col >= 0 && col < this.COLS && row >= 0 && row < this.ROWS) {
+        this.hoverCol = col;
+        this.hoverRow = row;
+      } else {
+        this.hoverCol = -1;
+        this.hoverRow = -1;
+      }
+    });
+
+    const finishDrag = (e: FederatedPointerEvent) => {
+      if (!this.draggedItem) return;
+
+      const dropCol = Math.floor((e.global.x - this.GRID_X) / this.CELL_SIZE);
+      const dropRow = Math.floor((e.global.y - this.GRID_Y) / this.CELL_SIZE);
+
+      const origCol = this.dragOriginCol;
+      const origRow = this.dragOriginRow;
+
+      // Kiểm tra hợp lệ bên trong bàn cờ 5x5
+      if (dropCol >= 0 && dropCol < this.COLS && dropRow >= 0 && dropRow < this.ROWS) {
+        const targetCell = this.grid[dropRow][dropCol];
+        const sourceCell = this.grid[origRow][origCol];
+
+        if (dropCol === origCol && dropRow === origRow) {
+          // Thả lại chỗ cũ -> giữ nguyên
+        } else if (targetCell.item === null) {
+          // 1. Ô đích trống -> Di chuyển
+          targetCell.item = this.draggedItem;
+          sourceCell.item = null;
+          sound.playClick();
+        } else {
+          // 2. Ô đích đã có món
+          const dest = targetCell.item;
+          const drag = this.draggedItem;
+
+          const canMerge =
+            dest.type === drag.type &&
+            dest.level === drag.level &&
+            dest.level < 5 &&
+            ((dest.type === 'GUN' && dest.gunKind === drag.gunKind) ||
+             (dest.type === 'BUFF' && dest.buffKind === drag.buffKind) ||
+             (dest.type === 'TRIGGER'));
+
+          if (canMerge) {
+            // MERGE LÊN LEVEL + 1
+            if (dest.type === 'GUN') {
+              targetCell.item = this.createGun(dest.gunKind!, dest.level + 1);
+            } else if (dest.type === 'TRIGGER') {
+              targetCell.item = this.createTrigger(dest.level + 1);
+            } else if (dest.type === 'BUFF') {
+              targetCell.item = this.createBuff(dest.buffKind!, dest.level + 1);
+            }
+
+            sourceCell.item = null;
+            sound.playMerge();
+            this.addFloatingText(
+              this.GRID_X + dropCol * this.CELL_SIZE + 24,
+              this.GRID_Y + dropRow * this.CELL_SIZE + 24,
+              `MERGE Lv${targetCell.item!.level}!`,
+              '#facc15'
+            );
+          } else {
+            // KHÁC LOẠI HOẶC KHÁC LEVEL -> ĐỔI CHỖ (SWAP)
+            targetCell.item = drag;
+            sourceCell.item = dest;
+            sound.playClick();
+          }
+        }
+      }
+
+      // Dọn dẹp trạng thái drag
+      this.draggedItem = null;
+      this.dragOriginCol = -1;
+      this.dragOriginRow = -1;
+      this.hoverCol = -1;
+      this.hoverRow = -1;
+
+      if (this.dragGhost) {
+        this.dragGhost.destroy({ children: true });
+        this.dragGhost = null;
+      }
+    };
+
+    this.stage.on('pointerup', finishDrag);
+    this.stage.on('pointerupoutside', finishDrag);
   }
 
-  // Update chính mỗi frame
+  // Khi click/chạm vào một món đồ
+  private onItemPointerDown(e: FederatedPointerEvent, item: GridItem, col: number, row: number) {
+    this.draggedItem = item;
+    this.dragOriginCol = col;
+    this.dragOriginRow = row;
+
+    if (this.dragGhost) {
+      this.dragGhost.destroy({ children: true });
+      this.dragGhost = null;
+    }
+
+    // Tạo ghost bám theo tay
+    this.dragGhost = this.createItemDisplay(item, e.global.x - 20, e.global.y - 20, false);
+    this.dragGhost.alpha = 0.9;
+    this.dragContainer.addChild(this.dragGhost);
+  }
+
+  // ================= GAME LOOP ================= //
+
   public update(rawDt: number) {
     if (this.isGameOver || this.isVictory) return;
 
     const dt = Math.min(rawDt, 0.1) * this.gameSpeed;
 
-    // 1. Cập nhật xoay Bánh Răng Cò và kích hoạt Hit
+    // 1. Cập nhật xoay Bánh Răng Cò
     this.updateTriggers(dt);
 
-    // 2. Cập nhật hồi giật của súng
+    // 2. Cập nhật hồi giật súng
     this.updateGuns(dt);
 
-    // 3. Cập nhật Wave & Quái vật
-    this.updateWave(dt);
+    // 3. Cập nhật Wave (chỉ khi wave đang active)
+    if (this.isWaveActive) {
+      this.updateWave(dt);
+    }
 
-    // 4. Cập nhật Đạn & Va chạm
+    // 4. Cập nhật Đạn
     this.updateBullets(dt);
 
-    // 5. Cập nhật Floating text
+    // 5. Cập nhật Floating Texts
     this.updateFloatingTexts(dt);
 
-    // 6. Cập nhật Rung màn hình (Screen shake)
+    // 6. Cập nhật Rung màn hình
     this.updateScreenShake(dt);
 
-    // 7. Cập nhật Text HUD
+    // 7. Cập nhật HUD text
     this.goldText.text = `$: ${this.gold}`;
     this.hpText.text = `HP: ${this.castleHp}/${this.maxCastleHp}`;
 
-    // Render lại giao diện Grid
+    // Render Grid & Entities
     this.renderGrid();
     this.renderEnemies();
     this.renderBullets();
     this.renderFloatingTexts();
   }
 
-  // Cập nhật Cò và cơ chế gõ 4 hướng
+  // Cập nhật Cò và gõ 4 hướng
   private updateTriggers(dt: number) {
     for (let r = 0; r < this.ROWS; r++) {
       for (let c = 0; c < this.COLS; c++) {
         const item = this.grid[r][c].item;
         if (!item || item.type !== 'TRIGGER') continue;
 
-        // Tính toán buff tốc độ xoay từ các ô kề
         let speedMultiplier = 1.0;
         this.getAdjacentCells(c, r).forEach(adj => {
           if (adj.item && adj.item.type === 'BUFF' && adj.item.buffKind === 'SPEED') {
@@ -552,8 +640,6 @@ export class GameEngine {
         const speedDeg = item.rotationSpeed * speedMultiplier * 360;
         item.angle = (item.angle + speedDeg * dt) % 360;
 
-        // Kiểm tra xem các chấu cò có vừa quét qua 4 hướng thẳng không:
-        // Hướng: Phải (0° / 360°), Dưới (90°), Trái (180°), Trên (270°)
         const cardinalAngles = [
           { dir: 'RIGHT', angle: 0, dc: 1, dr: 0 },
           { dir: 'DOWN', angle: 90, dc: 0, dr: 1 },
@@ -561,7 +647,7 @@ export class GameEngine {
           { dir: 'UP', angle: 270, dc: 0, dr: -1 },
         ];
 
-        const bladesCount = item.level; // Số chấu = level
+        const bladesCount = item.level;
         const bladeStep = 360 / bladesCount;
 
         for (let b = 0; b < bladesCount; b++) {
@@ -570,7 +656,7 @@ export class GameEngine {
 
           cardinalAngles.forEach(card => {
             if (this.angleCrossed(prevBladeAngle, bladeAngle, card.angle)) {
-              this.triggerHit(c + card.dc, r + card.dr, c, r);
+              this.triggerHit(c + card.dc, r + card.dr);
             }
           });
         }
@@ -578,18 +664,15 @@ export class GameEngine {
     }
   }
 
-  // Kiểm tra góc quét qua mốc
   private angleCrossed(prev: number, curr: number, target: number): boolean {
     if (prev <= curr) {
       return prev < target && target <= curr;
     } else {
-      // Qua mốc 360
       return prev < target || target <= curr;
     }
   }
 
-  // Kích hoạt khi Cò gõ vào 1 ô kề
-  private triggerHit(targetCol: number, targetRow: number, fromCol: number, fromRow: number) {
+  private triggerHit(targetCol: number, targetRow: number) {
     if (targetCol < 0 || targetCol >= this.COLS || targetRow < 0 || targetRow >= this.ROWS) return;
 
     const targetCell = this.grid[targetRow][targetCol];
@@ -598,7 +681,6 @@ export class GameEngine {
     const item = targetCell.item;
 
     if (item.type === 'GUN') {
-      // Tính buff Fill từ các ô kề của súng
       let fillMultiplier = 1.0;
       this.getAdjacentCells(targetCol, targetRow).forEach(adj => {
         if (adj.item && adj.item.type === 'BUFF' && adj.item.buffKind === 'FILL') {
@@ -607,20 +689,20 @@ export class GameEngine {
       });
 
       item.fill += item.fillPerHit * fillMultiplier;
-      item.recoilOffset = 4; // Giật nhẹ
+      item.recoilOffset = 4;
       sound.playClick();
 
-      // Khi súng đầy thanh nạp -> BẮN
       if (item.fill >= 1.0) {
         item.fill -= 1.0;
-        this.fireGun(targetCol, targetRow, item);
+        // Chỉ bắn khi wave đang đánh hoặc có quái
+        if (this.isWaveActive || this.enemies.length > 0) {
+          this.fireGun(targetCol, targetRow, item);
+        }
       }
     }
   }
 
-  // Súng bắn đạn
   private fireGun(col: number, row: number, gun: GridItem) {
-    // Tính buff sát thương và chí mạng
     let dmgMultiplier = 1.0;
     let critChance = 0.05;
 
@@ -640,14 +722,12 @@ export class GameEngine {
     sound.playShoot(gun.tier);
 
     if (gun.rangeType === 'LANE' || gun.rangeType === 'SHORT') {
-      // Bắn thẳng lên trên
       this.spawnBullet(spawnX, spawnY, 0, -380, finalDmg, gun.gunKind === 'CROSSBOW' ? 2 : 1, this.getGunElement(gun.gunKind));
     } else if (gun.rangeType === 'SPREAD') {
-      // Bắn 3 tia quạt
       this.spawnBullet(spawnX, spawnY, 0, -360, finalDmg, 1, 'NORMAL');
       this.spawnBullet(spawnX, spawnY, -90, -340, Math.round(finalDmg * 0.7), 1, 'NORMAL');
       this.spawnBullet(spawnX, spawnY, 90, -340, Math.round(finalDmg * 0.7), 1, 'NORMAL');
-    } else { // GLOBAL / TESLA
+    } else {
       this.spawnBullet(spawnX, spawnY, 0, -420, finalDmg, 3, 'ELECTRIC');
     }
   }
@@ -660,7 +740,6 @@ export class GameEngine {
     return 'NORMAL';
   }
 
-  // Tạo đạn
   private spawnBullet(x: number, y: number, vx: number, vy: number, damage: number, pierce: number, element: any) {
     this.bullets.push({
       id: this.nextId++,
@@ -676,7 +755,6 @@ export class GameEngine {
     });
   }
 
-  // Hồi giật súng
   private updateGuns(dt: number) {
     for (let r = 0; r < this.ROWS; r++) {
       for (let c = 0; c < this.COLS; c++) {
@@ -688,10 +766,8 @@ export class GameEngine {
     }
   }
 
-  // Quản lý Wave & Spawn quái
+  // Cập nhật Wave & Quái
   private updateWave(dt: number) {
-    if (!this.isWaveActive) return;
-
     this.spawnTimer += dt;
     const spawnInterval = Math.max(0.6, 1.8 - this.wave * 0.1);
 
@@ -701,16 +777,14 @@ export class GameEngine {
       this.spawnRandomEnemy();
     }
 
-    // Cập nhật vị trí quái
     for (let i = this.enemies.length - 1; i >= 0; i--) {
       const e = this.enemies[i];
       if (!e.active) continue;
 
-      // Trạng thái hiệu ứng
       let currentSpeed = e.speed;
       if (e.slowTimer > 0) {
         e.slowTimer -= dt;
-        currentSpeed *= 0.6; // Giảm 40% tốc độ
+        currentSpeed *= 0.6;
       }
       if (e.burnTimer > 0) {
         e.burnTimer -= dt;
@@ -726,7 +800,6 @@ export class GameEngine {
 
       e.y += currentSpeed * dt;
 
-      // Quái chạm tường thành
       if (e.y >= this.WALL_Y - 10) {
         e.active = false;
         const dmg = e.isBoss ? 30 : (e.isElite ? 15 : 8);
@@ -741,16 +814,14 @@ export class GameEngine {
       }
     }
 
-    // Dọn dẹp quái chết
     this.enemies = this.enemies.filter(e => e.active);
 
-    // Kiểm tra hoàn thành wave
+    // Khi hết quái trong wave
     if (this.enemiesToSpawn === 0 && this.enemies.length === 0) {
       this.onWaveClear();
     }
   }
 
-  // Sinh quái ngẫu nhiên theo làn
   private spawnRandomEnemy() {
     const lane = Math.floor(Math.random() * 5);
     const x = this.GRID_X + lane * this.CELL_SIZE + this.CELL_SIZE / 2;
@@ -759,7 +830,7 @@ export class GameEngine {
     const isBossWave = this.wave === this.maxWave && this.enemiesToSpawn === 0;
     const isElite = !isBossWave && Math.random() < 0.2;
 
-    const baseHp = 30 * Math.pow(1.22, this.wave - 1);
+    const baseHp = 28 * Math.pow(1.22, this.wave - 1);
     let hp = baseHp;
     let speed = 36 + Math.random() * 12;
 
@@ -790,7 +861,6 @@ export class GameEngine {
     });
   }
 
-  // Quái bị tiêu diệt
   private killEnemy(e: Enemy) {
     e.active = false;
     const reward = e.isBoss ? 20 : (e.isElite ? 5 : 2);
@@ -799,9 +869,11 @@ export class GameEngine {
     this.addFloatingText(e.x, e.y, `+${reward}$`, '#facc15');
   }
 
-  // Hoàn thành Wave
+  // Kết thúc Wave -> Chuyển về Prep Phase để người chơi sắp xếp tiếp!
   private onWaveClear() {
     this.isWaveActive = false;
+    this.prepPhase = true;
+
     const waveBonus = 8 + this.wave * 2;
     this.gold += waveBonus;
     sound.playMerge();
@@ -810,25 +882,29 @@ export class GameEngine {
     if (this.wave >= this.maxWave) {
       this.isVictory = true;
       this.addFloatingText(180, 200, 'CHIẾN THẮNG!', '#facc15');
+      this.drawStartWaveBtn(false);
+      this.startWaveBtnText.text = 'THẮNG CUỘC!';
       return;
     }
 
-    // Nghỉ 5s rồi tự sang wave kế
-    setTimeout(() => {
-      if (!this.isGameOver && !this.isVictory) {
-        this.startWave(this.wave + 1);
-      }
-    }, 4000);
+    // Tăng wave và cho người chơi bấm nút khi đã sẵn sàng
+    this.wave++;
+    this.drawStartWaveBtn(true);
+    this.startWaveBtnText.text = `⚔ BẮT ĐẦU\n  VÁN ${this.wave}`;
+    this.tipText.text = `Chuẩn bị xong ấn BẮT ĐẦU VÁN ${this.wave}`;
+    this.tipText.style.fill = '#facc15';
+    this.waveText.text = `WAVE ${this.wave}/${this.maxWave} (CHUẨN BỊ)`;
+    this.waveText.style.fill = '#60a5fa';
   }
 
-  // Thua cuộc
   private onGameOver() {
     this.isGameOver = true;
     sound.playExplode();
     this.addFloatingText(180, 200, 'THÀNH BỊ PHÁ HỦY!', '#ef4444');
+    this.drawStartWaveBtn(false);
+    this.startWaveBtnText.text = 'THUA RỒI!';
   }
 
-  // Cập nhật Đạn
   private updateBullets(dt: number) {
     for (let i = this.bullets.length - 1; i >= 0; i--) {
       const b = this.bullets[i];
@@ -837,13 +913,11 @@ export class GameEngine {
       b.x += b.vx * dt;
       b.y += b.vy * dt;
 
-      // Ra khỏi màn hình
       if (b.y < 30 || b.y > 640 || b.x < 20 || b.x > 340) {
         b.active = false;
         continue;
       }
 
-      // Va chạm với Quái
       for (const e of this.enemies) {
         if (!e.active) continue;
 
@@ -853,11 +927,10 @@ export class GameEngine {
 
         if (dx * dx + dy * dy <= hitDist * hitDist) {
           e.hp -= b.damage;
-          e.hitFlashTimer = 0.08; // Nháy trắng
+          e.hitFlashTimer = 0.08;
           sound.playHit();
           this.addFloatingText(e.x + (Math.random() * 16 - 8), e.y - 10, `${b.damage}`, '#ffffff');
 
-          // Hiệu ứng nguyên tố
           if (b.element === 'ICE') e.slowTimer = 2.0;
           if (b.element === 'FIRE') e.burnTimer = 3.0;
 
@@ -877,7 +950,6 @@ export class GameEngine {
     this.bullets = this.bullets.filter(b => b.active);
   }
 
-  // Rung màn hình
   private updateScreenShake(dt: number) {
     if (this.trauma > 0) {
       this.trauma = Math.max(0, this.trauma - 1.5 * dt);
@@ -890,7 +962,6 @@ export class GameEngine {
     }
   }
 
-  // Cập nhật text bay
   private updateFloatingTexts(dt: number) {
     for (let i = this.floatingTexts.length - 1; i >= 0; i--) {
       const ft = this.floatingTexts[i];
@@ -915,7 +986,6 @@ export class GameEngine {
     });
   }
 
-  // Lấy 4 ô lân cận (Trên, Dưới, Trái, Phải)
   private getAdjacentCells(col: number, row: number): GridCell[] {
     const res: GridCell[] = [];
     const offsets = [[0, -1], [0, 1], [-1, 0], [1, 0]];
@@ -929,7 +999,7 @@ export class GameEngine {
     return res;
   }
 
-  // ================= RENDER HỆ THỐNG GRID & KÉO THẢ ================= //
+  // ================= RENDER GRID ================= //
 
   private renderGrid() {
     this.gridContainer.removeChildren();
@@ -946,30 +1016,48 @@ export class GameEngine {
         cellSprite.y = cellY;
         this.gridContainer.addChild(cellSprite);
 
-        // Nếu ô có item và không phải đang bị kéo đi
-        if (cell.item && !(this.draggedItem === cell.item)) {
-          const itemContainer = this.createItemDisplay(cell.item, cellX + 4, cellY + 4, c, r);
-          this.gridContainer.addChild(itemContainer);
+        // Highlight ô đang hover khi kéo thả
+        if (this.draggedItem && this.hoverCol === c && this.hoverRow === r) {
+          const hl = new Graphics();
+          hl.rect(cellX + 2, cellY + 2, 44, 44);
+          hl.stroke({ color: 0xfacc15, width: 2 });
+          this.gridContainer.addChild(hl);
+        }
+
+        // Nếu ô có item
+        if (cell.item) {
+          const isBeingDragged = this.draggedItem === cell.item;
+          const itemDisplay = this.createItemDisplay(cell.item, cellX + 4, cellY + 4, true, c, r);
+          if (isBeingDragged) {
+            itemDisplay.alpha = 0.35; // Làm mờ ô gốc khi đang kéo đi
+          }
+          this.gridContainer.addChild(itemDisplay);
         }
       }
-    }
-
-    // Nếu đang kéo món đồ
-    if (this.dragSprite) {
-      this.gridContainer.addChild(this.dragSprite);
     }
   }
 
   // Tạo container hiển thị cho 1 món đồ
-  private createItemDisplay(item: GridItem, x: number, y: number, col: number, row: number): Container {
+  private createItemDisplay(
+    item: GridItem,
+    x: number,
+    y: number,
+    isInteractive: boolean = false,
+    col: number = -1,
+    row: number = -1
+  ): Container {
     const container = new Container();
     container.x = x;
     container.y = y - (item.recoilOffset || 0);
 
-    // Kích hoạt tương tác chạm & kéo
-    container.eventMode = 'static';
-    container.cursor = 'grab';
-    container.on('pointerdown', (e) => this.onItemPointerDown(e, item, col, row));
+    if (isInteractive) {
+      container.eventMode = 'static';
+      container.cursor = 'grab';
+      container.on('pointerdown', (e: FederatedPointerEvent) => {
+        e.stopPropagation();
+        this.onItemPointerDown(e, item, col, row);
+      });
+    }
 
     if (item.type === 'TRIGGER') {
       const sprite = new Sprite(PixelAssetManager.getTriggerTexture(item.level));
@@ -979,7 +1067,6 @@ export class GameEngine {
       sprite.rotation = (item.angle * Math.PI) / 180;
       container.addChild(sprite);
 
-      // Hiển thị cấp độ Cò
       const lvlText = new Text({
         text: `x${item.level}`,
         style: { fontFamily: 'monospace', fontSize: 10, fill: '#fef08a', fontWeight: 'bold' }
@@ -991,7 +1078,7 @@ export class GameEngine {
       const sprite = new Sprite(PixelAssetManager.getGunTexture(item.gunKind!, item.level));
       container.addChild(sprite);
 
-      // Vòng tròn / thanh fill nạp đạn quanh súng
+      // Thanh fill nạp đạn
       const fillG = new Graphics();
       fillG.rect(4, 34, 32, 4);
       fillG.fill({ color: 0x0f172a });
@@ -1001,7 +1088,6 @@ export class GameEngine {
       fillG.fill({ color: item.fill >= 0.9 ? 0xfacc15 : 0x38bdf8 });
       container.addChild(fillG);
 
-      // Hiển thị Level
       const lvlText = new Text({
         text: `${item.level}`,
         style: { fontFamily: 'monospace', fontSize: 9, fill: '#ffffff', fontWeight: 'bold' }
@@ -1025,106 +1111,6 @@ export class GameEngine {
     return container;
   }
 
-  // Bắt đầu kéo món đồ
-  private onItemPointerDown(e: any, item: GridItem, col: number, row: number) {
-    this.draggedItem = item;
-    this.dragOriginCol = col;
-    this.dragOriginRow = row;
-
-    const globalPos = e.data ? e.data.global : { x: e.clientX, y: e.clientY };
-
-    // Tạo drag sprite theo tay
-    this.dragSprite = this.createItemDisplay(item, globalPos.x - 20, globalPos.y - 20, -1, -1);
-    this.dragSprite.alpha = 0.85;
-
-    const onPointerMove = (ev: any) => {
-      if (!this.dragSprite) return;
-      const pos = ev.data ? ev.data.global : { x: ev.clientX, y: ev.clientY };
-      this.dragSprite.x = pos.x - 20;
-      this.dragSprite.y = pos.y - 20;
-    };
-
-    const onPointerUp = (ev: any) => {
-      window.removeEventListener('pointermove', onPointerMove);
-      window.removeEventListener('pointerup', onPointerUp);
-      this.onItemDropped(ev);
-    };
-
-    window.addEventListener('pointermove', onPointerMove);
-    window.addEventListener('pointerup', onPointerUp);
-  }
-
-  // Thả món đồ (Di chuyển, Merge hoặc Swap)
-  private onItemDropped(ev: any) {
-    if (!this.draggedItem) return;
-
-    const pos = ev.data ? ev.data.global : { x: ev.clientX, y: ev.clientY };
-
-    // Tính toán ô grid được thả vào
-    const dropCol = Math.floor((pos.x - this.GRID_X) / this.CELL_SIZE);
-    const dropRow = Math.floor((pos.y - this.GRID_Y) / this.CELL_SIZE);
-
-    const origCol = this.dragOriginCol;
-    const origRow = this.dragOriginRow;
-
-    // Kiểm tra tính hợp lệ của ô đích
-    if (
-      dropCol >= 0 && dropCol < this.COLS &&
-      dropRow >= 0 && dropRow < this.ROWS &&
-      this.grid[dropRow][dropCol].unlocked
-    ) {
-      const targetCell = this.grid[dropRow][dropCol];
-      const sourceCell = this.grid[origRow][origCol];
-
-      if (targetCell.item === null) {
-        // 1. Ô đích trống -> Di chuyển
-        targetCell.item = this.draggedItem;
-        sourceCell.item = null;
-        sound.playClick();
-      } else if (targetCell !== sourceCell) {
-        const destItem = targetCell.item;
-
-        // 2. Cùng loại, cùng level -> MERGE!
-        const canMerge =
-          destItem.type === this.draggedItem.type &&
-          destItem.level === this.draggedItem.level &&
-          destItem.level < 5 && // Max Lv5
-          ((destItem.type === 'GUN' && destItem.gunKind === this.draggedItem.gunKind) ||
-           (destItem.type === 'BUFF' && destItem.buffKind === this.draggedItem.buffKind) ||
-           (destItem.type === 'TRIGGER'));
-
-        if (canMerge) {
-          // Nâng cấp lên Level + 1
-          if (destItem.type === 'GUN') {
-            targetCell.item = this.createGun(destItem.gunKind!, destItem.level + 1);
-          } else if (destItem.type === 'TRIGGER') {
-            targetCell.item = this.createTrigger(destItem.level + 1);
-          } else if (destItem.type === 'BUFF') {
-            targetCell.item = this.createBuff(destItem.buffKind!, destItem.level + 1);
-          }
-
-          sourceCell.item = null;
-          sound.playMerge();
-          this.addFloatingText(
-            this.GRID_X + dropCol * this.CELL_SIZE + 24,
-            this.GRID_Y + dropRow * this.CELL_SIZE + 24,
-            `MERGE Lv${targetCell.item!.level}!`,
-            '#facc15'
-          );
-        } else {
-          // 3. Khác loại -> Đổi chỗ (Swap)
-          targetCell.item = this.draggedItem;
-          sourceCell.item = destItem;
-          sound.playClick();
-        }
-      }
-    }
-
-    // Dọn dẹp drag state
-    this.draggedItem = null;
-    this.dragSprite = null;
-  }
-
   // ================= RENDER QUÁI VẬT & ĐẠN ================= //
 
   private renderEnemies() {
@@ -1137,18 +1123,17 @@ export class GameEngine {
       sprite.x = e.x;
       sprite.y = e.y;
 
-      // Nháy trắng khi trúng đạn
       if (e.hitFlashTimer > 0) {
         sprite.tint = 0xffffff;
       } else if (e.slowTimer > 0) {
-        sprite.tint = 0x38bdf8; // Xanh băng
+        sprite.tint = 0x38bdf8;
       } else if (e.burnTimer > 0) {
-        sprite.tint = 0xf97316; // Cam lửa
+        sprite.tint = 0xf97316;
       }
 
       this.enemyContainer.addChild(sprite);
 
-      // Thanh máu quái vật
+      // Thanh HP
       const hpG = new Graphics();
       const barW = e.width;
       hpG.rect(e.x - barW / 2, e.y - e.height / 2 - 6, barW, 3);

@@ -4136,11 +4136,30 @@ export class GameEngine {
     this.mainMenuContainer.addChild(cont);
   }
 
+  public uiManager?: any;
+  public setUIManager(ui: any) {
+    this.uiManager = ui;
+    this.uiContainer.visible = false;
+    this.mainMenuContainer.visible = false;
+    this.resultModalContainer.visible = false;
+  }
+
+  public startWave() {
+    this.onStartWaveClicked();
+  }
+
+  public rollItem() {
+    this.onRollClicked();
+  }
+
   // --- QUẢN LÝ BẮT ĐẦU VÁN & VỀ MÀN HÌNH CHÍNH ---
   public startBattle() {
     this.inMenu = false;
     this.mainMenuContainer.visible = false;
     this.resultModalContainer.visible = false;
+    if (this.uiManager) {
+      this.uiManager.render();
+    }
 
     this.isGameOver = false;
     this.isVictory = false;
@@ -4196,6 +4215,9 @@ export class GameEngine {
     this.bullets.forEach(b => b.active = false);
     this.bullets = [];
     this.showMainMenu();
+    if (this.uiManager) {
+      this.uiManager.render();
+    }
   }
 
   // --- MODAL KẾT THÚC VÁN ĐẤU (THẮNG / THUA) ---
@@ -4206,40 +4228,6 @@ export class GameEngine {
   }
 
   private showResultModal(isWin: boolean, waveReached: number) {
-    this.resultModalContainer.removeChildren();
-    this.resultModalContainer.visible = true;
-
-    // Overlay mờ
-    const mask = new Graphics();
-    mask.rect(0, 0, 720, 1280);
-    mask.fill({ color: 0x000000, alpha: 0.85 });
-    this.resultModalContainer.addChild(mask);
-
-    // Khung bảng kết quả
-    const card = new Container();
-    card.x = 60;
-    card.y = 340;
-
-    const bg = new Graphics();
-    bg.roundRect(0, 0, 600, 480, 20);
-    bg.fill({ color: 0x0f172a });
-    bg.stroke({ color: isWin ? 0xfacc15 : 0xef4444, width: 4 });
-    card.addChild(bg);
-
-    const title = new Text({
-      text: isWin ? '🏆 CHIẾN THẮNG TOÀN DIỆN!' : '💀 THÀNH TRÌ THẤT THỦ!',
-      style: {
-        fontFamily: this.FONT_FAMILY,
-        fontSize: 28,
-        fill: isWin ? '#facc15' : '#ef4444',
-        fontWeight: 'bold',
-      }
-    });
-    title.anchor.set(0.5);
-    title.x = 300;
-    title.y = 60;
-    card.addChild(title);
-
     // Tính toán phần thưởng vĩnh viễn
     let earnedGold = 0;
     let earnedDia = 0;
@@ -4267,6 +4255,42 @@ export class GameEngine {
     this.saveData.permanentGold += earnedGold;
     this.saveData.diamonds += earnedDia;
     this.saveGame();
+
+    if (this.uiManager) {
+      this.uiManager.showResultModal(isWin, waveReached, earnedGold, earnedDia);
+      return;
+    }
+
+    this.resultModalContainer.removeChildren();
+    this.resultModalContainer.visible = true;
+
+    // Overlay mờ
+    const mask = new Graphics();
+    mask.rect(0, 0, 720, 1280);
+    mask.fill({ color: 0x000000, alpha: 0.85 });
+    const card = new Container();
+    card.x = 60;
+    card.y = 340;
+
+    const bg = new Graphics();
+    bg.roundRect(0, 0, 600, 480, 20);
+    bg.fill({ color: 0x0f172a });
+    bg.stroke({ color: isWin ? 0xfacc15 : 0xef4444, width: 4 });
+    card.addChild(bg);
+
+    const title = new Text({
+      text: isWin ? '🏆 CHIẾN THẮNG TOÀN DIỆN!' : '💀 THÀNH TRÌ THẤT THỦ!',
+      style: {
+        fontFamily: this.FONT_FAMILY,
+        fontSize: 28,
+        fill: isWin ? '#facc15' : '#ef4444',
+        fontWeight: 'bold',
+      }
+    });
+    title.anchor.set(0.5);
+    title.x = 300;
+    title.y = 60;
+    card.addChild(title);
 
     const info = new Text({
       text: `Chế độ: ${this.gameMode === 'CAMPAIGN' ? `Chiến Dịch (Map ${this.saveData.selectedCampaignMap})` : 'Sinh Tồn Vô Tận'}\nĐã vượt qua: Wave ${waveReached}\n\nPHẦN THƯỞNG NHẬN ĐƯỢC:\n+${earnedGold}$ Vàng Vĩnh Viễn 💰\n+${earnedDia} Kim Cương 💎`,

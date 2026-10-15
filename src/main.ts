@@ -1,5 +1,6 @@
 import { Application } from 'pixi.js';
 import { GameEngine } from './game';
+import { UIManager } from './ui';
 
 async function bootstrap() {
   const container = document.getElementById('game-container')!;
@@ -16,7 +17,15 @@ async function bootstrap() {
 
   container.appendChild(app.canvas);
 
-  // Resize canvas giữ đúng tỉ lệ 9:16 sắc nét trên mọi thiết bị
+  // Khởi tạo Game Engine
+  const game = new GameEngine();
+  app.stage.addChild(game.stage);
+
+  // Khởi tạo Real HTML/CSS UI Manager
+  const ui = new UIManager(game, container);
+  game.setUIManager(ui);
+
+  // Resize canvas & UI giữ đúng tỉ lệ 9:16 sắc nét trên mọi thiết bị
   function resizeGame() {
     const windowWidth = window.innerWidth;
     const windowHeight = window.innerHeight;
@@ -35,21 +44,26 @@ async function bootstrap() {
       finalH = finalW / targetRatio;
     }
 
-    app.canvas.style.width = `${Math.floor(finalW)}px`;
-    app.canvas.style.height = `${Math.floor(finalH)}px`;
+    const w = Math.floor(finalW);
+    const h = Math.floor(finalH);
+
+    app.canvas.style.width = `${w}px`;
+    app.canvas.style.height = `${h}px`;
+
+    container.style.width = `${w}px`;
+    container.style.height = `${h}px`;
+
+    ui.setScale(w / 720);
   }
 
   window.addEventListener('resize', resizeGame);
   resizeGame();
 
-  // Khởi tạo Game Engine
-  const game = new GameEngine();
-  app.stage.addChild(game.stage);
-
   // Vòng lặp Game Loop chuẩn mực
   app.ticker.add((ticker) => {
     const dt = ticker.deltaMS / 1000;
     game.update(dt);
+    ui.updateHudValues();
   });
 }
 

@@ -1,5 +1,5 @@
 import { Texture } from 'pixi.js';
-import { GunKind, BuffKind } from './types';
+import { GunKind, BuffKind, EnemyKind } from './types';
 
 // Helper vẽ Rounded Rectangle an toàn 100% trên mọi trình duyệt
 function safeRoundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
@@ -215,29 +215,29 @@ export class PixelAssetManager {
     return tex;
   }
 
-  // 3. Đế Súng (BÁNH RĂNG CÔNG NGHIỆP 10 RĂNG BẢN TO - CHUẨN ẢNH THIẾT KẾ) 96x96
+  // 3. Đế Súng (BÁNH RĂNG CÔNG NGHIỆP 10 RĂNG BẢN TO) 96x96 - HOÀN TOÀN ĐỒNG TÂM 100%
   static getGunBaseTexture(tier: number): Texture {
-    const key = `gun_base_gear_hires_v2_${tier}`;
+    const key = `gun_base_gear_hires_v3_${tier}`;
     if (this.cache.has(key)) return this.cache.get(key)!;
 
     const tex = createHighResTexture(96, 96, (ctx) => {
       const cx = 48, cy = 48;
 
-      // Bảng màu bánh răng công nghiệp (Slate-Blue chuẩn ảnh người dùng cung cấp)
+      // Bảng màu bánh răng công nghiệp
       const gearMainColors = ['#346596', '#2563eb', '#6d28d9', '#b45309', '#be123c'];
-      const gearShadowColors = ['#1e3b5c', '#1e3a8a', '#4c1d95', '#78350f', '#881337'];
-      const gearHighlightColors = ['#5b8bb8', '#60a5fa', '#a78bfa', '#fbbf24', '#fb7185'];
+      const gearRimColors = ['#5b8bb8', '#60a5fa', '#a78bfa', '#fbbf24', '#fb7185'];
+      const gearInnerColors = ['#1e3b5c', '#1e3a8a', '#4c1d95', '#78350f', '#881337'];
 
       const colorIdx = Math.min(tier - 1, 4);
       const mainCol = gearMainColors[colorIdx];
-      const shadowCol = gearShadowColors[colorIdx];
-      const lightCol = gearHighlightColors[colorIdx];
+      const rimCol = gearRimColors[colorIdx];
+      const innerCol = gearInnerColors[colorIdx];
 
-      const numTeeth = 10; // Đúng 10 răng bản to như ảnh mẫu!
-      const rRoot = 32;   // Bán kính chân răng
-      const rOuter = 42;  // Bán kính đỉnh răng bản to
+      const numTeeth = 10;
+      const rRoot = 32;
+      const rOuter = 42;
 
-      // 1. Vẽ chu vi 10 răng bản to (Trapezoidal Cogwheel Teeth)
+      // 1. Vẽ 10 răng bản to hình thang (đồng tâm tuyệt đối cx, cy)
       ctx.fillStyle = mainCol;
       ctx.beginPath();
       for (let i = 0; i < numTeeth; i++) {
@@ -268,42 +268,40 @@ export class PixelAssetManager {
       ctx.closePath();
       ctx.fill();
 
-      // 2. Đổ bóng 3D phía dưới-phải (giống ảnh mẫu người dùng)
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(cx, cy, rOuter + 2, 0, Math.PI * 2);
-      ctx.clip();
-
-      ctx.fillStyle = shadowCol;
-      ctx.beginPath();
-      ctx.arc(cx + 4, cy + 4, 34, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-
-      // 3. Viền kim loại nổi bọc quanh toàn bộ bánh răng
+      // Viền kim loại nổi sắc nét quanh các răng
       ctx.strokeStyle = '#0f172a';
       ctx.lineWidth = 2.5;
       ctx.stroke();
 
-      // 4. Vòng tròn rãnh bạc kim loại đồng tâm (Đặc trưng như ảnh mẫu)
-      ctx.strokeStyle = '#e2e8f0';
-      ctx.lineWidth = 4.5;
+      // 2. Vành tròn thân bánh răng (đồng tâm cx, cy)
+      ctx.fillStyle = innerCol;
       ctx.beginPath();
-      ctx.arc(cx, cy, 26, 0, Math.PI * 2);
+      ctx.arc(cx, cy, 31, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.strokeStyle = rimCol;
+      ctx.lineWidth = 1.5;
       ctx.stroke();
 
-      // Viền đen nhấn cho rãnh bạc
-      ctx.strokeStyle = '#1e293b';
+      // 3. Vành rãnh bạc kim loại đồng tâm (Chuẩn ảnh thiết kế, đồng tâm cx, cy)
+      ctx.strokeStyle = '#e2e8f0';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(cx, cy, 25, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Viền tương phản cho rãnh bạc
+      ctx.strokeStyle = '#0f172a';
       ctx.lineWidth = 1.2;
       ctx.beginPath();
-      ctx.arc(cx, cy, 28.5, 0, Math.PI * 2);
+      ctx.arc(cx, cy, 27.5, 0, Math.PI * 2);
       ctx.stroke();
 
       ctx.beginPath();
-      ctx.arc(cx, cy, 23.5, 0, Math.PI * 2);
+      ctx.arc(cx, cy, 22.5, 0, Math.PI * 2);
       ctx.stroke();
 
-      // 5. Lỗ rỗng xuyên tâm lớn ở giữa (Center Bore) như ảnh mẫu
+      // 4. Lỗ rỗng xuyên tâm lớn (Center Bore) ở giữa (đồng tâm cx, cy)
       ctx.fillStyle = '#090d16';
       ctx.beginPath();
       ctx.arc(cx, cy, 15, 0, Math.PI * 2);
@@ -311,8 +309,6 @@ export class PixelAssetManager {
 
       ctx.strokeStyle = '#1e293b';
       ctx.lineWidth = 2.5;
-      ctx.beginPath();
-      ctx.arc(cx, cy, 15, 0, Math.PI * 2);
       ctx.stroke();
 
       // Vòng bạc nhỏ trong lòng lỗ tâm
@@ -322,7 +318,7 @@ export class PixelAssetManager {
       ctx.arc(cx, cy, 11, 0, Math.PI * 2);
       ctx.stroke();
 
-      // Khớp trục gắn nòng súng
+      // Khớp trục xoay ở giữa
       ctx.fillStyle = '#1e293b';
       ctx.beginPath();
       ctx.arc(cx, cy, 6, 0, Math.PI * 2);
@@ -453,7 +449,7 @@ export class PixelAssetManager {
         ctx.fill();
         ctx.fillStyle = '#ef4444';
         ctx.fillRect(-5, -36, 10, 4);
-      } else { // TESLA
+      } else if (kind === 'TESLA') {
         ctx.fillStyle = '#6b21a8';
         ctx.fillRect(-6, -26, 12, 26);
         ctx.fillStyle = '#a855f7';
@@ -471,6 +467,74 @@ export class PixelAssetManager {
         ctx.fillStyle = '#ffffff';
         ctx.beginPath();
         ctx.arc(0, -34, 3, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (kind === 'SLINGSHOT') {
+        ctx.fillStyle = '#854d0e';
+        ctx.fillRect(-4, -18, 8, 18);
+        ctx.strokeStyle = '#a16207';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(-11, -32);
+        ctx.lineTo(-4, -18);
+        ctx.lineTo(4, -18);
+        ctx.lineTo(11, -32);
+        ctx.stroke();
+        ctx.strokeStyle = '#f59e0b';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(-11, -32);
+        ctx.lineTo(0, -22);
+        ctx.lineTo(11, -32);
+        ctx.stroke();
+        ctx.fillStyle = '#94a3b8';
+        ctx.beginPath();
+        ctx.arc(0, -22, 3.5, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (kind === 'SNIPER') {
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(-4, -44, 8, 44);
+        ctx.fillStyle = '#334155';
+        ctx.fillRect(-2, -42, 4, 42);
+        ctx.fillStyle = '#64748b';
+        ctx.fillRect(-5, -46, 10, 5);
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(-7, -26, 14, 8);
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillRect(-5, -24, 10, 4);
+      } else if (kind === 'MINIGUN') {
+        ctx.fillStyle = '#334155';
+        ctx.fillRect(-8, -32, 16, 32);
+        for (let b = 0; b < 6; b++) {
+          const ba = (b * Math.PI) / 3;
+          const bx = Math.cos(ba) * 5;
+          const by = -20 + Math.sin(ba) * 3;
+          ctx.fillStyle = '#64748b';
+          ctx.beginPath();
+          ctx.arc(bx, by, 2.5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.fillStyle = '#facc15';
+        ctx.fillRect(-9, -36, 18, 4);
+      } else { // METEOR
+        ctx.fillStyle = '#450a0a';
+        ctx.fillRect(-10, -32, 20, 32);
+        ctx.fillStyle = '#b91c1c';
+        ctx.fillRect(-7, -30, 14, 30);
+        ctx.fillStyle = '#f97316';
+        ctx.beginPath();
+        ctx.arc(0, -16, 6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#fef08a';
+        ctx.beginPath();
+        ctx.arc(0, -16, 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#ea580c';
+        ctx.beginPath();
+        ctx.moveTo(-12, -32);
+        ctx.lineTo(12, -32);
+        ctx.lineTo(8, -36);
+        ctx.lineTo(-8, -36);
+        ctx.closePath();
         ctx.fill();
       }
 
@@ -567,15 +631,39 @@ export class PixelAssetManager {
   }
 
   // 6. Quái vật
-  static getEnemyTexture(type: 'NORMAL' | 'FAST' | 'TANK' | 'BOSS'): Texture {
-    const key = `enemy_hires_${type}`;
+  static getEnemyTexture(type: EnemyKind | string): Texture {
+    const key = `enemy_hires_v4_${type}`;
     if (this.cache.has(key)) return this.cache.get(key)!;
 
-    const size = type === 'BOSS' ? 96 : (type === 'TANK' ? 64 : 48);
+    const size = type === 'BOSS' ? 96 : (type === 'TANK' || type === 'ELITE' ? 64 : (type === 'SWARM' ? 36 : 48));
     const tex = createHighResTexture(size, size, (ctx) => {
       const cx = size / 2, cy = size / 2;
 
-      if (type === 'NORMAL') {
+      if (type === 'SWARM') {
+        ctx.fillStyle = '#dc2626';
+        ctx.beginPath();
+        ctx.arc(cx, cy, 12, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#facc15';
+        ctx.beginPath();
+        ctx.arc(cx - 4, cy - 2, 2.5, 0, Math.PI * 2);
+        ctx.arc(cx + 4, cy - 2, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (type === 'RUNNER' || type === 'FAST') {
+        ctx.fillStyle = '#7e22ce';
+        safeEllipse(ctx, cx, cy, 18, 12);
+        ctx.fill();
+
+        ctx.fillStyle = '#c084fc';
+        safeEllipse(ctx, cx, cy, 14, 8);
+        ctx.fill();
+
+        ctx.fillStyle = '#facc15';
+        ctx.beginPath();
+        ctx.arc(cx - 5, cy - 2, 2.5, 0, Math.PI * 2);
+        ctx.arc(cx + 5, cy - 2, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (type === 'NORMAL') {
         ctx.fillStyle = '#15803d';
         ctx.beginPath();
         ctx.arc(cx, cy, 18, 0, Math.PI * 2);
@@ -595,20 +683,6 @@ export class PixelAssetManager {
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(cx - 5, cy + 6, 3, 4);
         ctx.fillRect(cx + 2, cy + 6, 3, 4);
-      } else if (type === 'FAST') {
-        ctx.fillStyle = '#6b21a8';
-        safeEllipse(ctx, cx, cy, 20, 14);
-        ctx.fill();
-
-        ctx.fillStyle = '#c084fc';
-        safeEllipse(ctx, cx, cy, 15, 10);
-        ctx.fill();
-
-        ctx.fillStyle = '#facc15';
-        ctx.beginPath();
-        ctx.arc(cx - 6, cy - 2, 3, 0, Math.PI * 2);
-        ctx.arc(cx + 6, cy - 2, 3, 0, Math.PI * 2);
-        ctx.fill();
       } else if (type === 'TANK') {
         ctx.fillStyle = '#1e293b';
         safeRoundRect(ctx, cx - 26, cy - 26, 52, 52, 8);
@@ -622,9 +696,33 @@ export class PixelAssetManager {
         ctx.lineWidth = 3;
         ctx.strokeRect(cx - 16, cy - 16, 32, 32);
 
-        ctx.fillStyle = '#fb923c';
-        ctx.fillRect(cx - 10, cy - 6, 6, 6);
-        ctx.fillRect(cx + 4, cy - 6, 6, 6);
+        ctx.fillStyle = '#38bdf8';
+        ctx.beginPath();
+        ctx.arc(cx, cy, 10, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#ef4444';
+        ctx.beginPath();
+        ctx.arc(cx - 10, cy - 12, 3, 0, Math.PI * 2);
+        ctx.arc(cx + 10, cy - 12, 3, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (type === 'ELITE') {
+        ctx.fillStyle = '#ca8a04';
+        safeRoundRect(ctx, cx - 24, cy - 24, 48, 48, 12);
+        ctx.fill();
+        ctx.strokeStyle = '#fef08a';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        ctx.fillStyle = '#854d0e';
+        safeRoundRect(ctx, cx - 18, cy - 18, 36, 36, 8);
+        ctx.fill();
+
+        ctx.fillStyle = '#ef4444';
+        ctx.beginPath();
+        ctx.arc(cx - 8, cy - 4, 4, 0, Math.PI * 2);
+        ctx.arc(cx + 8, cy - 4, 4, 0, Math.PI * 2);
+        ctx.fill();
       } else { // BOSS
         ctx.fillStyle = '#450a0a';
         ctx.beginPath();

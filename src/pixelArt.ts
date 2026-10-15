@@ -1099,7 +1099,7 @@ export class PixelAssetManager {
   }
 
   // 8. Texture nút bấm phong cách Steampunk Máy Móc Đinh Tán (Brass Machinery UI)
-  static getSteampunkButtonTexture(w: number, h: number, theme: 'GOLD' | 'GREEN' | 'RED' | 'BLUE' = 'GOLD'): Texture {
+  static getSteampunkButtonTexture(w: number, h: number, theme: 'GOLD' | 'GREEN' | 'RED' | 'BLUE' | 'DISABLED' = 'GOLD'): Texture {
     const key = `sp_btn_${w}_${h}_${theme}`;
     if (this.cache.has(key)) return this.cache.get(key)!;
 
@@ -1115,6 +1115,7 @@ export class PixelAssetManager {
         GREEN: { border: '#15803d', fill1: '#16a34a', fill2: '#14532d', highlight: '#86efac' },
         RED: { border: '#b91c1c', fill1: '#dc2626', fill2: '#7f1d1d', highlight: '#fca5a5' },
         BLUE: { border: '#1d4ed8', fill1: '#2563eb', fill2: '#1e3a8a', highlight: '#93c5fd' },
+        DISABLED: { border: '#334155', fill1: '#1e293b', fill2: '#0f172a', highlight: '#475569' },
       }[theme];
 
       ctx.fillStyle = borderColors.border;
@@ -1147,7 +1148,7 @@ export class PixelAssetManager {
         ctx.arc(rx, ry, 3.5, 0, Math.PI * 2);
         ctx.fill();
 
-        ctx.fillStyle = '#fde047';
+        ctx.fillStyle = theme === 'DISABLED' ? '#64748b' : '#fde047';
         ctx.beginPath();
         ctx.arc(rx - 0.8, ry - 0.8, 1.2, 0, Math.PI * 2);
         ctx.fill();

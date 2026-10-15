@@ -50,6 +50,20 @@ export function getGunTier(kind: GunKind): number {
   return GUN_TIERS[kind] || 1;
 }
 
+export const GUN_NAMES: Record<GunKind, string> = {
+  PISTOL: 'SÚNG LỤC',
+  CROSSBOW: 'NỎ THÉP',
+  SLINGSHOT: 'NÁ CAO SU',
+  CRYO: 'SÚNG BĂNG',
+  FLAMER: 'SÚNG LỬA',
+  SHOTGUN: 'SHOTGUN',
+  CANNON: 'ĐẠI BÁC BOM',
+  TESLA: 'SÚNG SÉT',
+  SNIPER: 'BẮN TỈA BÁO THÙ',
+  MINIGUN: 'MINIGUN 6 NÒNG',
+  METEOR: 'BÁNH RĂNG THIÊN THẠCH',
+};
+
 // Bảng màu chuẩn Rarity Gaming trên mạng:
 // 1: Trắng (Common) | 2: Xanh (Rare) | 3: Tím (Epic) | 4: Vàng (Legendary) | 5: Đỏ (Mythic)
 export interface RarityConfig {
@@ -220,6 +234,8 @@ export class GameEngine {
   private rollBtnContainer!: Container;
   private rollBtnBg!: Sprite;
   private rollBtnText!: Text;
+  private lastCanAffordRoll: boolean | null = null;
+  private lastRollPriceDisplayed: number = -1;
   private startWaveBtnContainer!: Container;
   private startWaveBtnBg!: Sprite;
   private startWaveBtnText!: Text;
@@ -706,6 +722,7 @@ export class GameEngine {
       this.onRollClicked();
     });
     this.uiContainer.addChild(this.rollBtnContainer);
+    this.updateRollButtonState();
 
     // Nút BẮT ĐẦU VÁN Steampunk (w = 430, h = 84)
     this.startWaveBtnContainer = new Container();
@@ -799,14 +816,38 @@ export class GameEngine {
     this.addFloatingText(360, 200, `WAVE ${this.wave} BẮT ĐẦU!`, '#4ade80');
   }
 
+  public updateRollButtonState() {
+    const canAfford = this.gold >= this.rollPrice;
+    if (this.lastRollPriceDisplayed !== this.rollPrice) {
+      this.lastRollPriceDisplayed = this.rollPrice;
+      this.rollBtnText.text = `🎲 ROLL (${this.rollPrice}$)\n(Súng / Cò / Buff)`;
+    }
+    if (this.lastCanAffordRoll !== canAfford) {
+      this.lastCanAffordRoll = canAfford;
+      if (canAfford) {
+        this.rollBtnBg.texture = PixelAssetManager.getSteampunkButtonTexture(230, 84, 'BLUE');
+        this.rollBtnContainer.alpha = 1.0;
+        this.rollBtnText.style.fill = '#ffffff';
+        this.rollBtnContainer.cursor = 'pointer';
+      } else {
+        this.rollBtnBg.texture = PixelAssetManager.getSteampunkButtonTexture(230, 84, 'DISABLED');
+        this.rollBtnContainer.alpha = 0.52;
+        this.rollBtnText.style.fill = '#94a3b8';
+        this.rollBtnContainer.cursor = 'not-allowed';
+      }
+    }
+  }
+
   public onRollClicked() {
     if (this.gold < this.rollPrice) {
+      sound.playClick();
       this.addFloatingText(130, 1050, 'Không đủ vàng!', '#ef4444');
       return;
     }
 
     const emptyCell = this.getRandomEmptyUnlockedCell();
     if (!emptyCell) {
+      sound.playClick();
       this.addFloatingText(130, 1050, 'Hết ô trống!', '#ef4444');
       return;
     }
@@ -815,7 +856,7 @@ export class GameEngine {
     this.rollCount++;
     // TĂNG GIÁ ROLL ĐỀU ĐẶN SAU MỖI LẦN MUA (KHÔNG GIỚI HẠN TRẦN 12$)
     this.rollPrice = 2 + this.rollCount * 2;
-    this.rollBtnText.text = `🎲 ROLL (${this.rollPrice}$)\n(Súng / Cò / Buff)`;
+    this.updateRollButtonState();
 
     const rollType = Math.random();
     if (rollType < 0.60) {
@@ -837,13 +878,7 @@ export class GameEngine {
     }
 
     this.syncSlotView(emptyCell.col, emptyCell.row);
-    sound.playClick();
-    this.addFloatingText(
-      this.GRID_X + emptyCell.col * this.CELL_SIZE + 48,
-      this.GRID_Y + emptyCell.row * this.CELL_SIZE + 48,
-      '+1 MÓN',
-      '#60a5fa'
-    );
+    this.triggerSpawnFX(emptyCell.col, emptyCell.row, emptyCell.item);
   }
 
   private getRandomEmptyUnlockedCell(): GridCell | null {
@@ -1193,6 +1228,64 @@ export class GameEngine {
     return cont;
   }
 
+  // ================= HIỆU ỨNG VFX / SFX XUẤT HIỆN KHI BẤM ROLL SÚNG ================= //
+
+  private triggerSpawnFX(col: number, row: number, item: GridItem) {
+    const centerX = this.GRID_X + col * this.CELL_SIZE + 48;
+    const centerY = this.GRID_Y + row * this.CELL_SIZE + 48;
+
+    // 1. Bung scale ô slot (1.35x rồi co về mượt mà)
+    this.slotViews[row][col].popScale = 1.35;
+
+    // 2. Xác định màu sắc chủ đạo theo loại món xuất hiện
+    let mainColor = 0x38bdf8;
+    let label = '+1 MÓN';
+    let hexColor = '#38bdf8';
+
+    if (item.type === 'GUN' && item.gunKind) {
+      const tier = getGunTier(item.gunKind);
+      const rarity = RARITY_CONFIGS[tier];
+      mainColor = rarity.color;
+      hexColor = rarity.hex;
+      label = `+ ${GUN_NAMES[item.gunKind] || 'SÚNG'}`;
+    } else if (item.type === 'TRIGGER') {
+      mainColor = 0xf59e0b;
+      hexColor = '#f59e0b';
+      label = '+ BỘ CÒ XOAY';
+    } else if (item.type === 'BUFF') {
+      const buffNames: Record<BuffKind, { name: string; color: number; hex: string }> = {
+        DMG: { name: '+ BUFF CÔNG', color: 0xef4444, hex: '#ef4444' },
+        SPEED: { name: '+ BUFF TỐC', color: 0x3b82f6, hex: '#3b82f6' },
+        FILL: { name: '+ BUFF NẠP', color: 0x22c55e, hex: '#22c55e' },
+        CRIT: { name: '+ BUFF CHÍ MẠNG', color: 0xfacc15, hex: '#facc15' },
+      };
+      const info = buffNames[item.buffKind || 'DMG'];
+      mainColor = info.color;
+      hexColor = info.hex;
+      label = info.name;
+    }
+
+    // 3. Shockwave lan tỏa kép (vòng màu chính + vòng trắng bên trong)
+    this.addShockwave(centerX, centerY, 72, mainColor);
+    this.addShockwave(centerX, centerY, 44, 0xffffff);
+
+    // 4. Mưa tia lửa máy móc và tinh thể sáng bùng nổ
+    this.addSparks(centerX, centerY, 20, mainColor, 220);
+    this.addSparks(centerX, centerY, 12, 0xffffff, 160);
+
+    // 5. Lóe sáng chớp vàng tại tâm ô
+    this.addMuzzleFlash(centerX, centerY, mainColor);
+
+    // 6. Rung nhẹ màn hình tạo cảm giác lực
+    this.trauma = Math.min(1.0, this.trauma + 0.12);
+
+    // 7. Floating Text thông báo tên món đồ xuất hiện
+    this.addFloatingText(centerX, centerY - 28, label, hexColor);
+
+    // 8. SFX âm thanh gacha cơ khí + chuông ngân vật phẩm xuất hiện
+    sound.playRollSpawn();
+  }
+
   // ================= HIỆU ỨNG VFX / SFX THĂNG CẤP MERGE TIER CỰC ĐỈNH ================= //
 
   private triggerUpgradeFX(col: number, row: number, nextLevel: number, label: string) {
@@ -1285,20 +1378,7 @@ export class GameEngine {
       stats = `• Dạng: Nẫy bánh cóc cơ khí\n• Số chấu: ${item.level} nẫy\n• Tốc độ: ${hitsPerSec} hit/s`;
       desc = `Các nẫy xoay gõ vào súng lân cận, làm xoay đế bánh răng và nạp đạn cho súng.`;
     } else if (item.type === 'GUN') {
-      const names: Record<GunKind, string> = {
-        PISTOL: 'SÚNG LỤC',
-        CROSSBOW: 'NỎ THÉP',
-        SLINGSHOT: 'NÁ CAO SU',
-        CRYO: 'SÚNG BĂNG',
-        FLAMER: 'SÚNG LỬA',
-        SHOTGUN: 'SHOTGUN',
-        CANNON: 'ĐẠI BÁC BOM',
-        TESLA: 'SÚNG SÉT',
-        SNIPER: 'BẮN TỈA BÁO THÙ',
-        MINIGUN: 'MINIGUN 6 NÒNG',
-        METEOR: 'BÁNH RĂNG THIÊN THẠCH',
-      };
-      name = `[TIER ${gunTier} • ${tierRarity.name}] ${names[item.gunKind!]} Lv.${item.level}`;
+      name = `[TIER ${gunTier} • ${tierRarity.name}] ${GUN_NAMES[item.gunKind!] || 'SÚNG'} Lv.${item.level}`;
       const hitsNeeded = Math.ceil(1.0 / item.fillPerHit);
       stats = `• Sát thương: ${item.damage} DMG\n• Cần nạp: ${hitsNeeded} lần gõ (1 viên)\n• Xoay 360° tự động ngắm quái`;
 
@@ -1367,6 +1447,7 @@ export class GameEngine {
 
     this.goldText.text = `$: ${this.gold}`;
     this.hpText.text = `HP THÀNH: ${this.castleHp}/${this.maxCastleHp}`;
+    this.updateRollButtonState();
 
     this.renderActiveEntities();
   }

@@ -481,6 +481,78 @@ class SoundController {
     });
   }
 
+  // Tiếng máy cơ khí quay xúc xắc + vật phẩm xuất hiện thần thánh (Roll & Spawn SFX)
+  playRollSpawn() {
+    if (!this.enabled) return;
+    this.initCtx();
+    if (!this.ctx) return;
+
+    const t = this.ctx.currentTime;
+
+    // 1. Tiếng cơ khí bánh cóc gõ nhịp nhanh (Ratchet click)
+    [0, 0.035, 0.07].forEach((delay, idx) => {
+      if (!this.ctx) return;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(600 + idx * 120, t + delay);
+      osc.frequency.exponentialRampToValueAtTime(140, t + delay + 0.03);
+      gain.gain.setValueAtTime(0.18, t + delay);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + delay + 0.03);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(t + delay);
+      osc.stop(t + delay + 0.035);
+    });
+
+    // 2. Tiếng xả khí nén nhẹ (Steam release puff)
+    const noise = this.createNoiseBuffer(0.12);
+    if (noise) {
+      const src = this.ctx.createBufferSource();
+      src.buffer = noise;
+      const filter = this.ctx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.setValueAtTime(1200, t + 0.06);
+      filter.Q.setValueAtTime(3.0, t + 0.06);
+      const gain = this.ctx.createGain();
+      gain.gain.setValueAtTime(0.2, t + 0.06);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+      src.connect(filter);
+      filter.connect(gain);
+      gain.connect(this.ctx.destination);
+      src.start(t + 0.06);
+      src.stop(t + 0.19);
+    }
+
+    // 3. Chuông ngân vật phẩm thần kỳ xuất hiện (Magic spawn chime arpeggio: C5 -> E5 -> G5 -> C6)
+    const notes = [523.25, 659.25, 783.99, 1046.5];
+    notes.forEach((freq, idx) => {
+      if (!this.ctx) return;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, t + 0.09 + idx * 0.04);
+      gain.gain.setValueAtTime(0.22, t + 0.09 + idx * 0.04);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.09 + idx * 0.04 + 0.28);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(t + 0.09 + idx * 0.04);
+      osc.stop(t + 0.09 + idx * 0.04 + 0.3);
+
+      // Thêm harmonic lấp lánh nhẹ
+      const shimmer = this.ctx.createOscillator();
+      const sGain = this.ctx.createGain();
+      shimmer.type = 'triangle';
+      shimmer.frequency.setValueAtTime(freq * 2, t + 0.09 + idx * 0.04);
+      sGain.gain.setValueAtTime(0.08, t + 0.09 + idx * 0.04);
+      sGain.gain.exponentialRampToValueAtTime(0.001, t + 0.09 + idx * 0.04 + 0.2);
+      shimmer.connect(sGain);
+      sGain.connect(this.ctx.destination);
+      shimmer.start(t + 0.09 + idx * 0.04);
+      shimmer.stop(t + 0.09 + idx * 0.04 + 0.22);
+    });
+  }
+
   // Tiếng nổ quái chết / Boss hit
   playExplode() {
     if (!this.enabled) return;

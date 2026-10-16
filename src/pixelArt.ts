@@ -400,19 +400,6 @@ export class PixelAssetManager {
     const key = `gun_barrel_hires_lvl_${kind}_${lvl}`;
     if (this.cache.has(key)) return this.cache.get(key)!;
 
-    // Ưu tiên load trực tiếp Asset Pixel Art chất lượng cao vẽ từ Aseprite
-    try {
-      const img = new Image();
-      img.src = `/assets/gun_${kind.toLowerCase()}.png`;
-      const tex = Texture.from(img);
-      if (tex) {
-        this.cache.set(key, tex);
-        return tex;
-      }
-    } catch {
-      // fallback to procedural canvas
-    }
-
     const tex = createHighResTexture(80, 80, (ctx) => {
       const cx = 40, cy = 40;
 

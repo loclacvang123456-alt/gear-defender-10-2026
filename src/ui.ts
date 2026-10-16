@@ -2,6 +2,32 @@ import { GameEngine, GUN_NAMES, GUN_TIERS, RARITY_CONFIGS } from './game';
 import { GunKind, BuffKind, GameMode } from './types';
 import { sound } from './audio';
 
+let activeUiManager: UIManager | null = null;
+
+export function showInGameAlert(message: string, title: string = 'THÔNG BÁO', icon: string = '🔔') {
+  if (activeUiManager) {
+    activeUiManager.showAlertModal(message, title, icon);
+  } else {
+    const fallback = document.createElement('div');
+    fallback.style.position = 'fixed';
+    fallback.style.top = '50%';
+    fallback.style.left = '50%';
+    fallback.style.transform = 'translate(-50%, -50%)';
+    fallback.style.background = '#0f172a';
+    fallback.style.border = '3px solid #f59e0b';
+    fallback.style.color = '#ffffff';
+    fallback.style.padding = '22px 28px';
+    fallback.style.borderRadius = '16px';
+    fallback.style.zIndex = '999999';
+    fallback.style.boxShadow = '0 10px 40px rgba(0,0,0,0.85)';
+    fallback.style.textAlign = 'center';
+    fallback.style.whiteSpace = 'pre-line';
+    fallback.innerText = message;
+    document.body.appendChild(fallback);
+    setTimeout(() => fallback.remove(), 2500);
+  }
+}
+
 export class UIManager {
   private game: GameEngine;
   private container: HTMLElement;
@@ -23,6 +49,25 @@ export class UIManager {
   constructor(game: GameEngine, container: HTMLElement) {
     this.game = game;
     this.container = container;
+    activeUiManager = this;
+
+    // GHI ĐÈ TOÀN BỘ WINDOW.ALERT: Không bao giờ dùng hộp thoại trình duyệt của Chrome
+    window.alert = (msg: any) => {
+      const text = String(msg ?? '');
+      let title = 'THÔNG BÁO';
+      let icon = '🔔';
+      if (text.includes('CÀI ĐẶT')) { title = 'CÀI ĐẶT GAME'; icon = '⚙'; }
+      else if (text.includes('BATTLE PASS')) { title = 'BATTLE PASS'; icon = '🏅'; }
+      else if (text.includes('CHÚC MỪNG') || text.includes('MỞ KHÓA')) { title = 'CHÚC MỪNG!'; icon = '🎉'; }
+      else if (text.includes('THU HOẠCH') || text.includes('TIẾP TẾ') || text.includes('NHẬN THÀNH CÔNG')) { title = 'NHẬN THƯỞNG'; icon = '🎁'; }
+      else if (text.includes('Không đủ') || text.includes('phải giữ lại')) { title = 'CHÚ Ý'; icon = '⚠️'; }
+      else if (text.includes('SỰ KIỆN')) { title = 'SỰ KIỆN ĐẶC BIỆT'; icon = '🔥'; }
+      else if (text.includes('VIỄN CHINH')) { title = 'VIỄN CHINH'; icon = '🧭'; }
+      else if (text.includes('TĂNG TỐC')) { title = 'TĂNG TỐC MA THẦN'; icon = '⚡'; }
+      else if (text.includes('HACK') || text.includes('CHEAT')) { title = 'DEV HACK'; icon = '⚡'; }
+      this.showAlertModal(text, title, icon);
+    };
+
     this.injectStyles();
     this.initRoot();
     this.render();
@@ -131,20 +176,20 @@ export class UIManager {
         </div>
       </div>
 
-      <div class="currency-pill energy-pill">
+      <div class="currency-pill energy-pill" id="pill-energy" title="Click để hack Full Năng Lượng!">
         <span class="pill-icon">⚡</span>
         <div class="pill-texts">
-          <span class="pill-val">${save.energy || 7}/${save.maxEnergy || 20}</span>
-          <span class="pill-timer">07:54</span>
+          <span class="pill-val">${save.energy || 999}/${save.maxEnergy || 999}</span>
+          <span class="pill-timer">FULL ⚡</span>
         </div>
-        <button class="pill-plus-btn" title="Nạp năng lượng">
+        <button class="pill-plus-btn" title="Nạp đầy Năng Lượng">
           <img src="/assets/btn_plus.png" class="plus-pixel-icon" alt="+" />
         </button>
       </div>
 
       <div class="currency-pill gold-pill">
-        <span class="pill-icon">🏹</span>
-        <span class="pill-val">${(save.permanentGold || 121181022).toLocaleString()}</span>
+        <span class="pill-icon">💰</span>
+        <span class="pill-val">${(save.permanentGold || 12118).toLocaleString()}</span>
         <button class="pill-plus-btn" title="Mua vàng">
           <img src="/assets/btn_plus.png" class="plus-pixel-icon" alt="+" />
         </button>
@@ -158,14 +203,44 @@ export class UIManager {
         </button>
       </div>
 
+      <button class="dev-hack-btn" id="btn-dev-hack" title="Dev Cheat: Full Năng Lượng & Tài Nguyên Test">
+        ⚡ HACK DEV
+      </button>
+
       <button class="menu-settings-btn" id="btn-settings" title="Cài đặt">
         <img src="/assets/btn_settings.png" class="settings-gear-img" alt="Cài đặt" />
       </button>
     `;
 
+    const triggerDevCheat = () => {
+      save.energy = 999;
+      save.maxEnergy = 999;
+      save.permanentGold += 20000;
+      save.diamonds += 2000;
+      this.game['saveGame']();
+      sound.playMerge(4);
+      showInGameAlert(
+        '⚡ DEV CHEAT HACK ĐÃ KÍCH HOẠT:\n\n' +
+        '• Năng lượng: FULL 999/999 ⚡ (Vô hạn, không bao giờ cạn)\n' +
+        '• Vàng vĩnh viễn: +20,000 💰\n' +
+        '• Kim cương: +2,000 💎\n\n' +
+        'Bạn có thể test game, roll gacha và vượt 25 waves thoải mái!',
+        'DEV CHEAT KÍCH HOẠT',
+        '⚡'
+      );
+      this.render();
+    };
+
+    header.querySelector('#btn-dev-hack')?.addEventListener('click', triggerDevCheat);
+    header.querySelector('#pill-energy')?.addEventListener('click', triggerDevCheat);
+
     header.querySelector('#btn-settings')?.addEventListener('click', () => {
       sound.playClick();
-      alert('⚙ CÀI ĐẶT GAME:\n• Phiên bản: Gear Gun Castle (Archero Style)\n• Âm thanh: ĐANG BẬT\n• Nhà phát triển: Antigravity Game Engine');
+      showInGameAlert(
+        '⚙ CÀI ĐẶT GAME:\n• Phiên bản: Gear Gun Castle (Archero Style)\n• Chế độ: DEV TEST MODE (Full Energy Hack)\n• Âm thanh: ĐANG BẬT\n• Nhà phát triển: Antigravity Game Engine',
+        'CÀI ĐẶT GAME',
+        '⚙'
+      );
     });
 
     return header;
@@ -355,12 +430,10 @@ export class UIManager {
 
     // PLAY BUTTON CLICK -> START BATTLE
     tab.querySelector('#btn-play')?.addEventListener('click', () => {
+      // DEV HACK: Luôn đảm bảo năng lượng để test game không bao giờ hết
       if (save.energy < 5) {
-        sound.playHit();
-        alert('⚡ Không đủ Năng lượng! Cần ít nhất 5 ⚡ để xuất trận.');
-        return;
+        save.energy = 999;
       }
-      save.energy -= 5;
       this.game['saveGame']();
       sound.playMerge();
       this.game.startBattle();
@@ -808,12 +881,10 @@ export class UIManager {
     });
 
     tab.querySelector('#btn-modes-launch')?.addEventListener('click', () => {
+      // DEV HACK: Luôn đảm bảo năng lượng để test game không bao giờ hết
       if (save.energy < 5) {
-        sound.playHit();
-        alert('⚡ Không đủ Năng lượng! Cần ít nhất 5 ⚡.');
-        return;
+        save.energy = 999;
       }
-      save.energy -= 5;
       this.game['saveGame']();
       sound.playMerge();
       this.game.startBattle();
@@ -2431,6 +2502,139 @@ export class UIManager {
         cursor: pointer;
         box-shadow: 0 6px 16px rgba(37, 99, 235, 0.5);
       }
+
+      /* IN-GAME NOTIFICATION MODAL DIALOG */
+      .game-alert-overlay {
+        position: absolute;
+        inset: 0;
+        background: rgba(4, 7, 16, 0.85);
+        backdrop-filter: blur(8px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 99999;
+        pointer-events: auto;
+        animation: alertFadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+      .game-alert-overlay.fade-out {
+        opacity: 0;
+        transition: opacity 0.16s ease;
+      }
+      .game-alert-card {
+        width: 530px;
+        max-width: 92%;
+        background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+        border: 3.5px solid #f59e0b;
+        border-radius: 22px;
+        box-shadow: 0 16px 48px rgba(0, 0, 0, 0.95), 0 0 28px rgba(245, 158, 11, 0.38), inset 0 2px 4px rgba(254, 240, 138, 0.25);
+        padding: 28px 24px 24px;
+        position: relative;
+        overflow: hidden;
+        animation: alertPopIn 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+      }
+      .game-alert-glow {
+        position: absolute;
+        top: -60px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 300px;
+        height: 120px;
+        background: radial-gradient(circle, rgba(245, 158, 11, 0.3) 0%, transparent 70%);
+        pointer-events: none;
+      }
+      .game-alert-header {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        margin-bottom: 16px;
+        border-bottom: 2px solid rgba(245, 158, 11, 0.35);
+        padding-bottom: 14px;
+      }
+      .game-alert-icon {
+        font-size: 30px;
+        filter: drop-shadow(0 2px 8px rgba(0,0,0,0.7));
+      }
+      .game-alert-title {
+        font-size: 21px;
+        font-weight: 900;
+        color: #fde047;
+        text-shadow: 0 2px 8px rgba(0,0,0,0.85);
+        letter-spacing: 0.5px;
+      }
+      .game-alert-body {
+        color: #f8fafc;
+        font-size: 15.5px;
+        line-height: 1.65;
+        text-align: center;
+        white-space: pre-line;
+        margin-bottom: 24px;
+        text-shadow: 0 1px 3px rgba(0,0,0,0.7);
+        max-height: 400px;
+        overflow-y: auto;
+        padding: 0 8px;
+      }
+      .game-alert-footer {
+        display: flex;
+        justify-content: center;
+      }
+      .game-alert-btn {
+        min-width: 170px;
+        height: 50px;
+        background: linear-gradient(180deg, #22c55e 0%, #15803d 100%);
+        border: 2px solid #86efac;
+        border-radius: 14px;
+        color: #ffffff;
+        font-size: 17px;
+        font-weight: 900;
+        cursor: pointer;
+        box-shadow: 0 5px 0 #14532d, 0 8px 18px rgba(0,0,0,0.6);
+        transition: transform 0.08s ease, filter 0.08s ease;
+      }
+      .game-alert-btn:hover {
+        filter: brightness(1.15);
+        transform: translateY(-2px);
+      }
+      .game-alert-btn:active {
+        transform: translateY(4px);
+        box-shadow: 0 1px 0 #14532d;
+      }
+
+      /* DEV HACK BUTTON */
+      .dev-hack-btn {
+        background: linear-gradient(180deg, #f59e0b 0%, #b45309 100%);
+        border: 2px solid #fef08a;
+        border-radius: 12px;
+        color: #ffffff;
+        font-weight: 900;
+        font-size: 12px;
+        padding: 8px 12px;
+        cursor: pointer;
+        box-shadow: 0 3px 0 #78350f, 0 4px 10px rgba(0,0,0,0.5);
+        white-space: nowrap;
+        animation: devHackPulse 1.8s infinite alternate;
+      }
+      .dev-hack-btn:hover {
+        filter: brightness(1.2);
+        transform: translateY(-1px);
+      }
+      .dev-hack-btn:active {
+        transform: translateY(3px);
+        box-shadow: 0 1px 0 #78350f;
+      }
+      @keyframes devHackPulse {
+        from { transform: scale(1); filter: brightness(1); }
+        to { transform: scale(1.05); filter: brightness(1.22); }
+      }
+
+      @keyframes alertFadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+      @keyframes alertPopIn {
+        from { transform: scale(0.82); opacity: 0; }
+        to { transform: scale(1); opacity: 1; }
+      }
     `;
 
     document.head.appendChild(styleEl);
@@ -2467,5 +2671,43 @@ export class UIManager {
     });
 
     this.rootEl.appendChild(modal);
+  }
+
+  public showAlertModal(message: string, title: string = 'THÔNG BÁO', icon: string = '🔔') {
+    sound.playClick();
+    const existing = this.rootEl.querySelector('.game-alert-overlay');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.className = 'game-alert-overlay';
+    overlay.innerHTML = `
+      <div class="game-alert-card">
+        <div class="game-alert-glow"></div>
+        <div class="game-alert-header">
+          <span class="game-alert-icon">${icon}</span>
+          <span class="game-alert-title">${title}</span>
+        </div>
+        <div class="game-alert-body">${message}</div>
+        <div class="game-alert-footer">
+          <button class="game-alert-btn" id="btn-alert-ok">ĐỒNG Ý</button>
+        </div>
+      </div>
+    `;
+
+    const close = () => {
+      sound.playClick();
+      overlay.classList.add('fade-out');
+      setTimeout(() => overlay.remove(), 160);
+    };
+
+    overlay.querySelector('#btn-alert-ok')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      close();
+    });
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) close();
+    });
+
+    this.rootEl.appendChild(overlay);
   }
 }

@@ -7,8 +7,8 @@ const DEFAULT_SAVE: UserSaveData = {
   saveVersion: 2,
   diamonds: 6472,
   permanentGold: 12118,
-  energy: 20,
-  maxEnergy: 20,
+  energy: 999,
+  maxEnergy: 999,
   playerLevel: 115,
   playerExp: 75,
   unlockedGuns: ['PISTOL', 'CROSSBOW', 'SLINGSHOT', 'SHOTGUN', 'FLAMER'],
@@ -2639,10 +2639,13 @@ export class GameEngine {
           startGoldLevel: 0,
           bountyLevel: 0,
         };
+        // DEV HACK: Luôn Full Năng Lượng để test game không bao giờ hết
+        data.energy = 999;
+        data.maxEnergy = 999;
         return data;
       }
     } catch (e) {}
-    return { ...DEFAULT_SAVE };
+    return { ...DEFAULT_SAVE, energy: 999, maxEnergy: 999 };
   }
 
   private saveGame() {
@@ -3297,12 +3300,8 @@ export class GameEngine {
 
     playCont.on('pointerdown', () => {
       if (this.saveData.energy < 5) {
-        sound.playHit();
-        alert('⚡ Không đủ Năng lượng! Cần ít nhất 5 ⚡ để xuất trận. Hãy chờ hồi phục.');
-        return;
+        this.saveData.energy = 999;
       }
-
-      this.saveData.energy -= 5;
       this.saveGame();
       sound.playMerge();
       this.startBattle();
@@ -4217,11 +4216,8 @@ export class GameEngine {
 
     startBtn.on('pointerdown', () => {
       if (this.saveData.energy < 5) {
-        sound.playHit();
-        alert('⚡ Không đủ Năng lượng! Cần ít nhất 5 ⚡.');
-        return;
+        this.saveData.energy = 999;
       }
-      this.saveData.energy -= 5;
       this.saveGame();
       sound.playMerge();
       this.startBattle();

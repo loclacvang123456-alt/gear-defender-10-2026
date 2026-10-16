@@ -1147,23 +1147,61 @@ export class UIManager {
       .currency-pill {
         display: flex;
         align-items: center;
-        gap: 6px;
-        background: rgba(15, 23, 42, 0.95);
-        border: 2px solid #334155;
-        border-radius: 12px;
-        padding: 4px 10px;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        gap: 8px;
+        background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+        border: 3px solid #475569;
+        border-radius: 16px;
+        padding: 5px 12px;
+        box-shadow: 0 4px 0 rgba(0,0,0,0.6), 0 6px 14px rgba(0,0,0,0.5), inset 0 1px 2px rgba(255,255,255,0.15);
       }
 
-      .energy-pill { border-color: #22c55e; }
-      .energy-pill .pill-val { color: #86efac; font-weight: 800; font-size: 14px; }
-      .energy-pill .pill-timer { font-size: 9px; color: #a7f3d0; font-weight: bold; }
+      .pill-icon {
+        font-size: 20px;
+        line-height: 1;
+        filter: drop-shadow(0 2px 3px rgba(0,0,0,0.5));
+      }
 
-      .gold-pill { border-color: #f59e0b; }
-      .gold-pill .pill-val { color: #fde047; font-weight: 800; font-size: 14px; }
+      .energy-pill {
+        border-color: #22c55e;
+        box-shadow: 0 4px 0 #14532d, 0 6px 14px rgba(0,0,0,0.5), inset 0 1px 2px rgba(187, 247, 208, 0.3);
+      }
+      .energy-pill .pill-val {
+        color: #86efac;
+        font-weight: 900;
+        font-size: 17px;
+        letter-spacing: 0.5px;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+      }
+      .energy-pill .pill-timer {
+        font-size: 11px;
+        color: #bbf7d0;
+        font-weight: 900;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+      }
 
-      .gem-pill { border-color: #10b981; }
-      .gem-pill .pill-val { color: #6ee7b7; font-weight: 800; font-size: 14px; }
+      .gold-pill {
+        border-color: #f59e0b;
+        box-shadow: 0 4px 0 #78350f, 0 6px 14px rgba(0,0,0,0.5), inset 0 1px 2px rgba(254, 240, 138, 0.3);
+      }
+      .gold-pill .pill-val {
+        color: #fde047;
+        font-weight: 900;
+        font-size: 17px;
+        letter-spacing: 0.5px;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+      }
+
+      .gem-pill {
+        border-color: #10b981;
+        box-shadow: 0 4px 0 #064e3b, 0 6px 14px rgba(0,0,0,0.5), inset 0 1px 2px rgba(110, 231, 183, 0.3);
+      }
+      .gem-pill .pill-val {
+        color: #6ee7b7;
+        font-weight: 900;
+        font-size: 17px;
+        letter-spacing: 0.5px;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+      }
 
       .pill-plus-btn {
         background: transparent;
@@ -1173,28 +1211,29 @@ export class UIManager {
         display: flex;
         align-items: center;
         justify-content: center;
-        transition: transform 0.1s ease;
+        transition: transform 0.1s ease, filter 0.1s ease;
       }
 
       .pill-plus-btn:hover {
-        transform: scale(1.15);
+        transform: scale(1.18);
+        filter: brightness(1.2);
       }
 
       .pill-plus-btn:active {
-        transform: scale(0.9);
+        transform: translateY(2px) scale(0.92);
       }
 
       .plus-pixel-icon {
-        width: 20px;
-        height: 20px;
+        width: 24px;
+        height: 24px;
         object-fit: contain;
         image-rendering: pixelated;
-        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
+        filter: drop-shadow(0 2px 5px rgba(0,0,0,0.6));
       }
 
       .menu-settings-btn {
-        width: 44px;
-        height: 44px;
+        width: 48px;
+        height: 48px;
         background: transparent;
         border: none;
         padding: 0;
@@ -1206,8 +1245,8 @@ export class UIManager {
       }
 
       .menu-settings-btn:hover {
-        transform: rotate(45deg) scale(1.1);
-        filter: brightness(1.2);
+        transform: rotate(45deg) scale(1.15);
+        filter: brightness(1.25);
       }
 
       .menu-settings-btn:active {
@@ -1215,11 +1254,11 @@ export class UIManager {
       }
 
       .settings-gear-img {
-        width: 40px;
-        height: 40px;
+        width: 44px;
+        height: 44px;
         object-fit: contain;
         image-rendering: pixelated;
-        filter: drop-shadow(0 4px 10px rgba(0,0,0,0.6));
+        filter: drop-shadow(0 4px 10px rgba(0,0,0,0.7));
       }
 
       /* SEASON PASS 117 BAR */
@@ -1228,35 +1267,45 @@ export class UIManager {
         top: 76px;
         left: 20px;
         right: 20px;
-        height: 52px;
-        background: #1c1917;
-        border: 2px solid #b45309;
-        border-radius: 12px;
+        height: 56px;
+        background: linear-gradient(180deg, #292524 0%, #1c1917 100%);
+        border: 3px solid #d97706;
+        border-radius: 16px;
         display: flex;
         align-items: center;
-        padding: 0 12px;
+        padding: 0 14px;
         cursor: pointer;
         z-index: 90;
-        box-shadow: 0 6px 16px rgba(0,0,0,0.6);
+        box-shadow: 0 5px 0 #78350f, 0 10px 22px rgba(0,0,0,0.7), inset 0 1px 2px rgba(254, 240, 138, 0.25);
+        transition: transform 0.1s ease, box-shadow 0.1s ease;
+      }
+
+      .season-pass-bar:hover {
+        filter: brightness(1.08);
+      }
+
+      .season-pass-bar:active {
+        transform: translateY(3px);
+        box-shadow: 0 2px 0 #78350f, 0 4px 10px rgba(0,0,0,0.7);
       }
 
       .hero-pink-badge {
         position: relative;
-        width: 44px;
-        height: 44px;
+        width: 46px;
+        height: 46px;
         border-radius: 50%;
-        border: 2.5px solid #f472b6;
+        border: 3px solid #f472b6;
         background: radial-gradient(circle, #f472b6 0%, #db2777 100%);
         display: flex;
         align-items: center;
         justify-content: center;
         overflow: visible;
-        margin-right: 8px;
-        box-shadow: 0 0 10px rgba(244, 114, 182, 0.4);
+        margin-right: 10px;
+        box-shadow: 0 0 12px rgba(244, 114, 182, 0.5);
       }
 
       .pink-avatar-emoji {
-        font-size: 24px;
+        font-size: 26px;
         line-height: 1;
         user-select: none;
       }
@@ -1266,11 +1315,11 @@ export class UIManager {
         bottom: -4px;
         right: -4px;
         background: #7e22ce;
-        border: 1.5px solid #f472b6;
+        border: 2px solid #f472b6;
         border-radius: 50%;
-        width: 18px;
-        height: 18px;
-        font-size: 10px;
+        width: 20px;
+        height: 20px;
+        font-size: 11px;
         font-weight: 900;
         display: flex;
         align-items: center;
@@ -1296,19 +1345,20 @@ export class UIManager {
       }
 
       .pass-title {
-        font-size: 13px;
+        font-size: 15px;
         font-weight: 900;
         color: #fde047;
-        text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+        text-shadow: 0 2px 4px rgba(0,0,0,0.85);
+        letter-spacing: 0.5px;
       }
 
       .pass-progress-track {
         position: relative;
         width: 82%;
-        height: 18px;
-        background: #0f172a;
-        border: 1.5px solid #0284c7;
-        border-radius: 9px;
+        height: 20px;
+        background: #090d16;
+        border: 2px solid #0284c7;
+        border-radius: 10px;
         overflow: visible;
       }
 
@@ -1321,18 +1371,19 @@ export class UIManager {
 
       .pass-lvl-badge {
         position: absolute;
-        left: -8px;
-        top: -4px;
-        width: 24px;
-        height: 24px;
+        left: -10px;
+        top: -5px;
+        width: 28px;
+        height: 28px;
         border-radius: 50%;
         background: #7c2d12;
         border: 2px solid #fde047;
-        font-size: 12px;
+        font-size: 13px;
         font-weight: 900;
         display: flex;
         align-items: center;
         justify-content: center;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.6);
       }
 
       .green-hero-circle {
@@ -1379,22 +1430,22 @@ export class UIManager {
         top: 14px;
         left: 50%;
         transform: translateX(-50%);
-        width: 520px;
-        height: 56px;
+        width: 540px;
+        height: 64px;
         background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
-        border: 2px solid #ca8a04;
-        border-radius: 14px;
+        border: 3px solid #f59e0b;
+        border-radius: 18px;
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 0 16px;
-        box-shadow: 0 6px 18px rgba(0,0,0,0.6), inset 0 1px 2px rgba(254, 240, 138, 0.3);
+        padding: 0 20px;
+        box-shadow: 0 6px 0 #78350f, 0 10px 24px rgba(0,0,0,0.7), inset 0 2px 4px rgba(254, 240, 138, 0.4);
         z-index: 50;
       }
 
       .stage-gift-icon {
-        font-size: 26px;
-        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
+        font-size: 32px;
+        filter: drop-shadow(0 2px 5px rgba(0,0,0,0.5));
       }
 
       .stage-title-col {
@@ -1404,17 +1455,18 @@ export class UIManager {
       }
 
       .stage-name {
-        font-size: 16px;
+        font-size: 19px;
         font-weight: 900;
         color: #fde047;
-        text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+        text-shadow: 0 2px 6px rgba(0,0,0,0.9);
         letter-spacing: 0.5px;
       }
 
       .stage-progress {
-        font-size: 11px;
+        font-size: 13px;
         font-weight: 800;
-        color: #94a3b8;
+        color: #cbd5e1;
+        text-shadow: 0 1px 3px rgba(0,0,0,0.8);
       }
 
       .stage-info-icon-btn {
@@ -1434,22 +1486,22 @@ export class UIManager {
       }
 
       .stage-info-icon-btn:active {
-        transform: scale(0.9);
+        transform: translateY(2px) scale(0.92);
       }
 
       .info-badge-img {
-        width: 34px;
-        height: 34px;
+        width: 38px;
+        height: 38px;
         object-fit: contain;
         image-rendering: pixelated;
-        filter: drop-shadow(0 2px 6px rgba(0,0,0,0.5));
+        filter: drop-shadow(0 3px 6px rgba(0,0,0,0.6));
       }
 
       /* SIDE FLOATING BADGES */
       .left-badges-col {
         position: absolute;
         left: 20px;
-        top: 90px;
+        top: 96px;
         display: flex;
         flex-direction: column;
         gap: 16px;
@@ -1459,7 +1511,7 @@ export class UIManager {
       .right-badges-col {
         position: absolute;
         right: 20px;
-        top: 80px;
+        top: 86px;
         display: flex;
         flex-direction: column;
         gap: 12px;
@@ -1479,34 +1531,34 @@ export class UIManager {
       }
 
       .badge-item-btn:hover {
-        transform: scale(1.12);
-        filter: brightness(1.15);
+        transform: translateY(-3px) scale(1.12);
+        filter: brightness(1.2);
       }
 
       .badge-item-btn:active {
-        transform: scale(0.92);
+        transform: translateY(3px) scale(0.94);
       }
 
       .badge-pixel-img {
-        width: 64px;
-        height: 64px;
+        width: 66px;
+        height: 66px;
         object-fit: contain;
         image-rendering: pixelated;
-        filter: drop-shadow(0 4px 8px rgba(0,0,0,0.7));
+        filter: drop-shadow(0 4px 10px rgba(0,0,0,0.7));
       }
 
       .badge-timer-tag {
-        background: rgba(15, 23, 42, 0.9);
-        border: 1px solid #eab308;
-        border-radius: 8px;
-        font-size: 10px;
+        background: rgba(15, 23, 42, 0.95);
+        border: 2px solid #eab308;
+        border-radius: 10px;
+        font-size: 11px;
         font-weight: 900;
         color: #fde047;
-        padding: 1px 6px;
-        margin-top: -6px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        padding: 2px 8px;
+        margin-top: -8px;
+        box-shadow: 0 3px 6px rgba(0,0,0,0.6);
+        text-shadow: 0 1px 2px rgba(0,0,0,0.9);
       }
-
       /* CENTER STAGE CONTAINER */
       .center-stage-container {
         position: absolute;
@@ -1700,13 +1752,14 @@ export class UIManager {
       }
 
       .nav-tab-label {
-        font-size: 12px;
-        font-weight: 800;
+        font-size: 14px;
+        font-weight: 900;
         color: #94a3b8;
-        margin-top: 2px;
+        margin-top: 3px;
+        letter-spacing: 0.3px;
       }
 
-      .active-tab .nav-tab-label { color: #38bdf8; }
+      .active-tab .nav-tab-label { color: #38bdf8; text-shadow: 0 0 10px rgba(56, 189, 248, 0.6); }
 
       .nav-tab-badge {
         position: absolute;
@@ -1716,9 +1769,10 @@ export class UIManager {
         border: 2px solid #ffffff;
         border-radius: 10px;
         padding: 1px 6px;
-        font-size: 10px;
+        font-size: 11px;
         font-weight: 900;
         color: #ffffff;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.6);
       }
 
       .elevated-tab {
@@ -1726,36 +1780,37 @@ export class UIManager {
       }
 
       .elevated-tab .nav-tab-box {
-        background: #1e293b;
-        border: 3px solid #f59e0b;
-        border-radius: 16px;
-        padding: 8px 18px;
-        box-shadow: 0 6px 16px rgba(245, 158, 11, 0.4);
+        background: linear-gradient(180deg, #1e293b, #0f172a);
+        border: 3.5px solid #f59e0b;
+        border-radius: 18px;
+        padding: 8px 20px;
+        box-shadow: 0 6px 0 #78350f, 0 10px 24px rgba(245, 158, 11, 0.45);
       }
 
-      .elevated-tab .nav-tab-pixel-icon { width: 50px; height: 50px; }
-      .elevated-tab .nav-tab-label { color: #fde047; font-size: 13px; font-weight: 900; }
+      .elevated-tab .nav-tab-pixel-icon { width: 52px; height: 52px; }
+      .elevated-tab .nav-tab-label { color: #fde047; font-size: 15px; font-weight: 900; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
 
       /* TAB GENERAL STYLES */
-      .tab-header-title h2 { font-size: 20px; color: #facc15; font-weight: 900; margin-bottom: 4px; }
-      .tab-header-title h3 { font-size: 17px; color: #38bdf8; font-weight: 800; margin-bottom: 4px; }
-      .tab-header-title p { font-size: 13px; color: #94a3b8; line-height: 18px; }
+      .tab-header-title h2 { font-size: 22px; color: #facc15; font-weight: 900; margin-bottom: 6px; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
+      .tab-header-title h3 { font-size: 18px; color: #38bdf8; font-weight: 900; margin-bottom: 6px; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
+      .tab-header-title p { font-size: 14px; color: #94a3b8; line-height: 20px; }
 
       /* SHOP CARDS */
       .shop-card {
         margin-top: 14px;
-        border-radius: 16px;
-        padding: 18px;
+        border-radius: 18px;
+        padding: 20px;
         display: flex;
-        gap: 16px;
+        gap: 18px;
         align-items: center;
         position: relative;
         overflow: hidden;
-        border: 2px solid;
+        border: 3px solid;
+        box-shadow: 0 6px 18px rgba(0,0,0,0.6);
       }
 
       .common-chest-card {
-        background: #1e293b;
+        background: linear-gradient(180deg, #1e293b, #0f172a);
         border-color: #38bdf8;
       }
 
@@ -1765,40 +1820,58 @@ export class UIManager {
       }
 
       .daily-card {
-        background: #064e3b;
+        background: linear-gradient(180deg, #064e3b, #022c22);
         border-color: #34d399;
       }
 
       .shop-card-pixel-icon {
-        width: 68px;
-        height: 68px;
+        width: 76px;
+        height: 76px;
         object-fit: contain;
         image-rendering: pixelated;
-        filter: drop-shadow(0 4px 10px rgba(0,0,0,0.6));
+        filter: drop-shadow(0 6px 14px rgba(0,0,0,0.7));
       }
 
       .card-body { flex: 1; }
-      .card-title { font-size: 17px; font-weight: 900; color: #ffffff; margin-bottom: 4px; }
-      .card-desc { font-size: 12px; color: #cbd5e1; line-height: 18px; margin-bottom: 10px; }
+      .card-title { font-size: 19px; font-weight: 900; color: #ffffff; margin-bottom: 4px; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
+      .card-desc { font-size: 13px; color: #cbd5e1; line-height: 20px; margin-bottom: 12px; }
 
       .shop-buy-btn {
-        padding: 10px 24px;
-        border-radius: 10px;
-        font-size: 14px;
+        padding: 12px 28px;
+        border-radius: 14px;
+        font-size: 16px;
         font-weight: 900;
         color: #ffffff;
-        border: 2px solid;
+        border: 3px solid;
         cursor: pointer;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.4);
-        transition: transform 0.1s ease;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+        transition: transform 0.1s ease, box-shadow 0.1s ease, filter 0.1s ease;
       }
-      .shop-buy-btn:hover { transform: scale(1.04); }
-      .shop-buy-btn:active { transform: scale(0.95); }
+      .shop-buy-btn:hover { filter: brightness(1.15); transform: translateY(-2px); }
+      .shop-buy-btn:active { transform: translateY(4px); box-shadow: 0 1px 0 rgba(0,0,0,0.5); }
 
-      .can-buy { background: #0284c7; border-color: #7dd3fc; }
-      .royal-btn.can-buy { background: #9333ea; border-color: #fde047; }
-      .free-btn { background: #059669; border-color: #6ee7b7; }
-      .disabled { background: #475569; border-color: #64748b; cursor: not-allowed; opacity: 0.6; }
+      .can-buy {
+        background: linear-gradient(180deg, #0284c7, #0369a1);
+        border-color: #7dd3fc;
+        box-shadow: 0 5px 0 #075985, 0 8px 18px rgba(0,0,0,0.5);
+      }
+      .royal-btn.can-buy {
+        background: linear-gradient(180deg, #9333ea, #6b21a8);
+        border-color: #fde047;
+        box-shadow: 0 5px 0 #4c1d95, 0 8px 18px rgba(0,0,0,0.5);
+      }
+      .free-btn {
+        background: linear-gradient(180deg, #16a34a, #15803d);
+        border-color: #86efac;
+        box-shadow: 0 5px 0 #14532d, 0 8px 18px rgba(0,0,0,0.5);
+      }
+      .disabled {
+        background: #475569;
+        border-color: #64748b;
+        box-shadow: 0 4px 0 #1e293b;
+        cursor: not-allowed;
+        opacity: 0.6;
+      }
 
       /* LOADOUT SLOTS */
       .loadout-container {
@@ -1820,46 +1893,49 @@ export class UIManager {
 
       .slot-box {
         flex: 1;
-        height: 108px;
+        height: 114px;
         background: #1e293b;
-        border-radius: 12px;
+        border-radius: 14px;
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
         position: relative;
         cursor: pointer;
-        border: 2.5px solid;
-        transition: transform 0.15s ease;
+        border: 3px solid;
+        box-shadow: 0 4px 0 rgba(0,0,0,0.5);
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
       }
-      .slot-box:hover { transform: translateY(-2px); }
+      .slot-box:hover { transform: translateY(-3px); box-shadow: 0 6px 12px rgba(0,0,0,0.6); }
+      .slot-box:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(0,0,0,0.5); }
 
       .slot-gun-img {
-        width: 44px;
-        height: 44px;
+        width: 48px;
+        height: 48px;
         object-fit: contain;
         image-rendering: pixelated;
-        margin-top: 12px;
-        filter: drop-shadow(0 2px 6px rgba(0,0,0,0.6));
+        margin-top: 10px;
+        filter: drop-shadow(0 3px 6px rgba(0,0,0,0.6));
       }
 
       .slot-tier-tag {
         position: absolute;
         top: 4px;
-        font-size: 9px;
+        font-size: 10px;
         font-weight: 900;
-        padding: 1px 4px;
-        border-radius: 4px;
+        padding: 2px 6px;
+        border-radius: 6px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.5);
       }
 
-      .slot-gun-name { font-size: 11px; font-weight: 800; color: #ffffff; margin-top: 2px; text-align: center; }
-      .slot-gun-lvl { font-size: 10px; font-weight: 900; color: #facc15; }
-      .slot-action-hint { font-size: 8px; color: #ef4444; }
+      .slot-gun-name { font-size: 12px; font-weight: 900; color: #ffffff; margin-top: 3px; text-align: center; }
+      .slot-gun-lvl { font-size: 11px; font-weight: 900; color: #facc15; }
+      .slot-action-hint { font-size: 9px; font-weight: 800; color: #f87171; }
 
-      .empty-slot { border-color: #334155; border-style: dashed; color: #64748b; font-size: 11px; font-weight: bold; }
-      .buff-box { border-color: #facc15; background: #312e81; width: 68px; }
-      .buff-badge { font-size: 9px; font-weight: 900; color: #facc15; }
-      .buff-name { font-size: 12px; font-weight: 800; color: #ffffff; }
+      .empty-slot { border-color: #334155; border-style: dashed; color: #64748b; font-size: 12px; font-weight: 900; }
+      .buff-box { border-color: #facc15; background: #312e81; width: 72px; }
+      .buff-badge { font-size: 10px; font-weight: 900; color: #facc15; }
+      .buff-name { font-size: 13px; font-weight: 900; color: #ffffff; }
 
       /* TIER BORDERS */
       .tier-border-1 { border-color: #f8fafc; }
@@ -1872,15 +1948,16 @@ export class UIManager {
       .inventory-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 10px;
-        margin-top: 12px;
+        gap: 12px;
+        margin-top: 14px;
       }
 
       .inv-card {
         background: #1e293b;
-        border-radius: 12px;
-        padding: 12px;
-        border: 2px solid;
+        border-radius: 14px;
+        padding: 14px;
+        border: 2.5px solid;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.5);
       }
 
       .inv-card.locked { opacity: 0.5; background: #0f172a; }
@@ -1893,30 +1970,30 @@ export class UIManager {
       }
 
       .inv-rarity-pill {
-        font-size: 9px;
+        font-size: 10px;
         font-weight: 900;
-        padding: 1px 6px;
-        border-radius: 4px;
+        padding: 2px 8px;
+        border-radius: 6px;
       }
 
-      .inv-lvl-text { font-size: 12px; font-weight: 800; color: #facc15; }
+      .inv-lvl-text { font-size: 13px; font-weight: 900; color: #facc15; }
       
       .inv-card-body-row {
         display: flex;
         align-items: center;
         gap: 12px;
-        margin: 6px 0 8px;
+        margin: 6px 0 10px;
       }
 
       .inv-gun-preview-img {
-        width: 50px;
-        height: 50px;
+        width: 54px;
+        height: 54px;
         object-fit: contain;
         image-rendering: pixelated;
-        filter: drop-shadow(0 4px 8px rgba(0,0,0,0.7));
+        filter: drop-shadow(0 4px 10px rgba(0,0,0,0.7));
         transition: transform 0.15s ease;
       }
-      .inv-card:hover .inv-gun-preview-img { transform: scale(1.08); }
+      .inv-card:hover .inv-gun-preview-img { transform: scale(1.1); }
 
       .inv-gun-preview-img.is-locked-img {
         filter: grayscale(1) brightness(0.35) opacity(0.6);
@@ -1926,85 +2003,113 @@ export class UIManager {
         flex: 1;
       }
 
-      .inv-gun-title { font-size: 14px; font-weight: 900; color: #ffffff; }
-      .inv-stats { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+      .inv-gun-title { font-size: 15px; font-weight: 900; color: #ffffff; text-shadow: 0 1px 3px rgba(0,0,0,0.8); }
+      .inv-stats { font-size: 12px; font-weight: 700; color: #94a3b8; margin-top: 2px; }
 
-      .inv-actions { display: flex; gap: 6px; }
+      .inv-actions { display: flex; gap: 8px; }
 
       .equip-toggle-btn {
         flex: 1;
-        padding: 6px;
-        border-radius: 6px;
-        border: none;
-        font-size: 11px;
+        padding: 8px 12px;
+        border-radius: 10px;
+        border: 2px solid;
+        font-size: 12px;
         font-weight: 900;
         cursor: pointer;
         color: white;
+        text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+        transition: transform 0.1s ease, box-shadow 0.1s ease;
       }
 
-      .is-equipped { background: #16a34a; }
-      .can-equip { background: #0284c7; }
+      .is-equipped {
+        background: linear-gradient(180deg, #16a34a, #15803d);
+        border-color: #86efac;
+        box-shadow: 0 3px 0 #14532d;
+      }
+      .can-equip {
+        background: linear-gradient(180deg, #0284c7, #0369a1);
+        border-color: #7dd3fc;
+        box-shadow: 0 3px 0 #075985;
+      }
+      .equip-toggle-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0,0,0,0.4); }
 
       .upgrade-btn {
-        padding: 6px 10px;
-        border-radius: 6px;
-        border: none;
-        font-size: 11px;
+        padding: 8px 14px;
+        border-radius: 10px;
+        border: 2px solid #fef08a;
+        font-size: 12px;
         font-weight: 900;
         cursor: pointer;
-        color: white;
+        color: #ffffff;
+        background: linear-gradient(180deg, #d97706, #b45309);
+        box-shadow: 0 3px 0 #78350f;
+        text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+        transition: transform 0.1s ease;
       }
+      .upgrade-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #78350f; }
 
-      .locked-hint { font-size: 11px; font-weight: bold; color: #ef4444; }
+      .locked-hint { font-size: 12px; font-weight: 900; color: #ef4444; }
 
       /* TALENTS */
-      .talents-container { margin-top: 14px; display: flex; flex-direction: column; gap: 12px; }
+      .talents-container { margin-top: 14px; display: flex; flex-direction: column; gap: 14px; }
 
       .talent-card {
         background: #1e293b;
-        border: 2px solid #475569;
-        border-radius: 14px;
-        padding: 14px 18px;
+        border: 2.5px solid #475569;
+        border-radius: 16px;
+        padding: 16px 20px;
         display: flex;
         align-items: center;
-        gap: 16px;
+        gap: 18px;
+        box-shadow: 0 6px 14px rgba(0,0,0,0.5);
       }
 
       .talent-info { flex: 1; }
-      .talent-title { font-size: 15px; font-weight: 900; color: #38bdf8; margin-bottom: 4px; }
-      .talent-desc { font-size: 12px; color: #cbd5e1; margin-bottom: 8px; }
-      .talent-progress { width: 100%; height: 10px; background: #0f172a; border-radius: 5px; overflow: hidden; }
-      .talent-fill { height: 100%; background: #22c55e; }
+      .talent-title { font-size: 16px; font-weight: 900; color: #38bdf8; margin-bottom: 4px; text-shadow: 0 1px 3px rgba(0,0,0,0.8); }
+      .talent-desc { font-size: 13px; color: #cbd5e1; margin-bottom: 8px; line-height: 18px; }
+      .talent-progress { width: 100%; height: 12px; background: #0f172a; border-radius: 6px; overflow: hidden; border: 1.5px solid #334155; }
+      .talent-fill { height: 100%; background: linear-gradient(90deg, #16a34a, #4ade80); box-shadow: 0 0 8px #4ade80; }
 
       .talent-btn {
-        padding: 10px 16px;
-        border-radius: 10px;
-        font-size: 13px;
+        padding: 12px 20px;
+        border-radius: 12px;
+        font-size: 14px;
         font-weight: 900;
         color: white;
-        border: 2px solid;
+        border: 2.5px solid #86efac;
+        background: linear-gradient(180deg, #16a34a, #15803d);
+        box-shadow: 0 4px 0 #14532d, 0 6px 12px rgba(0,0,0,0.4);
         cursor: pointer;
+        text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+        transition: transform 0.1s ease;
       }
+      .talent-btn:hover { filter: brightness(1.15); transform: translateY(-2px); }
+      .talent-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 #14532d; }
 
-      .is-max { background: #334155; border-color: #64748b; }
+      .is-max { background: #334155; border-color: #64748b; box-shadow: none; cursor: default; }
 
       /* MODES */
-      .mode-toggle-row { display: flex; gap: 12px; margin: 14px 0; }
+      .mode-toggle-row { display: flex; gap: 14px; margin: 16px 0; }
       .mode-toggle-btn {
         flex: 1;
-        padding: 14px;
-        border-radius: 12px;
+        padding: 16px;
+        border-radius: 14px;
         background: #1e293b;
-        border: 2px solid #475569;
+        border: 3px solid #475569;
+        box-shadow: 0 4px 0 #0f172a;
         color: white;
-        font-size: 15px;
+        font-size: 16px;
         font-weight: 900;
         cursor: pointer;
+        transition: transform 0.1s ease, box-shadow 0.1s ease;
       }
 
+      .mode-toggle-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 #0f172a; }
+
       .mode-toggle-btn.active {
-        background: #059669;
+        background: linear-gradient(180deg, #059669, #047857);
         border-color: #34d399;
+        box-shadow: 0 4px 0 #064e3b;
       }
 
       .map-cards-list { display: flex; flex-direction: column; gap: 10px; }
@@ -2034,17 +2139,21 @@ export class UIManager {
 
       .modes-launch-btn {
         width: 100%;
-        margin-top: 18px;
-        padding: 16px;
-        border-radius: 14px;
-        background: #16a34a;
-        border: 3px solid #4ade80;
+        margin-top: 20px;
+        padding: 18px;
+        border-radius: 16px;
+        background: linear-gradient(180deg, #16a34a, #15803d);
+        border: 4px solid #86efac;
         color: white;
-        font-size: 20px;
+        font-size: 22px;
         font-weight: 900;
         cursor: pointer;
-        box-shadow: 0 6px 16px rgba(0,0,0,0.5);
+        box-shadow: 0 8px 0 #14532d, 0 14px 28px rgba(0,0,0,0.6);
+        text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+        transition: transform 0.1s ease, box-shadow 0.1s ease, filter 0.1s ease;
       }
+      .modes-launch-btn:hover { filter: brightness(1.15); transform: translateY(-2px); }
+      .modes-launch-btn:active { transform: translateY(6px); box-shadow: 0 2px 0 #14532d; }
 
       /* IN-GAME BATTLE HUD */
       .battle-hud-screen {
@@ -2066,29 +2175,37 @@ export class UIManager {
       }
 
       .battle-menu-btn, .battle-speed-btn {
-        background: rgba(15, 23, 42, 0.9);
-        border: 2px solid #38bdf8;
-        border-radius: 10px;
+        background: linear-gradient(180deg, #1e293b, #0f172a);
+        border: 3px solid #38bdf8;
+        border-radius: 14px;
         color: white;
-        padding: 8px 14px;
-        font-size: 14px;
+        padding: 10px 18px;
+        font-size: 16px;
         font-weight: 900;
         cursor: pointer;
+        box-shadow: 0 4px 0 #0284c7, 0 6px 14px rgba(0,0,0,0.6);
+        text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+        transition: transform 0.1s ease, box-shadow 0.1s ease, filter 0.1s ease;
       }
+      .battle-menu-btn:hover, .battle-speed-btn:hover { filter: brightness(1.2); }
+      .battle-menu-btn:active, .battle-speed-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 #0284c7; }
 
       .battle-wave-badge {
-        background: rgba(15, 23, 42, 0.95);
-        border: 2px solid #facc15;
-        border-radius: 12px;
-        padding: 6px 16px;
-        font-size: 14px;
+        background: linear-gradient(180deg, #1e293b, #0f172a);
+        border: 3px solid #facc15;
+        border-radius: 16px;
+        padding: 10px 24px;
+        font-size: 18px;
         font-weight: 900;
-        color: #facc15;
+        color: #fef08a;
+        box-shadow: 0 5px 0 #854d0e, 0 8px 18px rgba(0,0,0,0.7), inset 0 2px 3px rgba(254, 240, 138, 0.4);
+        text-shadow: 0 2px 6px rgba(0,0,0,0.9);
+        letter-spacing: 0.5px;
       }
 
       .battle-stats-bar {
         position: absolute;
-        top: 70px;
+        top: 76px;
         left: 16px;
         right: 16px;
         display: flex;
@@ -2100,41 +2217,74 @@ export class UIManager {
       .battle-hp-pill {
         display: flex;
         align-items: center;
-        gap: 8px;
-        background: rgba(15, 23, 42, 0.9);
-        border: 2px solid #ef4444;
-        border-radius: 12px;
-        padding: 6px 12px;
-        width: 220px;
+        gap: 10px;
+        background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+        border: 3.5px solid #ef4444;
+        border-radius: 18px;
+        padding: 0 16px;
+        width: 330px;
+        height: 50px;
+        box-shadow: 0 6px 0 #7f1d1d, 0 10px 24px rgba(0,0,0,0.75), inset 0 2px 4px rgba(254, 202, 202, 0.3);
+      }
+
+      .hp-icon {
+        font-size: 26px;
+        line-height: 1;
+        filter: drop-shadow(0 2px 6px rgba(239, 68, 68, 0.8));
       }
 
       .hp-bar-track {
         flex: 1;
-        height: 14px;
-        background: #334155;
-        border-radius: 7px;
+        height: 22px;
+        background: #090d16;
+        border: 2px solid #334155;
+        border-radius: 11px;
         overflow: hidden;
+        position: relative;
       }
 
       .hp-bar-fill {
         height: 100%;
-        background: linear-gradient(90deg, #ef4444, #f87171);
+        background: linear-gradient(90deg, #dc2626 0%, #ef4444 60%, #fca5a5 100%);
+        box-shadow: 0 0 14px #ef4444;
         transition: width 0.2s ease;
       }
 
-      .hp-text { font-size: 11px; font-weight: 800; color: #fee2e2; }
+      .hp-text {
+        font-size: 16px;
+        font-weight: 900;
+        color: #ffffff;
+        text-shadow: 0 2px 4px #000000;
+        letter-spacing: 0.5px;
+        min-width: 96px;
+        text-align: right;
+      }
 
       .battle-gold-pill {
         display: flex;
         align-items: center;
-        gap: 6px;
-        background: rgba(15, 23, 42, 0.9);
-        border: 2px solid #f59e0b;
-        border-radius: 12px;
-        padding: 6px 14px;
+        gap: 8px;
+        background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+        border: 3.5px solid #f59e0b;
+        border-radius: 18px;
+        padding: 0 22px;
+        height: 50px;
+        box-shadow: 0 6px 0 #78350f, 0 10px 24px rgba(0,0,0,0.75), inset 0 2px 4px rgba(254, 240, 138, 0.3);
       }
 
-      .gold-text { font-size: 15px; font-weight: 900; color: #fde047; }
+      .gold-icon {
+        font-size: 28px;
+        line-height: 1;
+        filter: drop-shadow(0 2px 6px rgba(245, 158, 11, 0.8));
+      }
+
+      .gold-text {
+        font-size: 24px;
+        font-weight: 900;
+        color: #fde047;
+        text-shadow: 0 2px 6px #000000;
+        letter-spacing: 1px;
+      }
 
       /* BATTLE BOTTOM BAR */
       .battle-bottom-bar {
@@ -2142,26 +2292,32 @@ export class UIManager {
         bottom: 24px;
         left: 20px;
         right: 20px;
-        height: 84px;
+        height: 92px;
         display: flex;
-        gap: 16px;
+        gap: 18px;
         pointer-events: auto;
       }
 
       .chunky-roll-btn {
         flex: 1;
-        background: linear-gradient(180deg, #b45309, #78350f);
-        border: 3.5px solid #fde047;
-        border-radius: 18px;
+        height: 100%;
+        background: linear-gradient(180deg, #d97706 0%, #78350f 100%);
+        border: 4px solid #fde047;
+        border-radius: 20px;
         color: white;
         cursor: pointer;
-        box-shadow: 0 6px 0 #451a03, 0 10px 20px rgba(0,0,0,0.6);
-        transition: transform 0.1s ease, box-shadow 0.1s ease;
+        box-shadow: 0 8px 0 #451a03, 0 14px 28px rgba(0,0,0,0.7), inset 0 2px 4px rgba(254, 240, 138, 0.5);
+        transition: transform 0.1s ease, box-shadow 0.1s ease, filter 0.1s ease;
       }
 
-      .chunky-roll-btn:active {
-        transform: translateY(4px);
-        box-shadow: 0 2px 0 #451a03, 0 4px 10px rgba(0,0,0,0.6);
+      .chunky-roll-btn:hover:not(.disabled) {
+        filter: brightness(1.15);
+        transform: translateY(-2px);
+      }
+
+      .chunky-roll-btn:active:not(.disabled) {
+        transform: translateY(6px);
+        box-shadow: 0 2px 0 #451a03, 0 6px 14px rgba(0,0,0,0.7);
       }
 
       .chunky-roll-btn.disabled {
@@ -2176,32 +2332,39 @@ export class UIManager {
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 8px;
+        gap: 10px;
       }
 
-      .roll-icon { font-size: 26px; }
-      .roll-label { font-size: 18px; font-weight: 900; }
-      .roll-price { font-size: 15px; font-weight: 900; color: #fde047; }
+      .roll-icon { font-size: 32px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6)); }
+      .roll-label { font-size: 22px; font-weight: 900; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
+      .roll-price { font-size: 19px; font-weight: 900; color: #fef08a; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
 
       .chunky-wave-btn {
-        flex: 1.2;
-        background: linear-gradient(180deg, #16a34a, #14532d);
-        border: 3.5px solid #4ade80;
-        border-radius: 18px;
+        flex: 1.25;
+        height: 100%;
+        background: linear-gradient(180deg, #16a34a 0%, #14532d 100%);
+        border: 4px solid #4ade80;
+        border-radius: 20px;
         color: white;
-        font-size: 20px;
+        font-size: 24px;
         font-weight: 900;
         cursor: pointer;
-        box-shadow: 0 6px 0 #052e16, 0 10px 20px rgba(0,0,0,0.6);
-        transition: transform 0.1s ease, box-shadow 0.1s ease;
+        box-shadow: 0 8px 0 #052e16, 0 14px 28px rgba(0,0,0,0.7), inset 0 2px 4px rgba(187, 247, 208, 0.5);
+        text-shadow: 0 2px 6px rgba(0,0,0,0.8);
+        transition: transform 0.1s ease, box-shadow 0.1s ease, filter 0.1s ease;
       }
 
-      .chunky-wave-btn:active {
-        transform: translateY(4px);
-        box-shadow: 0 2px 0 #052e16, 0 4px 10px rgba(0,0,0,0.6);
+      .chunky-wave-btn:hover:not(.in-wave) {
+        filter: brightness(1.15);
+        transform: translateY(-2px);
       }
 
-        .chunky-wave-btn.in-wave {
+      .chunky-wave-btn:active:not(.in-wave) {
+        transform: translateY(6px);
+        box-shadow: 0 2px 0 #052e16, 0 6px 14px rgba(0,0,0,0.7);
+      }
+
+      .chunky-wave-btn.in-wave {
         background: #334155;
         border-color: #64748b;
         box-shadow: 0 4px 0 #1e293b;

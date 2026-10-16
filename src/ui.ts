@@ -174,7 +174,7 @@ export class UIManager {
 
     banner.innerHTML = `
       <div class="hero-pink-badge">
-        <img src="/archero_bg.png" class="pink-avatar" alt="Hero"/>
+        <div class="pink-avatar-emoji">🧙‍♀️</div>
         <div class="hero-lvl-chip">9</div>
       </div>
 
@@ -218,31 +218,82 @@ export class UIManager {
     const save = this.game.saveData;
 
     tab.innerHTML = `
-      <!-- STAGE TITLE INFO BUTTON -->
-      <button class="stage-info-btn hotspot-info" id="hotspot-info" title="Thông tin ải"></button>
+      <!-- TOP STAGE BANNER -->
+      <div class="stage-banner-header">
+        <div class="stage-gift-icon">🎁</div>
+        <div class="stage-title-col">
+          <div class="stage-name">Hero50.Radiant Temple</div>
+          <div class="stage-progress">Top Stage : ${save.highestCampaignStage * 10}/50</div>
+        </div>
+        <button class="stage-info-icon-btn" id="hotspot-info" title="Thông tin ải">ℹ️</button>
+      </div>
 
       <!-- LEFT FLOATING BADGES -->
-      <button class="badge-hotspot hotspot-octopus" id="badge-octopus" title="Sự kiện Bạch tuộc"></button>
-      <button class="badge-hotspot hotspot-island" id="badge-island" title="Đảo kho báu"></button>
+      <div class="left-badges-col">
+        <button class="badge-item-btn" id="badge-octopus" title="Sự kiện Bạch tuộc">
+          <img src="/assets/badge_octopus.png" class="badge-pixel-img" alt="Octopus"/>
+          <span class="badge-timer-tag">2h 22m</span>
+        </button>
+        <button class="badge-item-btn" id="badge-island" title="Đảo kho báu">
+          <img src="/assets/badge_island.png" class="badge-pixel-img" alt="Island"/>
+          <span class="badge-timer-tag">Event</span>
+        </button>
+      </div>
 
       <!-- RIGHT FLOATING BADGES -->
-      <button class="badge-hotspot hotspot-arena" id="badge-arena" title="Đấu trường PvP"></button>
-      <button class="badge-hotspot hotspot-quest" id="badge-quest" title="Nhiệm vụ hàng ngày"></button>
-      <button class="badge-hotspot hotspot-demon" id="badge-demon" title="Sự kiện Ma Vương"></button>
-      <button class="badge-hotspot hotspot-wizard" id="badge-wizard" title="Mèo phù thủy"></button>
+      <div class="right-badges-col">
+        <button class="badge-item-btn" id="badge-arena" title="Đấu trường PvP">
+          <img src="/assets/badge_arena.png" class="badge-pixel-img" alt="Arena"/>
+          <span class="badge-timer-tag">PvP</span>
+        </button>
+        <button class="badge-item-btn" id="badge-quest" title="Nhiệm vụ hàng ngày">
+          <img src="/assets/badge_quest.png" class="badge-pixel-img" alt="Quests"/>
+          <span class="badge-timer-tag">Daily</span>
+        </button>
+        <button class="badge-item-btn" id="badge-demon" title="Sự kiện Ma Vương">
+          <img src="/assets/badge_demon.png" class="badge-pixel-img" alt="Demon"/>
+          <span class="badge-timer-tag">01:59</span>
+        </button>
+        <button class="badge-item-btn" id="badge-wizard" title="Mèo phù thủy">
+          <img src="/assets/badge_wizard.png" class="badge-pixel-img" alt="Wizard"/>
+          <span class="badge-timer-tag">00:32</span>
+        </button>
+      </div>
 
-      <!-- WATER MILESTONE CHEST -->
-      <button class="chest-hotspot hotspot-chest" id="milestone-chest" title="Rương cột mốc 50-40"></button>
+      <!-- CENTER DISPLAY: SHRINE TEMPLE & MILESTONE CHEST -->
+      <div class="center-stage-container">
+        <div class="temple-ambient-glow"></div>
+        <img src="/assets/shrine_temple.png" class="shrine-artwork-img" alt="Radiant Temple Shrine"/>
 
-      <!-- BOTTOM ACTION BUTTONS -->
-      <button class="action-hotspot hotspot-patrol" id="btn-patrol" title="Hero Patrol"></button>
-      <button class="action-hotspot hotspot-play" id="btn-play" title="Bắt đầu chiến đấu (⚡ x5)"></button>
-      <button class="action-hotspot hotspot-demon-act" id="btn-demon-act" title="Nâng cấp nhanh"></button>
-      <button class="action-hotspot hotspot-expedition" id="btn-expedition" title="Viễn chinh"></button>
+        <!-- WATER PLATFORM & MILESTONE CHEST -->
+        <button class="milestone-chest-wrapper" id="milestone-chest" title="Rương cột mốc 50-40">
+          <img src="/assets/chest_milestone.png" class="chest-artwork-img" alt="Milestone Chest"/>
+          <div class="chest-target-chip">Reach 50-40</div>
+        </button>
+      </div>
+
+      <!-- BOTTOM WORLD ACTION BAR -->
+      <div class="world-action-bar">
+        <button class="world-action-btn patrol-btn" id="btn-patrol" title="Hero Patrol">
+          <img src="/assets/btn_patrol.png" class="action-btn-img" alt="Patrol"/>
+        </button>
+
+        <button class="world-action-btn play-btn" id="btn-play" title="Bắt đầu chiến đấu (⚡ x5)">
+          <img src="/assets/btn_play.png" class="action-btn-img" alt="Play"/>
+        </button>
+
+        <button class="world-action-btn demon-btn" id="btn-demon-act" title="Nâng cấp Ma Thần">
+          <img src="/assets/btn_demon.png" class="action-btn-img" alt="Demon"/>
+        </button>
+
+        <button class="world-action-btn expedition-btn" id="btn-expedition" title="Viễn chinh">
+          <img src="/assets/btn_expedition.png" class="action-btn-img" alt="Expedition"/>
+        </button>
+      </div>
     `;
 
     // Click events
-    tab.querySelector('.stage-info-btn')?.addEventListener('click', () => {
+    tab.querySelector('#hotspot-info')?.addEventListener('click', () => {
       sound.playClick();
       alert(`📖 THÔNG TIN ẢI [Hero50.Radiant Temple]:\n• Cấp độ thử thách: 50 Wave\n• Kỷ lục hiện tại: ${save.highestCampaignStage * 10}/50\n• Thưởng qua ải: 1000 💎 + Rương Thần Thoại!`);
     });
@@ -769,12 +820,12 @@ export class UIManager {
     const nav = document.createElement('div');
     nav.className = 'bottom-nav-bar';
 
-    const tabs: { key: 'SHOP' | 'EQUIPMENT' | 'WORLD' | 'TALENT' | 'MODES'; label: string; icon: string; badge?: string }[] = [
-      { key: 'SHOP', label: 'Shop', icon: '🎁', badge: '67' },
-      { key: 'EQUIPMENT', label: 'Trang Bị', icon: '🛡', badge: 'New' },
-      { key: 'WORLD', label: 'World', icon: '🗺' },
-      { key: 'TALENT', label: 'Thiên Phú', icon: '🏛' },
-      { key: 'MODES', label: 'Chế Độ', icon: '🎯' },
+    const tabs: { key: 'SHOP' | 'EQUIPMENT' | 'WORLD' | 'TALENT' | 'MODES'; label: string; iconSrc: string; badge?: string }[] = [
+      { key: 'SHOP', label: 'Shop', iconSrc: '/assets/tab_shop.png', badge: '67' },
+      { key: 'EQUIPMENT', label: 'Trang Bị', iconSrc: '/assets/tab_equip.png', badge: 'New' },
+      { key: 'WORLD', label: 'World', iconSrc: '/assets/tab_world.png' },
+      { key: 'TALENT', label: 'Thiên Phú', iconSrc: '/assets/tab_talent.png' },
+      { key: 'MODES', label: 'Chế Độ', iconSrc: '/assets/tab_modes.png' },
     ];
 
     tabs.forEach(t => {
@@ -786,7 +837,7 @@ export class UIManager {
 
       tabBtn.innerHTML = `
         <div class="nav-tab-box">
-          <div class="nav-tab-icon">${t.icon}</div>
+          <img src="${t.iconSrc}" class="nav-tab-pixel-icon" alt="${t.label}"/>
           <div class="nav-tab-label">${t.label}</div>
           ${t.badge ? `<div class="nav-tab-badge">${t.badge}</div>` : ''}
         </div>
@@ -1164,15 +1215,19 @@ export class UIManager {
         height: 44px;
         border-radius: 50%;
         border: 2.5px solid #f472b6;
+        background: radial-gradient(circle, #f472b6 0%, #db2777 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
         overflow: visible;
         margin-right: 8px;
+        box-shadow: 0 0 10px rgba(244, 114, 182, 0.4);
       }
 
-      .pink-avatar {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        border-radius: 50%;
+      .pink-avatar-emoji {
+        font-size: 24px;
+        line-height: 1;
+        user-select: none;
       }
 
       .hero-lvl-chip {
@@ -1283,120 +1338,278 @@ export class UIManager {
         width: 100%;
         height: 100%;
         position: relative;
-        background: url('/archero_bg.png') no-repeat center top;
-        background-size: 100% 100%;
+        background: radial-gradient(circle at 50% 38%, #1e1b4b 0%, #0f172a 45%, #030712 100%);
+        overflow: hidden;
       }
 
-      /* HOTSPOTS FOR AUTHENTIC ARCHERO SCREEN */
-      .stage-info-btn.hotspot-info {
+      /* TOP STAGE BANNER */
+      .stage-banner-header {
         position: absolute;
-        top: 215px;
-        left: 470px;
-        width: 44px;
-        height: 44px;
-        background: transparent;
-        border: none;
-        cursor: pointer;
-        border-radius: 50%;
-        transition: transform 0.1s ease, background 0.15s ease;
-      }
-      .stage-info-btn.hotspot-info:hover {
-        background: rgba(255, 255, 255, 0.2);
-      }
-
-      .badge-hotspot, .action-hotspot, .chest-hotspot {
-        position: absolute;
-        background: transparent;
-        border: none;
-        cursor: pointer;
-        outline: none;
-        border-radius: 18px;
-        transition: transform 0.1s ease, background 0.15s ease, box-shadow 0.15s ease;
-      }
-
-      .badge-hotspot:hover, .action-hotspot:hover, .chest-hotspot:hover {
-        background: rgba(255, 255, 255, 0.12);
-        box-shadow: 0 0 16px rgba(254, 240, 138, 0.4);
-      }
-
-      .badge-hotspot:active, .action-hotspot:active, .chest-hotspot:active {
-        transform: scale(0.94);
-        background: rgba(255, 255, 255, 0.25);
-      }
-
-      .hotspot-octopus { top: 310px; left: 35px; width: 85px; height: 85px; }
-      .hotspot-island { top: 760px; left: 100px; width: 80px; height: 80px; border-radius: 50%; }
-
-      .hotspot-arena { top: 205px; right: 35px; width: 75px; height: 75px; }
-      .hotspot-quest { top: 305px; right: 35px; width: 75px; height: 75px; }
-      .hotspot-demon { top: 400px; right: 35px; width: 75px; height: 85px; }
-      .hotspot-wizard { top: 495px; right: 35px; width: 75px; height: 85px; }
-
-      .hotspot-chest { top: 765px; left: 240px; width: 220px; height: 85px; }
-
-      .hotspot-patrol { top: 890px; left: 15px; width: 115px; height: 125px; }
-      .hotspot-play { top: 890px; left: 180px; width: 280px; height: 125px; }
-      .hotspot-demon-act { top: 890px; left: 480px; width: 70px; height: 125px; }
-      .hotspot-expedition { top: 890px; right: 15px; width: 115px; height: 125px; }
-
-      /* CHUNKY 3D GOLDEN PLAY BUTTON */
-      .chunky-play-btn {
-        flex: 1;
-        height: 86px;
-        background: linear-gradient(180deg, #fde047 0%, #eab308 50%, #ca8a04 100%);
-        border: 4px solid #fef08a;
-        border-radius: 20px;
-        box-shadow: 0 8px 0 #854d0e, 0 12px 24px rgba(0,0,0,0.6);
-        cursor: pointer;
+        top: 14px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 520px;
+        height: 56px;
+        background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+        border: 2px solid #ca8a04;
+        border-radius: 14px;
         display: flex;
         align-items: center;
-        justify-content: center;
-        transition: transform 0.1s ease, box-shadow 0.1s ease;
+        justify-content: space-between;
+        padding: 0 16px;
+        box-shadow: 0 6px 18px rgba(0,0,0,0.6), inset 0 1px 2px rgba(254, 240, 138, 0.3);
+        z-index: 50;
       }
 
-      .chunky-play-btn:active {
-        transform: translateY(6px);
-        box-shadow: 0 2px 0 #854d0e, 0 4px 10px rgba(0,0,0,0.6);
+      .stage-gift-icon {
+        font-size: 26px;
+        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
       }
 
-      .play-content {
+      .stage-title-col {
         display: flex;
         flex-direction: column;
         align-items: center;
       }
 
-      .play-text {
-        font-size: 34px;
+      .stage-name {
+        font-size: 16px;
         font-weight: 900;
-        color: #ffffff;
-        text-shadow: 0 3px 6px rgba(0,0,0,0.7), 0 0 12px #ca8a04;
-        letter-spacing: 1px;
+        color: #fde047;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+        letter-spacing: 0.5px;
       }
 
-      .play-energy-badge {
+      .stage-progress {
+        font-size: 11px;
+        font-weight: 800;
+        color: #94a3b8;
+      }
+
+      .stage-info-icon-btn {
+        background: #0284c7;
+        border: 1.5px solid #38bdf8;
+        border-radius: 50%;
+        width: 32px;
+        height: 32px;
+        font-size: 14px;
+        cursor: pointer;
         display: flex;
         align-items: center;
-        gap: 4px;
-        background: rgba(0,0,0,0.3);
-        border-radius: 10px;
-        padding: 2px 10px;
+        justify-content: center;
+        transition: transform 0.1s ease;
+      }
+      .stage-info-icon-btn:hover { transform: scale(1.1); }
+      .stage-info-icon-btn:active { transform: scale(0.9); }
+
+      /* SIDE FLOATING BADGES */
+      .left-badges-col {
+        position: absolute;
+        left: 20px;
+        top: 90px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        z-index: 40;
       }
 
-      .energy-icon { font-size: 14px; }
-      .energy-cost { font-size: 14px; font-weight: 900; color: #ffffff; }
-
-      .demon-btn {
-        width: 68px;
-        background: linear-gradient(180deg, #9333ea, #4c1d95);
-        border-color: #c084fc;
+      .right-badges-col {
+        position: absolute;
+        right: 20px;
+        top: 80px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        z-index: 40;
       }
 
-      .demon-arrow { font-size: 14px; color: #fde047; }
+      .badge-item-btn {
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 0;
+        position: relative;
+        transition: transform 0.15s ease, filter 0.15s ease;
+      }
 
-      .expedition-btn {
-        width: 95px;
-        background: linear-gradient(180deg, #0284c7, #075985);
-        border-color: #38bdf8;
+      .badge-item-btn:hover {
+        transform: scale(1.12);
+        filter: brightness(1.15);
+      }
+
+      .badge-item-btn:active {
+        transform: scale(0.92);
+      }
+
+      .badge-pixel-img {
+        width: 64px;
+        height: 64px;
+        object-fit: contain;
+        image-rendering: pixelated;
+        filter: drop-shadow(0 4px 8px rgba(0,0,0,0.7));
+      }
+
+      .badge-timer-tag {
+        background: rgba(15, 23, 42, 0.9);
+        border: 1px solid #eab308;
+        border-radius: 8px;
+        font-size: 10px;
+        font-weight: 900;
+        color: #fde047;
+        padding: 1px 6px;
+        margin-top: -6px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+      }
+
+      /* CENTER STAGE CONTAINER */
+      .center-stage-container {
+        position: absolute;
+        top: 75px;
+        left: 0;
+        right: 0;
+        bottom: 125px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        pointer-events: none;
+      }
+
+      .temple-ambient-glow {
+        position: absolute;
+        width: 440px;
+        height: 440px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(254, 240, 138, 0.22) 0%, rgba(56, 189, 248, 0.15) 45%, transparent 70%);
+        filter: blur(28px);
+        animation: templePulse 4s ease-in-out infinite alternate;
+        pointer-events: none;
+      }
+
+      @keyframes templePulse {
+        0% { transform: scale(0.95); opacity: 0.8; }
+        100% { transform: scale(1.1); opacity: 1; }
+      }
+
+      .shrine-artwork-img {
+        width: 320px;
+        height: 320px;
+        object-fit: contain;
+        image-rendering: pixelated;
+        filter: drop-shadow(0 16px 32px rgba(0,0,0,0.9));
+        animation: shrineHover 3.5s ease-in-out infinite alternate;
+        pointer-events: auto;
+      }
+
+      @keyframes shrineHover {
+        0% { transform: translateY(0px); }
+        100% { transform: translateY(-10px); }
+      }
+
+      /* WATER & MILESTONE CHEST */
+      .milestone-chest-wrapper {
+        position: relative;
+        margin-top: 10px;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 0;
+        pointer-events: auto;
+        transition: transform 0.15s ease;
+      }
+
+      .milestone-chest-wrapper:hover {
+        transform: scale(1.08);
+      }
+
+      .milestone-chest-wrapper:active {
+        transform: scale(0.94);
+      }
+
+      .chest-artwork-img {
+        width: 96px;
+        height: 96px;
+        object-fit: contain;
+        image-rendering: pixelated;
+        filter: drop-shadow(0 6px 14px rgba(0,0,0,0.7));
+      }
+
+      .chest-target-chip {
+        background: linear-gradient(180deg, #ca8a04 0%, #854d0e 100%);
+        border: 1.5px solid #fef08a;
+        border-radius: 12px;
+        padding: 3px 12px;
+        font-size: 11px;
+        font-weight: 900;
+        color: #ffffff;
+        margin-top: -10px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+      }
+
+      /* BOTTOM WORLD ACTION BAR */
+      .world-action-bar {
+        position: absolute;
+        bottom: 14px;
+        left: 0;
+        right: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 14px;
+        padding: 0 20px;
+        z-index: 60;
+      }
+
+      .world-action-btn {
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        padding: 0;
+        transition: transform 0.12s ease, filter 0.12s ease;
+      }
+
+      .world-action-btn:hover {
+        transform: translateY(-4px) scale(1.03);
+        filter: brightness(1.1);
+      }
+
+      .world-action-btn:active {
+        transform: translateY(2px) scale(0.96);
+      }
+
+      .patrol-btn .action-btn-img {
+        width: 100px;
+        height: 100px;
+        object-fit: contain;
+        image-rendering: pixelated;
+      }
+
+      .play-btn .action-btn-img {
+        width: 220px;
+        height: 88px;
+        object-fit: contain;
+        image-rendering: pixelated;
+        filter: drop-shadow(0 8px 20px rgba(234, 179, 8, 0.45));
+      }
+
+      .demon-btn .action-btn-img {
+        width: 72px;
+        height: 88px;
+        object-fit: contain;
+        image-rendering: pixelated;
+      }
+
+      .expedition-btn .action-btn-img {
+        width: 100px;
+        height: 100px;
+        object-fit: contain;
+        image-rendering: pixelated;
       }
 
       /* BOTTOM NAVIGATION BAR (5 TABS) */
@@ -1406,14 +1619,14 @@ export class UIManager {
         left: 0;
         right: 0;
         height: 115px;
-        background: #e2e8f0;
-        border-top: 2px solid #94a3b8;
+        background: #0f172a;
+        border-top: 2px solid #334155;
         display: flex;
         align-items: flex-end;
         justify-content: space-around;
         padding-bottom: 12px;
         z-index: 100;
-        box-shadow: 0 -4px 16px rgba(0,0,0,0.3);
+        box-shadow: 0 -6px 20px rgba(0,0,0,0.6);
       }
 
       .nav-tab-item {
@@ -1435,19 +1648,22 @@ export class UIManager {
         position: relative;
       }
 
-      .nav-tab-icon {
-        font-size: 34px;
-        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+      .nav-tab-pixel-icon {
+        width: 44px;
+        height: 44px;
+        object-fit: contain;
+        image-rendering: pixelated;
+        filter: drop-shadow(0 2px 6px rgba(0,0,0,0.5));
       }
 
       .nav-tab-label {
         font-size: 12px;
         font-weight: 800;
-        color: #475569;
+        color: #94a3b8;
         margin-top: 2px;
       }
 
-      .active-tab .nav-tab-label { color: #0284c7; }
+      .active-tab .nav-tab-label { color: #38bdf8; }
 
       .nav-tab-badge {
         position: absolute;
@@ -1467,15 +1683,15 @@ export class UIManager {
       }
 
       .elevated-tab .nav-tab-box {
-        background: #ffedd5;
-        border: 3px solid #f97316;
+        background: #1e293b;
+        border: 3px solid #f59e0b;
         border-radius: 16px;
         padding: 8px 18px;
-        box-shadow: 0 4px 12px rgba(249, 115, 22, 0.4);
+        box-shadow: 0 6px 16px rgba(245, 158, 11, 0.4);
       }
 
-      .elevated-tab .nav-tab-icon { font-size: 38px; }
-      .elevated-tab .nav-tab-label { color: #9a3412; font-size: 13px; }
+      .elevated-tab .nav-tab-pixel-icon { width: 50px; height: 50px; }
+      .elevated-tab .nav-tab-label { color: #fde047; font-size: 13px; font-weight: 900; }
 
       /* TAB GENERAL STYLES */
       .tab-header-title h2 { font-size: 20px; color: #facc15; font-weight: 900; margin-bottom: 4px; }

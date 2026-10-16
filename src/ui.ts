@@ -390,7 +390,7 @@ export class UIManager {
       <!-- COMMON CHEST -->
       <div class="shop-card common-chest-card">
         <div class="card-glow"></div>
-        <div class="card-icon">📦</div>
+        <img src="/assets/shop_chest_bronze.png" class="shop-card-pixel-icon" alt="Bronze Chest" />
         <div class="card-body">
           <div class="card-title">HÒM BÁNH RĂNG CHIẾN BINH</div>
           <div class="card-desc">
@@ -406,7 +406,7 @@ export class UIManager {
       <!-- ROYAL CHEST -->
       <div class="shop-card royal-chest-card">
         <div class="card-glow"></div>
-        <div class="card-icon">👑</div>
+        <img src="/assets/shop_chest_royal.png" class="shop-card-pixel-icon" alt="Royal Chest" />
         <div class="card-body">
           <div class="card-title">HÒM HOÀNG GIA THẦN THOẠI</div>
           <div class="card-desc">
@@ -422,7 +422,7 @@ export class UIManager {
 
       <!-- DAILY FREE SUPPLY -->
       <div class="shop-card daily-card">
-        <div class="card-icon">🎁</div>
+        <img src="/assets/shop_pack_daily.png" class="shop-card-pixel-icon" alt="Daily Gift" />
         <div class="card-body">
           <div class="card-title">TIẾP TẾ CHIẾN ĐẤU MỖI NGÀY</div>
           <div class="card-desc">Nhận ngay +50 💎 Kim Cương và +500 💰 Vàng miễn phí!</div>
@@ -469,6 +469,7 @@ export class UIManager {
         activeSlotsHtml += `
           <div class="slot-box tier-border-${tier}" data-unequip-idx="${i}">
             <div class="slot-tier-tag" style="background:${rar.hex}">${rar.name}</div>
+            <img src="/assets/gun_${g.toLowerCase()}.png" class="slot-gun-img" alt="${g}" />
             <div class="slot-gun-name">${GUN_NAMES[g]}</div>
             <div class="slot-gun-lvl">Lv.${save.gunLevels[g] || 1}</div>
             <div class="slot-action-hint">Chạm để gỡ</div>
@@ -516,8 +517,13 @@ export class UIManager {
             <span class="inv-rarity-pill" style="background:${rar.hex}; color: #000">${rar.name} • TIER ${tier}</span>
             <span class="inv-lvl-text">${isUnlocked ? `Cấp ${lvl}` : '🔒'}</span>
           </div>
-          <div class="inv-gun-title">${GUN_NAMES[g]}</div>
-          <div class="inv-stats">${isUnlocked ? `+${(lvl - 1) * 15}% Sát Thương Súng` : 'Chưa sở hữu'}</div>
+          <div class="inv-card-body-row">
+            <img src="/assets/gun_${g.toLowerCase()}.png" class="inv-gun-preview-img ${isUnlocked ? '' : 'is-locked-img'}" alt="${g}" />
+            <div class="inv-card-info-col">
+              <div class="inv-gun-title">${GUN_NAMES[g]}</div>
+              <div class="inv-stats">${isUnlocked ? `+${(lvl - 1) * 15}% Sát Thương Súng` : 'Chưa sở hữu'}</div>
+            </div>
+          </div>
           
           <div class="inv-actions">
             ${isUnlocked ? `
@@ -1763,7 +1769,14 @@ export class UIManager {
         border-color: #34d399;
       }
 
-      .card-icon { font-size: 48px; }
+      .shop-card-pixel-icon {
+        width: 68px;
+        height: 68px;
+        object-fit: contain;
+        image-rendering: pixelated;
+        filter: drop-shadow(0 4px 10px rgba(0,0,0,0.6));
+      }
+
       .card-body { flex: 1; }
       .card-title { font-size: 17px; font-weight: 900; color: #ffffff; margin-bottom: 4px; }
       .card-desc { font-size: 12px; color: #cbd5e1; line-height: 18px; margin-bottom: 10px; }
@@ -1777,7 +1790,10 @@ export class UIManager {
         border: 2px solid;
         cursor: pointer;
         box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+        transition: transform 0.1s ease;
       }
+      .shop-buy-btn:hover { transform: scale(1.04); }
+      .shop-buy-btn:active { transform: scale(0.95); }
 
       .can-buy { background: #0284c7; border-color: #7dd3fc; }
       .royal-btn.can-buy { background: #9333ea; border-color: #fde047; }
@@ -1804,7 +1820,7 @@ export class UIManager {
 
       .slot-box {
         flex: 1;
-        height: 80px;
+        height: 108px;
         background: #1e293b;
         border-radius: 12px;
         display: flex;
@@ -1814,6 +1830,17 @@ export class UIManager {
         position: relative;
         cursor: pointer;
         border: 2.5px solid;
+        transition: transform 0.15s ease;
+      }
+      .slot-box:hover { transform: translateY(-2px); }
+
+      .slot-gun-img {
+        width: 44px;
+        height: 44px;
+        object-fit: contain;
+        image-rendering: pixelated;
+        margin-top: 12px;
+        filter: drop-shadow(0 2px 6px rgba(0,0,0,0.6));
       }
 
       .slot-tier-tag {
@@ -1825,7 +1852,7 @@ export class UIManager {
         border-radius: 4px;
       }
 
-      .slot-gun-name { font-size: 11px; font-weight: 800; color: #ffffff; margin-top: 10px; text-align: center; }
+      .slot-gun-name { font-size: 11px; font-weight: 800; color: #ffffff; margin-top: 2px; text-align: center; }
       .slot-gun-lvl { font-size: 10px; font-weight: 900; color: #facc15; }
       .slot-action-hint { font-size: 8px; color: #ef4444; }
 
@@ -1873,8 +1900,34 @@ export class UIManager {
       }
 
       .inv-lvl-text { font-size: 12px; font-weight: 800; color: #facc15; }
+      
+      .inv-card-body-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin: 6px 0 8px;
+      }
+
+      .inv-gun-preview-img {
+        width: 50px;
+        height: 50px;
+        object-fit: contain;
+        image-rendering: pixelated;
+        filter: drop-shadow(0 4px 8px rgba(0,0,0,0.7));
+        transition: transform 0.15s ease;
+      }
+      .inv-card:hover .inv-gun-preview-img { transform: scale(1.08); }
+
+      .inv-gun-preview-img.is-locked-img {
+        filter: grayscale(1) brightness(0.35) opacity(0.6);
+      }
+
+      .inv-card-info-col {
+        flex: 1;
+      }
+
       .inv-gun-title { font-size: 14px; font-weight: 900; color: #ffffff; }
-      .inv-stats { font-size: 11px; color: #94a3b8; margin: 4px 0 8px; }
+      .inv-stats { font-size: 11px; color: #94a3b8; margin-top: 2px; }
 
       .inv-actions { display: flex; gap: 6px; }
 

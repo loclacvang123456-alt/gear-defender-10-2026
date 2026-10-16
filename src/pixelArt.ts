@@ -402,7 +402,9 @@ export class PixelAssetManager {
 
     // Ưu tiên load trực tiếp Asset Pixel Art chất lượng cao vẽ từ Aseprite
     try {
-      const tex = Texture.from(`/assets/gun_${kind.toLowerCase()}.png`);
+      const img = new Image();
+      img.src = `/assets/gun_${kind.toLowerCase()}.png`;
+      const tex = Texture.from(img);
       if (tex) {
         this.cache.set(key, tex);
         return tex;

@@ -1,6 +1,7 @@
 import { Application } from 'pixi.js';
 import { GameEngine } from './game';
 import { UIManager } from './ui';
+import { PixelAssetManager } from './pixelArt';
 
 async function bootstrap() {
   const container = document.getElementById('game-container')!;
@@ -14,6 +15,9 @@ async function bootstrap() {
     autoDensity: true,
     antialias: true, // Mịn màng sắc nét
   });
+
+  // Tải trước toàn bộ Asset Súng Pixel Art chất lượng cao vẽ từ Aseprite
+  await PixelAssetManager.preloadAssets();
 
   container.appendChild(app.canvas);
 

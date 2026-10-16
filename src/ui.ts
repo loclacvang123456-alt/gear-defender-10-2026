@@ -184,11 +184,7 @@ export class UIManager {
 
       <div class="pass-center">
         <div class="pass-laurel">
-          <svg viewBox="0 0 32 32" width="26" height="26">
-            <circle cx="16" cy="16" r="14" fill="#d97706" stroke="#fde047" stroke-width="2"/>
-            <path d="M10,16 L16,8 L22,16 L16,14 Z" fill="#ffffff"/>
-            <path d="M12,22 L16,14 L20,22 Z" fill="#fef08a"/>
-          </svg>
+          <img src="/assets/pass_laurel.png" class="pass-laurel-img" alt="Season 117" />
         </div>
         <div class="pass-title-row">
           <span class="pass-title">Season 117</span>
@@ -1338,6 +1334,14 @@ export class UIManager {
         position: absolute;
         left: 4px;
         top: -6px;
+      }
+
+      .pass-laurel-img {
+        width: 30px;
+        height: 30px;
+        object-fit: contain;
+        image-rendering: pixelated;
+        filter: drop-shadow(0 2px 5px rgba(0,0,0,0.7));
       }
 
       .pass-title-row {

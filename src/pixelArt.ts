@@ -1,4 +1,4 @@
-import { Texture } from 'pixi.js';
+import { Texture, Assets } from 'pixi.js';
 import { GunKind, BuffKind, EnemyKind } from './types';
 
 // Helper vẽ Rounded Rectangle an toàn 100% trên mọi trình duyệt
@@ -40,6 +40,25 @@ function createHighResTexture(width: number, height: number, drawFn: (ctx: Canva
 
 export class PixelAssetManager {
   private static cache: Map<string, Texture> = new Map();
+  private static gunTextures: Map<string, Texture> = new Map();
+
+  static async preloadAssets(): Promise<void> {
+    const guns: GunKind[] = [
+      'PISTOL', 'CROSSBOW', 'SLINGSHOT', 'SHOTGUN', 'FLAMER',
+      'CRYO', 'CANNON', 'TESLA', 'SNIPER', 'MINIGUN', 'METEOR'
+    ];
+    await Promise.all(guns.map(async (g) => {
+      try {
+        const path = `/assets/gun_${g.toLowerCase()}.png`;
+        const tex = await Assets.load<Texture>(path);
+        if (tex) {
+          this.gunTextures.set(g, tex);
+        }
+      } catch (err) {
+        console.warn(`Failed to preload gun texture for ${g}`, err);
+      }
+    }));
+  }
 
   // 1. Ô bàn cờ 96x96
   static getCellTexture(unlocked: boolean): Texture {
@@ -394,11 +413,19 @@ export class PixelAssetManager {
     return tex;
   }
 
-  // 4. Nòng Súng Xoay Độc Lập 80x80 (Tâm tại 40, 40) - ASSET CHUYỂN MÀU THEO LEVEL 1 -> 5
+  // 4. Nòng Súng Xoay Độc Lập (ASSET Pixel Art Aseprite cao cấp)
   static getGunBarrelTexture(kind: GunKind, level: number = 1): Texture {
     const lvl = Math.min(5, Math.max(1, level));
     const key = `gun_barrel_hires_lvl_${kind}_${lvl}`;
     if (this.cache.has(key)) return this.cache.get(key)!;
+
+    // Ưu tiên Asset Pixel Art chuẩn vẽ từ Aseprite nếu đã preload hoặc có sẵn
+    const path = `/assets/gun_${kind.toLowerCase()}.png`;
+    const assetTex = this.gunTextures.get(kind) || (Assets.cache.has(path) ? Assets.get<Texture>(path) : null);
+    if (assetTex && assetTex.width > 0) {
+      this.cache.set(key, assetTex);
+      return assetTex;
+    }
 
     const tex = createHighResTexture(80, 80, (ctx) => {
       const cx = 40, cy = 40;

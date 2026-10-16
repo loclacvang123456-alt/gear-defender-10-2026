@@ -137,25 +137,29 @@ export class UIManager {
           <span class="pill-val">${save.energy || 7}/${save.maxEnergy || 20}</span>
           <span class="pill-timer">07:54</span>
         </div>
-        <button class="pill-plus-btn">+</button>
+        <button class="pill-plus-btn" title="Nạp năng lượng">
+          <img src="/assets/btn_plus.png" class="plus-pixel-icon" alt="+" />
+        </button>
       </div>
 
       <div class="currency-pill gold-pill">
         <span class="pill-icon">🏹</span>
         <span class="pill-val">${(save.permanentGold || 121181022).toLocaleString()}</span>
-        <button class="pill-plus-btn">+</button>
+        <button class="pill-plus-btn" title="Mua vàng">
+          <img src="/assets/btn_plus.png" class="plus-pixel-icon" alt="+" />
+        </button>
       </div>
 
       <div class="currency-pill gem-pill">
         <span class="pill-icon">💎</span>
         <span class="pill-val">${(save.diamonds || 6472).toLocaleString()}</span>
-        <button class="pill-plus-btn">+</button>
+        <button class="pill-plus-btn" title="Nạp kim cương">
+          <img src="/assets/btn_plus.png" class="plus-pixel-icon" alt="+" />
+        </button>
       </div>
 
-      <button class="menu-hamburger-btn" id="btn-settings">
-        <span></span>
-        <span></span>
-        <span></span>
+      <button class="menu-settings-btn" id="btn-settings" title="Cài đặt">
+        <img src="/assets/btn_settings.png" class="settings-gear-img" alt="Cài đặt" />
       </button>
     `;
 
@@ -225,7 +229,9 @@ export class UIManager {
           <div class="stage-name">Hero50.Radiant Temple</div>
           <div class="stage-progress">Top Stage : ${save.highestCampaignStage * 10}/50</div>
         </div>
-        <button class="stage-info-icon-btn" id="hotspot-info" title="Thông tin ải">ℹ️</button>
+        <button class="stage-info-icon-btn" id="hotspot-info" title="Thông tin ải">
+          <img src="/assets/btn_info.png" class="info-badge-img" alt="Info" />
+        </button>
       </div>
 
       <!-- LEFT FLOATING BADGES -->
@@ -1154,41 +1160,60 @@ export class UIManager {
       .gem-pill .pill-val { color: #6ee7b7; font-weight: 800; font-size: 14px; }
 
       .pill-plus-btn {
-        background: #22c55e;
+        background: transparent;
         border: none;
-        color: white;
-        width: 18px;
-        height: 18px;
-        border-radius: 50%;
-        font-size: 14px;
-        font-weight: bold;
-        line-height: 1;
+        padding: 0;
         cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
+        transition: transform 0.1s ease;
       }
 
-      .menu-hamburger-btn {
+      .pill-plus-btn:hover {
+        transform: scale(1.15);
+      }
+
+      .pill-plus-btn:active {
+        transform: scale(0.9);
+      }
+
+      .plus-pixel-icon {
+        width: 20px;
+        height: 20px;
+        object-fit: contain;
+        image-rendering: pixelated;
+        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
+      }
+
+      .menu-settings-btn {
         width: 44px;
-        height: 40px;
-        background: #0284c7;
-        border: 2px solid #38bdf8;
-        border-radius: 10px;
+        height: 44px;
+        background: transparent;
+        border: none;
+        padding: 0;
         display: flex;
-        flex-direction: column;
-        justify-content: center;
         align-items: center;
-        gap: 5px;
+        justify-content: center;
         cursor: pointer;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+        transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.15s ease;
       }
 
-      .menu-hamburger-btn span {
-        width: 24px;
-        height: 3px;
-        background: #ffffff;
-        border-radius: 2px;
+      .menu-settings-btn:hover {
+        transform: rotate(45deg) scale(1.1);
+        filter: brightness(1.2);
+      }
+
+      .menu-settings-btn:active {
+        transform: rotate(90deg) scale(0.92);
+      }
+
+      .settings-gear-img {
+        width: 40px;
+        height: 40px;
+        object-fit: contain;
+        image-rendering: pixelated;
+        filter: drop-shadow(0 4px 10px rgba(0,0,0,0.6));
       }
 
       /* SEASON PASS 117 BAR */
@@ -1387,20 +1412,32 @@ export class UIManager {
       }
 
       .stage-info-icon-btn {
-        background: #0284c7;
-        border: 1.5px solid #38bdf8;
-        border-radius: 50%;
-        width: 32px;
-        height: 32px;
-        font-size: 14px;
+        background: transparent;
+        border: none;
+        padding: 0;
         cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
-        transition: transform 0.1s ease;
+        transition: transform 0.15s ease, filter 0.15s ease;
       }
-      .stage-info-icon-btn:hover { transform: scale(1.1); }
-      .stage-info-icon-btn:active { transform: scale(0.9); }
+
+      .stage-info-icon-btn:hover {
+        transform: scale(1.18);
+        filter: brightness(1.2);
+      }
+
+      .stage-info-icon-btn:active {
+        transform: scale(0.9);
+      }
+
+      .info-badge-img {
+        width: 34px;
+        height: 34px;
+        object-fit: contain;
+        image-rendering: pixelated;
+        filter: drop-shadow(0 2px 6px rgba(0,0,0,0.5));
+      }
 
       /* SIDE FLOATING BADGES */
       .left-badges-col {

@@ -125,6 +125,7 @@ interface GridSlotView {
   highlightG: Graphics;
   mergeHighlightG: Graphics; // Viền vàng kim phát sáng khi có thể MERGE
   tierFrameG: Graphics; // Vòng hollow vuông thể hiện Tier súng (1 Trắng, 2 Xanh, 3 Tím, 4 Vàng, 5 Đỏ)
+  obstacleSprite: Sprite; // Chướng ngại vật đá cản trở
   itemContainer: Container;
   baseSprite: Sprite; // Đế bánh răng kim loại xoay khi Cò gõ
   barrelSprite: Sprite; // Nòng súng xoay 360 độ tự động ngắm quái
@@ -471,9 +472,21 @@ export class GameEngine {
 
         this.gridItemsLayer.addChild(itemContainer);
 
+        const obstacleSprite = new Sprite(PixelAssetManager.getObstacleRockTexture());
+        obstacleSprite.anchor.set(0.5);
+        obstacleSprite.x = 48;
+        obstacleSprite.y = 48;
+        obstacleSprite.visible = false;
+        slotCont.addChild(obstacleSprite);
+
         slotCont.on('pointerdown', (e: FederatedPointerEvent) => {
           e.stopPropagation();
           const cell = this.grid[r][c];
+          if (cell.isBlocked) {
+            sound.playHit();
+            this.addFloatingText(cellX + 48, cellY + 30, 'Ô BỊ ĐÁ CHẶN!', '#f87171');
+            return;
+          }
           if (cell.item) {
             this.onItemPointerDown(e, cell.item, c, r);
           } else {
@@ -487,6 +500,7 @@ export class GameEngine {
           highlightG,
           mergeHighlightG,
           tierFrameG,
+          obstacleSprite,
           itemContainer,
           baseSprite,
           barrelSprite,
@@ -816,7 +830,7 @@ export class GameEngine {
 
     this.prepPhase = false;
     this.isWaveActive = true;
-    this.enemiesToSpawn = 8 + this.wave * 4;
+    this.enemiesToSpawn = 10 + this.wave * 3;
     this.spawnTimer = 0;
 
     this.drawStartWaveBtn(false);
@@ -897,7 +911,7 @@ export class GameEngine {
     const available: GridCell[] = [];
     for (let r = 0; r < this.ROWS; r++) {
       for (let c = 0; c < this.COLS; c++) {
-        if (this.grid[r][c].unlocked && this.grid[r][c].item === null) {
+        if (this.grid[r][c].unlocked && !this.grid[r][c].isBlocked && this.grid[r][c].item === null) {
           available.push(this.grid[r][c]);
         }
       }
@@ -912,6 +926,14 @@ export class GameEngine {
     const cell = this.grid[row][col];
     const view = this.slotViews[row][col];
     const item = cell.item;
+
+    view.obstacleSprite.visible = !!cell.isBlocked;
+
+    if (cell.isBlocked) {
+      view.itemContainer.visible = false;
+      view.tierFrameG.visible = false;
+      return;
+    }
 
     if (!item) {
       view.itemContainer.visible = false;
@@ -1061,7 +1083,7 @@ export class GameEngine {
 
         for (let r = 0; r < this.ROWS; r++) {
           for (let c = 0; c < this.COLS; c++) {
-            this.slotViews[r][c].highlightG.visible = (c === col && r === row);
+            this.slotViews[r][c].highlightG.visible = (c === col && r === row && !this.grid[r][c].isBlocked);
           }
         }
       }
@@ -1107,7 +1129,11 @@ export class GameEngine {
             const targetCell = this.grid[dropRow][dropCol];
             const sourceCell = this.grid[origRow][origCol];
 
-            if (dropCol === origCol && dropRow === origRow) {
+            if (targetCell.isBlocked) {
+              sound.playHit();
+              this.addFloatingText(this.GRID_X + dropCol * this.CELL_SIZE + 48, this.GRID_Y + dropRow * this.CELL_SIZE + 30, 'Ô BỊ ĐÁ CHẶN!', '#f87171');
+              this.slotViews[origRow][origCol].itemContainer.alpha = 1.0;
+            } else if (dropCol === origCol && dropRow === origRow) {
               // Giữ nguyên
             } else if (targetCell.item === null) {
               targetCell.item = this.pointerDownItem;
@@ -1891,11 +1917,14 @@ export class GameEngine {
 
       if (e.y >= this.WALL_Y - 20) {
         e.active = false;
-        const dmg = e.isBoss ? 30 : (e.isElite ? 15 : 8);
+        const dmg = e.isBoss ? 35 : (e.kind === 'MINIBOSS' ? 22 : (e.kind === 'BOMBER' ? 18 : (e.isElite ? 15 : 8)));
         this.castleHp = Math.max(0, this.castleHp - dmg);
-        this.trauma = Math.min(1.0, this.trauma + 0.4);
+        this.trauma = Math.min(1.0, this.trauma + (e.kind === 'BOMBER' ? 0.5 : 0.4));
         sound.playExplode();
         this.addFloatingText(e.x, this.WALL_Y - 30, `-${dmg} HP`, '#ef4444');
+        if (e.kind === 'BOMBER') {
+          this.addShockwave(e.x, this.WALL_Y - 20, 80, 0xef4444);
+        }
 
         if (this.castleHp <= 0) {
           this.onGameOver();
@@ -1916,78 +1945,106 @@ export class GameEngine {
     const targetX = 120 + Math.random() * 480;
     const targetY = this.WALL_Y;
 
-    // Phân loại quái theo wave (Càng về sau càng nhiều quái khó, ít quái dễ)
-    const isBoss = (this.gameMode === 'CAMPAIGN' && this.wave === this.maxWave && this.enemiesToSpawn === 0) ||
-                   (this.gameMode === 'SURVIVAL' && this.wave % 10 === 0 && this.enemiesToSpawn === 0);
+    // Trùm cuối (Mega Boss) ở Wave 25 (hoặc mỗi 10 wave trong Sinh Tồn)
+    const isMegaBoss = (this.gameMode === 'CAMPAIGN' && this.wave === this.maxWave && this.enemiesToSpawn === 0) ||
+                       (this.gameMode === 'SURVIVAL' && this.wave % 10 === 0 && this.enemiesToSpawn === 0);
+
+    // Mini Boss mỗi 5 Wave (Wave 5, 10, 15, 20)
+    const isMiniBoss = !isMegaBoss && (
+      (this.gameMode === 'CAMPAIGN' && this.wave % 5 === 0 && this.enemiesToSpawn === 0) ||
+      (this.gameMode === 'SURVIVAL' && this.wave % 5 === 0 && this.enemiesToSpawn === 0)
+    );
 
     let kind: EnemyKind = 'NORMAL';
     const roll = Math.random();
 
-    if (isBoss) {
+    if (isMegaBoss) {
       kind = 'BOSS';
+    } else if (isMiniBoss) {
+      kind = 'MINIBOSS';
     } else if (this.wave === 1) {
-      // Wave 1: Quái dễ chiếm đa số
-      kind = roll < 0.60 ? 'RUNNER' : (roll < 0.85 ? 'SWARM' : 'NORMAL');
-    } else if (this.wave === 2) {
-      kind = roll < 0.45 ? 'RUNNER' : (roll < 0.75 ? 'NORMAL' : 'SWARM');
-    } else if (this.wave <= 4) {
-      // Bắt đầu xuất hiện TANK
-      kind = roll < 0.35 ? 'NORMAL' : (roll < 0.65 ? 'RUNNER' : 'TANK');
-    } else if (this.wave <= 6) {
-      // Giảm quái dễ, tăng TANK và ELITE
-      kind = roll < 0.20 ? 'NORMAL' : (roll < 0.60 ? 'TANK' : 'ELITE');
+      kind = roll < 0.50 ? 'SWARM' : (roll < 0.85 ? 'RUNNER' : 'NORMAL');
+    } else if (this.wave <= 3) {
+      kind = roll < 0.35 ? 'SWARM' : (roll < 0.70 ? 'RUNNER' : 'NORMAL');
+    } else if (this.wave <= 5) {
+      // Bắt đầu có SHIELD che chắn đạn
+      kind = roll < 0.30 ? 'NORMAL' : (roll < 0.55 ? 'RUNNER' : (roll < 0.80 ? 'SHIELD' : 'TANK'));
     } else if (this.wave <= 9) {
-      // Quái khó áp đảo (Tank, Elite)
-      kind = roll < 0.10 ? 'NORMAL' : (roll < 0.55 ? 'TANK' : 'ELITE');
+      // Xuất hiện BOMBER nổ tự sát
+      kind = roll < 0.20 ? 'NORMAL' : (roll < 0.45 ? 'SHIELD' : (roll < 0.70 ? 'BOMBER' : (roll < 0.90 ? 'TANK' : 'ELITE')));
+    } else if (this.wave <= 14) {
+      kind = roll < 0.25 ? 'SHIELD' : (roll < 0.50 ? 'BOMBER' : (roll < 0.75 ? 'TANK' : (roll < 0.90 ? 'ELITE' : 'RUNNER')));
+    } else if (this.wave <= 19) {
+      kind = roll < 0.20 ? 'SHIELD' : (roll < 0.45 ? 'BOMBER' : (roll < 0.75 ? 'TANK' : 'ELITE'));
+    } else if (this.wave <= 24) {
+      kind = roll < 0.15 ? 'SHIELD' : (roll < 0.40 ? 'BOMBER' : (roll < 0.70 ? 'ELITE' : 'TANK'));
     } else {
-      // Wave 10+ (Survival / Late Wave): Toàn Tank, Elite, Runner cực nhanh
-      kind = roll < 0.40 ? 'TANK' : (roll < 0.80 ? 'ELITE' : 'RUNNER');
+      // Wave 25 (Quái hộ tống Mega Boss)
+      kind = roll < 0.40 ? 'ELITE' : (roll < 0.70 ? 'TANK' : 'BOMBER');
     }
 
     let hpMultiplier = 1.0;
-    let speed = 60;
-    let bounty = 3;
+    let speed = 65;
+    let bounty = 4;
     let width = 48;
     let height = 48;
 
     if (kind === 'SWARM') {
       hpMultiplier = 0.55;
-      speed = 95;
+      speed = 100;
       bounty = 2;
       width = 36;
       height = 36;
     } else if (kind === 'RUNNER') {
-      hpMultiplier = 0.80;
-      speed = 105;
+      hpMultiplier = 0.75;
+      speed = 115;
       bounty = 3;
       width = 44;
       height = 44;
     } else if (kind === 'NORMAL') {
       hpMultiplier = 1.0;
-      speed = 60;
+      speed = 65;
       bounty = 4;
+    } else if (kind === 'SHIELD') {
+      hpMultiplier = 2.2;
+      speed = 50;
+      bounty = 8;
+      width = 52;
+      height = 52;
+    } else if (kind === 'BOMBER') {
+      hpMultiplier = 1.4;
+      speed = 90;
+      bounty = 7;
+      width = 48;
+      height = 48;
     } else if (kind === 'TANK') {
-      hpMultiplier = 3.6;
-      speed = 36;
-      bounty = 10;
+      hpMultiplier = 3.8;
+      speed = 38;
+      bounty = 12;
       width = 64;
       height = 64;
     } else if (kind === 'ELITE') {
-      hpMultiplier = 5.8;
-      speed = 50;
-      bounty = 20;
+      hpMultiplier = 6.2;
+      speed = 52;
+      bounty = 22;
       width = 64;
       height = 64;
+    } else if (kind === 'MINIBOSS') {
+      hpMultiplier = 10.0;
+      speed = 32;
+      bounty = 45;
+      width = 80;
+      height = 80;
     } else if (kind === 'BOSS') {
-      hpMultiplier = 18.0;
-      speed = 28;
-      bounty = 60;
+      hpMultiplier = 22.0;
+      speed = 25;
+      bounty = 100;
       width = 96;
       height = 96;
     }
 
-    const mapScale = this.saveData.selectedCampaignMap === 3 ? 1.4 : (this.saveData.selectedCampaignMap === 2 ? 1.2 : 1.0);
-    const baseHp = 32 * Math.pow(1.18, this.wave - 1) * mapScale;
+    const mapScale = this.saveData.selectedCampaignMap === 3 ? 1.6 : (this.saveData.selectedCampaignMap === 2 ? 1.3 : 1.0);
+    const baseHp = (45 + this.wave * 12) * Math.pow(1.14, this.wave - 1) * mapScale;
     const finalHp = Math.round(baseHp * hpMultiplier);
 
     this.enemies.push({
@@ -2001,7 +2058,7 @@ export class GameEngine {
       maxHp: finalHp,
       speed,
       isBoss: kind === 'BOSS',
-      isElite: kind === 'ELITE',
+      isElite: kind === 'ELITE' || kind === 'MINIBOSS',
       bounty,
       active: true,
       width,
@@ -2016,9 +2073,18 @@ export class GameEngine {
     e.active = false;
     this.gold += e.bounty;
     sound.playExplode();
-    this.addShockwave(e.x, e.y, e.isBoss ? 80 : 36, e.isBoss ? 0xa855f7 : 0xfacc15);
-    this.addSparks(e.x, e.y, e.isBoss ? 18 : 8, e.isBoss ? 0xa855f7 : 0xfacc15, 180);
+    const isMega = e.kind === 'BOSS';
+    const isMini = e.kind === 'MINIBOSS';
+    this.addShockwave(e.x, e.y, isMega ? 85 : (isMini ? 60 : 36), isMega ? 0xa855f7 : (isMini ? 0xf97316 : 0xfacc15));
+    this.addSparks(e.x, e.y, isMega ? 20 : (isMini ? 14 : 8), isMega ? 0xa855f7 : (isMini ? 0xf97316 : 0xfacc15), 180);
     this.addFloatingText(e.x, e.y, `+${e.bounty}$`, '#facc15');
+
+    // Quái Bomber nổ tự sát khi bị tiêu diệt, gây sát thương lan ra xung quanh
+    if (e.kind === 'BOMBER') {
+      this.triggerAoeExplosion(e.x, e.y, 90, Math.round(e.maxHp * 0.35), 0xef4444);
+      this.addFloatingText(e.x, e.y - 28, '💥 BOM NỔ TỰ SÁT!', '#ef4444');
+      this.trauma = Math.min(1.0, this.trauma + 0.3);
+    }
   }
 
   private onWaveClear() {
@@ -2089,10 +2155,16 @@ export class GameEngine {
             break;
           }
 
-          e.hp -= b.damage;
+          let finalDamage = b.damage;
+          if (e.kind === 'SHIELD') {
+            finalDamage = Math.max(1, Math.round(b.damage * 0.5));
+            this.addFloatingText(e.x, e.y - 32, 'KHIÊN THÉP -50%', '#38bdf8');
+          }
+
+          e.hp -= finalDamage;
           e.hitFlashTimer = 0.08;
           sound.playHit();
-          this.addFloatingText(e.x + (Math.random() * 24 - 12), e.y - 16, `${b.damage}`, '#ffffff');
+          this.addFloatingText(e.x + (Math.random() * 24 - 12), e.y - 16, `${finalDamage}`, e.kind === 'SHIELD' ? '#7dd3fc' : '#ffffff');
 
           if (b.gunKind === 'CRYO' || b.element === 'ICE') {
             e.slowTimer = 3.0;
@@ -2342,6 +2414,20 @@ export class GameEngine {
 
   private renderActiveEntities() {
     const activeEnemiesCount = this.enemies.length;
+    while (this.enemyPool.length < activeEnemiesCount) {
+      const cont = new Container();
+      cont.visible = false;
+      const sprite = new Sprite();
+      sprite.anchor.set(0.5);
+      cont.addChild(sprite);
+      const hpBg = new Graphics();
+      cont.addChild(hpBg);
+      const hpFill = new Graphics();
+      cont.addChild(hpFill);
+      this.enemyContainer.addChild(cont);
+      this.enemyPool.push({ container: cont, sprite, hpBg, hpFill, active: false });
+    }
+
     for (let i = 0; i < this.enemyPool.length; i++) {
       const view = this.enemyPool[i];
       if (i < activeEnemiesCount) {
@@ -2370,13 +2456,22 @@ export class GameEngine {
         const hpRatio = Math.max(0, e.hp / e.maxHp);
         view.hpFill.clear();
         view.hpFill.rect(-barW / 2, -e.height / 2 - 10, barW * hpRatio, 6);
-        view.hpFill.fill({ color: e.isBoss ? 0xa855f7 : 0xef4444 });
+        const hpColor = e.isBoss ? 0xa855f7 : (e.kind === 'MINIBOSS' ? 0xf97316 : (e.kind === 'SHIELD' ? 0x38bdf8 : 0xef4444));
+        view.hpFill.fill({ color: hpColor });
       } else {
         view.container.visible = false;
       }
     }
 
     const activeBulletsCount = this.bullets.length;
+    while (this.bulletPool.length < activeBulletsCount) {
+      const sprite = new Sprite();
+      sprite.anchor.set(0.5);
+      sprite.visible = false;
+      this.bulletContainer.addChild(sprite);
+      this.bulletPool.push({ sprite, active: false });
+    }
+
     for (let i = 0; i < this.bulletPool.length; i++) {
       const view = this.bulletPool[i];
       if (i < activeBulletsCount) {
@@ -4167,7 +4262,7 @@ export class GameEngine {
     this.prepPhase = true;
 
     this.wave = 1;
-    this.maxWave = this.gameMode === 'CAMPAIGN' ? 10 : 999;
+    this.maxWave = this.gameMode === 'CAMPAIGN' ? 25 : 999;
     this.maxCastleHp = 100 + (this.saveData.talents?.hpLevel || 0) * 50;
     this.castleHp = this.maxCastleHp;
     this.gold = 15 + (this.saveData.talents?.startGoldLevel || 0) * 5;
@@ -4180,10 +4275,33 @@ export class GameEngine {
     this.bullets.forEach(b => b.active = false);
     this.bullets = [];
 
-    // Xóa bàn cờ cũ
+    // Xóa bàn cờ cũ & reset chướng ngại vật
     for (let r = 0; r < this.ROWS; r++) {
       for (let c = 0; c < this.COLS; c++) {
         this.grid[r][c].item = null;
+        this.grid[r][c].isBlocked = false;
+      }
+    }
+
+    // Cài đặt ô chướng ngại vật đá theo Map chiến dịch
+    if (this.gameMode === 'CAMPAIGN') {
+      const mapId = this.saveData.selectedCampaignMap || 1;
+      let blockedCoords: [number, number][] = [];
+      if (mapId === 1) {
+        // Map 1 (Rừng Bánh Răng): 1 tảng đá cơ khí ở góc
+        blockedCoords = [[0, 0]];
+      } else if (mapId === 2) {
+        // Map 2 (Thành Trì Thép): 3 tảng đá phòng ngự
+        blockedCoords = [[0, 1], [3, 3], [4, 0]];
+      } else if (mapId >= 3) {
+        // Map 3 (Núi Lửa Cơ Khí): 5 tảng đá macma kiên cố
+        blockedCoords = [[0, 0], [0, 4], [2, 0], [4, 1], [4, 4]];
+      }
+
+      for (const [br, bc] of blockedCoords) {
+        if (this.grid[br] && this.grid[br][bc]) {
+          this.grid[br][bc].isBlocked = true;
+        }
       }
     }
 
@@ -4202,7 +4320,7 @@ export class GameEngine {
     this.drawStartWaveBtn(true);
     this.startWaveBtnText.text = '⚔ BẮT ĐẦU VÁN 1';
     this.waveText.text = this.gameMode === 'CAMPAIGN'
-      ? `MAP ${this.saveData.selectedCampaignMap} - WAVE 1/10 (CHUẨN BỊ)`
+      ? `MAP ${this.saveData.selectedCampaignMap} - WAVE 1/${this.maxWave} (CHUẨN BỊ)`
       : 'SINH TỒN - WAVE 1 (CHUẨN BỊ)';
     this.goldText.text = `$: ${this.gold}`;
     this.hpText.text = `HP THÀNH: ${this.castleHp}/${this.maxCastleHp}`;

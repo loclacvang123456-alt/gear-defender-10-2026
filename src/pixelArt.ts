@@ -41,23 +41,46 @@ function createHighResTexture(width: number, height: number, drawFn: (ctx: Canva
 export class PixelAssetManager {
   private static cache: Map<string, Texture> = new Map();
   private static gunTextures: Map<string, Texture> = new Map();
+  private static enemyTextures: Map<string, Texture> = new Map();
 
   static async preloadAssets(): Promise<void> {
     const guns: GunKind[] = [
       'PISTOL', 'CROSSBOW', 'SLINGSHOT', 'SHOTGUN', 'FLAMER',
       'CRYO', 'CANNON', 'TESLA', 'SNIPER', 'MINIGUN', 'METEOR'
     ];
-    await Promise.all(guns.map(async (g) => {
-      try {
-        const path = `/assets/gun_${g.toLowerCase()}.png`;
-        const tex = await Assets.load<Texture>(path);
-        if (tex) {
-          this.gunTextures.set(g, tex);
+    const enemies = [
+      'SWARM', 'RUNNER', 'NORMAL', 'SHIELD', 'BOMBER',
+      'TANK', 'ELITE', 'MINIBOSS', 'BOSS'
+    ];
+
+    await Promise.all([
+      ...guns.map(async (g) => {
+        try {
+          const path = `/assets/gun_${g.toLowerCase()}.png`;
+          const tex = await Assets.load<Texture>(path);
+          if (tex) this.gunTextures.set(g, tex);
+        } catch (err) {
+          console.warn(`Failed to preload gun texture for ${g}`, err);
         }
-      } catch (err) {
-        console.warn(`Failed to preload gun texture for ${g}`, err);
-      }
-    }));
+      }),
+      ...enemies.map(async (e) => {
+        try {
+          const path = `/assets/enemy_${e.toLowerCase()}.png`;
+          const tex = await Assets.load<Texture>(path);
+          if (tex) this.enemyTextures.set(e, tex);
+        } catch (err) {
+          console.warn(`Failed to preload enemy texture for ${e}`, err);
+        }
+      }),
+      (async () => {
+        try {
+          const tex = await Assets.load<Texture>('/assets/obstacle_rock.png');
+          if (tex) this.enemyTextures.set('ROCK', tex);
+        } catch (err) {
+          console.warn('Failed to preload obstacle_rock', err);
+        }
+      })()
+    ]);
   }
 
   // 1. Ô bàn cờ 96x96
@@ -711,12 +734,33 @@ export class PixelAssetManager {
     return tex;
   }
 
-  // 6. Quái vật
+  // 5b. Chướng ngại vật Đá cản trên bàn cờ (Obstacle Rock 72x72)
+  static getObstacleRockTexture(): Texture {
+    const key = 'obstacle_rock_tex';
+    if (this.cache.has(key)) return this.cache.get(key)!;
+    const path = '/assets/obstacle_rock.png';
+    const tex = this.enemyTextures.get('ROCK') || (Assets.cache.has(path) ? Assets.get<Texture>(path) : null);
+    if (tex) {
+      this.cache.set(key, tex);
+      return tex;
+    }
+    return Texture.from(path);
+  }
+
+  // 6. Quái vật (Pixel Art Aseprite cao cấp)
   static getEnemyTexture(type: EnemyKind | string): Texture {
-    const key = `enemy_hires_v4_${type}`;
+    const key = `enemy_hires_v5_${type}`;
     if (this.cache.has(key)) return this.cache.get(key)!;
 
-    const size = type === 'BOSS' ? 96 : (type === 'TANK' || type === 'ELITE' ? 64 : (type === 'SWARM' ? 36 : 48));
+    // Ưu tiên load Asset Pixel Art thật từ Aseprite nếu đã preload hoặc có sẵn
+    const path = `/assets/enemy_${type.toLowerCase()}.png`;
+    const assetTex = this.enemyTextures.get(type) || (Assets.cache.has(path) ? Assets.get<Texture>(path) : null);
+    if (assetTex && assetTex.width > 0) {
+      this.cache.set(key, assetTex);
+      return assetTex;
+    }
+
+    const size = type === 'BOSS' ? 96 : (type === 'MINIBOSS' ? 80 : (type === 'TANK' || type === 'ELITE' ? 64 : (type === 'SWARM' ? 36 : (type === 'SHIELD' ? 52 : 48))));
     const tex = createHighResTexture(size, size, (ctx) => {
       const cx = size / 2, cy = size / 2;
 

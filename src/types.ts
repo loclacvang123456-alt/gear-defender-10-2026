@@ -17,7 +17,16 @@ export type GunKind =
 
 export type BuffKind = 'DMG' | 'SPEED' | 'FILL' | 'CRIT';
 
-export type EnemyKind = 'SWARM' | 'RUNNER' | 'NORMAL' | 'TANK' | 'ELITE' | 'BOSS';
+export type EnemyKind =
+  | 'SWARM'
+  | 'RUNNER'
+  | 'NORMAL'
+  | 'SHIELD'
+  | 'BOMBER'
+  | 'TANK'
+  | 'ELITE'
+  | 'MINIBOSS'
+  | 'BOSS';
 
 export interface GridItem {
   id: string;
@@ -53,6 +62,7 @@ export interface GridCell {
   row: number; // 0 to 4
   unlocked: boolean;
   item: GridItem | null;
+  isBlocked?: boolean; // Ô bị đá cản trở không thể đặt súng
 }
 
 export interface Bullet {

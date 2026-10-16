@@ -737,12 +737,12 @@ export class UIManager {
     tab.innerHTML = `
       <div class="tab-header-title">
         <h2>⚔ CHỌN CHẾ ĐỘ CHIẾN ĐẤU & BẢN ĐỒ</h2>
-        <p>Lựa chọn chế độ Campaign 10 Wave hoặc Sinh Tồn Vô Tận để săn quà khủng!</p>
+        <p>Lựa chọn chế độ Chiến Dịch 25 Wave (Mini Boss mỗi 5 Wave) hoặc Sinh Tồn Vô Tận để săn quà khủng!</p>
       </div>
 
       <div class="mode-toggle-row">
         <button class="mode-toggle-btn ${this.game.gameMode === 'CAMPAIGN' ? 'active' : ''}" id="mode-camp">
-          🛡 CHIẾN DỊCH (10 Wave)
+          🛡 CHIẾN DỊCH (25 Wave)
         </button>
         <button class="mode-toggle-btn ${this.game.gameMode === 'SURVIVAL' ? 'active' : ''}" id="mode-surv">
           💀 SINH TỒN (Vô Tận)
@@ -753,17 +753,17 @@ export class UIManager {
         <div class="map-cards-list">
           <div class="map-card ${save.selectedCampaignMap === 1 ? 'selected' : ''}" data-map-id="1">
             <div class="map-name">Map 1: Rừng Bánh Răng ${save.selectedCampaignMap === 1 ? '✔ (ĐANG CHỌN)' : ''}</div>
-            <div class="map-desc">10 Wave • Độ khó tiêu chuẩn • Thích hợp tân binh</div>
+            <div class="map-desc">25 Wave • Mini Boss Wave 5, 10, 15, 20 • 1 Chướng Ngại Vật Đá</div>
           </div>
 
           <div class="map-card ${save.selectedCampaignMap === 2 ? 'selected' : ''} ${save.highestCampaignStage >= 2 ? '' : 'locked'}" data-map-id="2">
             <div class="map-name">Map 2: Thành Trì Thép ${save.highestCampaignStage >= 2 ? (save.selectedCampaignMap === 2 ? '✔ (ĐANG CHỌN)' : '') : '🔒 (Khóa)'}</div>
-            <div class="map-desc">10 Wave • Quái Thiết Giáp +20% HP • Cần thắng Map 1</div>
+            <div class="map-desc">25 Wave • Quái Thiết Giáp +30% HP • 3 Chướng Ngại Vật Đá • Cần thắng Map 1</div>
           </div>
 
           <div class="map-card ${save.selectedCampaignMap === 3 ? 'selected' : ''} ${save.highestCampaignStage >= 3 ? '' : 'locked'}" data-map-id="3">
             <div class="map-name">Map 3: Núi Lửa Cơ Khí ${save.highestCampaignStage >= 3 ? (save.selectedCampaignMap === 3 ? '✔ (ĐANG CHỌN)' : '') : '🔒 (Khóa)'}</div>
-            <div class="map-desc">10 Wave • Quái Nham Thạch +40% HP & Boss Lửa • Cần thắng Map 2</div>
+            <div class="map-desc">25 Wave • Quái Nham Thạch +60% HP & Boss Lửa • 5 Chướng Ngại Vật Đá • Cần thắng Map 2</div>
           </div>
         </div>
       ` : `
@@ -876,7 +876,7 @@ export class UIManager {
         <button class="battle-menu-btn" id="btn-battle-back">🏰 Menu</button>
         
         <div class="battle-wave-badge" id="hud-wave-text">
-          MAP ${save.selectedCampaignMap} - WAVE 1/10 (CHUẨN BỊ)
+          MAP ${save.selectedCampaignMap} - WAVE 1/25 (CHUẨN BỊ)
         </div>
 
         <button class="battle-speed-btn" id="btn-battle-speed">⏩ 1x</button>

@@ -46,7 +46,11 @@ export class PixelAssetManager {
   static async preloadAssets(): Promise<void> {
     const guns: GunKind[] = [
       'PISTOL', 'CROSSBOW', 'SLINGSHOT', 'SHOTGUN', 'FLAMER',
-      'CRYO', 'CANNON', 'TESLA', 'SNIPER', 'MINIGUN', 'METEOR'
+      'POISON', 'WIND', 'BOUNTY',
+      'CRYO', 'CANNON', 'THORN', 'SACRIFICE', 'BERSERKER', 'IRON', 'MINE', 'AURA_SPEED',
+      'TESLA', 'SNIPER', 'MYSTERY', 'MIMIC', 'SUMMONER', 'COMBO', 'BLIZZARD', 'MAGNET', 'AURA_DMG',
+      'MINIGUN', 'TYPHOON', 'NUCLEAR', 'ASSASSIN', 'LASER', 'CHAINSAW', 'TIME', 'AURA_CRIT',
+      'METEOR', 'SOLAR', 'LUNAR', 'HOLY', 'BLACKHOLE', 'PRISM', 'AURA_ENERGY'
     ];
     const enemies = [
       'SWARM', 'RUNNER', 'NORMAL', 'SHIELD', 'BOMBER',
@@ -83,45 +87,99 @@ export class PixelAssetManager {
     ]);
   }
 
-  // 1. Ô bàn cờ 96x96
+  // 1. Ô bàn cờ 96x96 (Sàn gạch đá lâu đài chạm khắc)
   static getCellTexture(unlocked: boolean): Texture {
-    const key = `cell_hires_${unlocked}`;
+    const key = `cell_castle_stone_v2_${unlocked}`;
     if (this.cache.has(key)) return this.cache.get(key)!;
 
     const tex = createHighResTexture(96, 96, (ctx) => {
       if (unlocked) {
-        const grad = ctx.createLinearGradient(0, 0, 96, 96);
-        grad.addColorStop(0, '#282d3c');
-        grad.addColorStop(1, '#1e2230');
-        ctx.fillStyle = grad;
+        // Khe mạch vữa tối màu giữa các viên gạch
+        ctx.fillStyle = '#273244';
         ctx.fillRect(0, 0, 96, 96);
 
-        ctx.fillStyle = '#181b26';
-        ctx.fillRect(4, 4, 88, 88);
+        // Viền vát nổi 3D của phiến đá (ánh sáng chiếu từ trên-trái)
+        ctx.fillStyle = '#94a3b8';
+        safeRoundRect(ctx, 2, 2, 92, 92, 10);
+        ctx.fill();
 
-        ctx.fillStyle = '#222736';
-        ctx.fillRect(6, 6, 84, 84);
+        // Cạnh bóng đổ dưới-phải của phiến đá
+        ctx.fillStyle = '#475569';
+        safeRoundRect(ctx, 4, 5, 90, 89, 9);
+        ctx.fill();
 
-        const bolts = [[10, 10], [86, 10], [10, 86], [86, 86]];
+        // Mặt chính phiến đá lâu đài
+        const grad = ctx.createLinearGradient(0, 4, 96, 92);
+        grad.addColorStop(0, '#78879e');
+        grad.addColorStop(0.5, '#64748b');
+        grad.addColorStop(1, '#526077');
+        ctx.fillStyle = grad;
+        safeRoundRect(ctx, 4, 4, 88, 87, 8);
+        ctx.fill();
+
+        // Vân gạch đá chìm (4 viên gạch nhỏ ghép trong 1 ô)
+        ctx.strokeStyle = 'rgba(30, 41, 59, 0.35)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(6, 48);
+        ctx.lineTo(90, 48);
+        ctx.moveTo(48, 6);
+        ctx.lineTo(48, 48);
+        ctx.moveTo(28, 48);
+        ctx.lineTo(28, 90);
+        ctx.moveTo(68, 48);
+        ctx.lineTo(68, 90);
+        ctx.stroke();
+
+        // Đường sáng mảnh sát mép vữa tạo độ nổi cho từng viên gạch
+        ctx.strokeStyle = 'rgba(226, 232, 240, 0.25)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(8, 7);
+        ctx.lineTo(88, 7);
+        ctx.moveTo(8, 50);
+        ctx.lineTo(88, 50);
+        ctx.stroke();
+
+        // Ổ trục tròn lắp bánh răng ở tâm ô đá
+        ctx.fillStyle = '#3b4759';
+        ctx.beginPath();
+        ctx.arc(48, 48, 28, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = '#8696ad';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(48, 48, 28, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.fillStyle = '#475569';
+        ctx.beginPath();
+        ctx.arc(48, 48, 22, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 4 chốt đinh tán đồng ở 4 góc phiến đá
+        const bolts = [[13, 13], [83, 13], [13, 83], [83, 83]];
         bolts.forEach(([bx, by]) => {
-          ctx.fillStyle = '#475569';
+          ctx.fillStyle = '#1e293b';
           ctx.beginPath();
-          ctx.arc(bx, by, 3.5, 0, Math.PI * 2);
+          ctx.arc(bx, by + 1, 4.5, 0, Math.PI * 2);
           ctx.fill();
-          ctx.fillStyle = '#94a3b8';
+          ctx.fillStyle = '#d97706';
           ctx.beginPath();
-          ctx.arc(bx - 1, by - 1, 1.5, 0, Math.PI * 2);
+          ctx.arc(bx, by, 4, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#fde047';
+          ctx.beginPath();
+          ctx.arc(bx - 1.2, by - 1.2, 1.8, 0, Math.PI * 2);
           ctx.fill();
         });
-
-        ctx.strokeStyle = '#2f384d';
-        ctx.lineWidth = 1.5;
-        ctx.strokeRect(16, 16, 64, 64);
       } else {
-        ctx.fillStyle = '#11131a';
+        ctx.fillStyle = '#1e293b';
         ctx.fillRect(0, 0, 96, 96);
-        ctx.fillStyle = '#171922';
-        ctx.fillRect(4, 4, 88, 88);
+        ctx.fillStyle = '#334155';
+        safeRoundRect(ctx, 4, 4, 88, 88, 8);
+        ctx.fill();
       }
     });
 
@@ -436,6 +494,170 @@ export class PixelAssetManager {
     return tex;
   }
 
+  // 3b. Bệ Trụ Đá / Altar Pháp Thuật (Dành cho Trụ Hào Quang Aura: KHÔNG BÁNH RĂNG, KHÔNG RĂNG CƯA)
+  static getTotemBaseTexture(kind: GunKind, level: number = 1): Texture {
+    const lvl = Math.min(5, Math.max(1, level));
+    const key = `totem_base_altar_${kind}_${lvl}`;
+    if (this.cache.has(key)) return this.cache.get(key)!;
+
+    const tex = createHighResTexture(96, 96, (ctx) => {
+      const cx = 48, cy = 48;
+
+      let auraMain = '#0284c7';
+      let auraGlow = '#38bdf8';
+      let auraDark = '#0f172a';
+
+      if (kind === 'AURA_DMG') {
+        auraMain = '#b91c1c';
+        auraGlow = '#ef4444';
+        auraDark = '#450a0a';
+      } else if (kind === 'AURA_SPEED') {
+        auraMain = '#0284c7';
+        auraGlow = '#38bdf8';
+        auraDark = '#082f49';
+      } else if (kind === 'AURA_CRIT') {
+        auraMain = '#d97706';
+        auraGlow = '#facc15';
+        auraDark = '#451a03';
+      } else if (kind === 'AURA_ENERGY') {
+        auraMain = '#059669';
+        auraGlow = '#34d399';
+        auraDark = '#064e3b';
+      } else if (kind === 'LUNAR') {
+        auraMain = '#4338ca';
+        auraGlow = '#c084fc';
+        auraDark = '#1e1b4b';
+      }
+
+      // 1. Đế đá mài tròn dày dặn vững chắc (Radius 42) - TUYỆT ĐỐI KHÔNG CÓ RĂNG CƯA BÁNH RĂNG
+      ctx.fillStyle = '#0f172a';
+      ctx.beginPath();
+      ctx.arc(cx, cy, 42, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#334155';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+
+      // 2. VÒNG TRÒN NGUYÊN TỐ MÀU SẮC TO HẲN RA VÀ RA CHÍNH GIỮA (Radius 36)
+      ctx.fillStyle = auraMain;
+      ctx.beginPath();
+      ctx.arc(cx, cy, 36, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = auraGlow;
+      ctx.lineWidth = 4;
+      ctx.stroke();
+
+      // 3. Vòng tròn nền tương phản bên trong (Radius 28)
+      ctx.fillStyle = auraDark;
+      ctx.beginPath();
+      ctx.arc(cx, cy, 28, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = auraGlow;
+      ctx.lineWidth = 1.8;
+      ctx.stroke();
+
+      // 4. Biểu tượng phóng đại nổi bật màu trắng tinh khiết ở chính giữa
+      if (kind === 'AURA_SPEED') {
+        // Mũi tên kiểu dấu lớn hơn ngửa lên trời 2 dấu chồng lên nhau màu trắng (Speed Up >> ngửa đứng)
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 6;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        // Dấu trên
+        ctx.beginPath();
+        ctx.moveTo(cx - 15, cy - 4);
+        ctx.lineTo(cx, cy - 19);
+        ctx.lineTo(cx + 15, cy - 4);
+        ctx.stroke();
+
+        // Dấu dưới
+        ctx.beginPath();
+        ctx.moveTo(cx - 15, cy + 9);
+        ctx.lineTo(cx, cy - 6);
+        ctx.lineTo(cx + 15, cy + 9);
+        ctx.stroke();
+      } else if (kind === 'AURA_DMG') {
+        // Hình cái kiếm màu trắng sắc nét ở giữa hình tròn đỏ
+        ctx.fillStyle = '#ffffff';
+        // Lưỡi kiếm
+        ctx.beginPath();
+        ctx.moveTo(cx, cy - 22);
+        ctx.lineTo(cx + 6, cy - 14);
+        ctx.lineTo(cx + 5, cy + 3);
+        ctx.lineTo(cx - 5, cy + 3);
+        ctx.lineTo(cx - 6, cy - 14);
+        ctx.closePath();
+        ctx.fill();
+
+        // Chuôi ngang kiếm
+        ctx.beginPath();
+        ctx.roundRect(cx - 14, cy + 3, 28, 5, 2);
+        ctx.fill();
+
+        // Cán kiếm
+        ctx.fillStyle = '#f87171';
+        ctx.fillRect(cx - 2.5, cy + 8, 5, 8);
+
+        // Chuôi tròn
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(cx, cy + 18, 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Rãnh giữa lưỡi kiếm
+        ctx.strokeStyle = '#b91c1c';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy - 16);
+        ctx.lineTo(cx, cy + 3);
+        ctx.stroke();
+      } else if (kind === 'AURA_CRIT') {
+        // Hồng tâm & Ngôi sao bạo kích trắng
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.arc(cx, cy, 14, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.moveTo(cx, cy - 18); ctx.lineTo(cx + 4, cy - 4);
+        ctx.lineTo(cx + 18, cy); ctx.lineTo(cx + 4, cy + 4);
+        ctx.lineTo(cx, cy + 18); ctx.lineTo(cx - 4, cy + 4);
+        ctx.lineTo(cx - 18, cy); ctx.lineTo(cx - 4, cy - 4);
+        ctx.closePath();
+        ctx.fill();
+      } else if (kind === 'AURA_ENERGY') {
+        // Tinh thể năng lượng SP trắng
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.moveTo(cx, cy - 18);
+        ctx.lineTo(cx + 13, cy - 7);
+        ctx.lineTo(cx + 10, cy + 13);
+        ctx.lineTo(cx, cy + 19);
+        ctx.lineTo(cx - 10, cy + 13);
+        ctx.lineTo(cx - 13, cy - 7);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = '#059669';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      } else if (kind === 'LUNAR') {
+        // Trăng lưỡi liềm trắng sáng
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(cx, cy, 17, 0.4, Math.PI * 1.6);
+        ctx.arc(cx + 7, cy - 3, 14, Math.PI * 1.5, 0.5, true);
+        ctx.closePath();
+        ctx.fill();
+      }
+    });
+
+    this.cache.set(key, tex);
+    return tex;
+  }
+
   // 4. Nòng Súng Xoay Độc Lập (ASSET Pixel Art Aseprite cao cấp)
   static getGunBarrelTexture(kind: GunKind, level: number = 1): Texture {
     const lvl = Math.min(5, Math.max(1, level));
@@ -619,7 +841,7 @@ export class PixelAssetManager {
         }
         ctx.fillStyle = pal.highlight;
         ctx.fillRect(-9, -36, 18, 4);
-      } else { // METEOR
+      } else if (kind === 'METEOR') {
         ctx.fillStyle = pal.body;
         ctx.fillRect(-10, -32, 20, 32);
         ctx.fillStyle = pal.accent;
@@ -632,14 +854,71 @@ export class PixelAssetManager {
         ctx.beginPath();
         ctx.arc(0, -16, 3, 0, Math.PI * 2);
         ctx.fill();
-        ctx.fillStyle = pal.accent;
-        ctx.beginPath();
-        ctx.moveTo(-12, -32);
-        ctx.lineTo(12, -32);
-        ctx.lineTo(8, -36);
-        ctx.lineTo(-8, -36);
-        ctx.closePath();
+      } else if (kind === 'MYSTERY') {
+        // Hộp xúc xắc bí ẩn màu tím với dấu hỏi vàng phát sáng
+        ctx.fillStyle = '#6b21a8';
+        safeRoundRect(ctx, -14, -32, 28, 28, 6);
         ctx.fill();
+        ctx.strokeStyle = '#facc15';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        ctx.font = 'bold 20px "Segoe UI", sans-serif';
+        ctx.fillStyle = '#fde047';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('?', 0, -18);
+      } else if (kind === 'MIMIC') {
+        // Súng tắc kè hoa vạn năng với ngôi sao 4 cánh
+        ctx.fillStyle = '#0284c7';
+        safeRoundRect(ctx, -14, -32, 28, 28, 8);
+        ctx.fill();
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+
+        ctx.font = 'bold 18px "Segoe UI", sans-serif';
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('✦', 0, -17);
+      } else if (kind === 'NUCLEAR') {
+        // Súng Hạt Nhân với biểu tượng phóng xạ ☢
+        ctx.fillStyle = '#1c1917';
+        ctx.fillRect(-11, -34, 22, 34);
+        ctx.fillStyle = '#eab308';
+        ctx.fillRect(-8, -32, 16, 30);
+
+        ctx.font = 'bold 16px "Segoe UI", sans-serif';
+        ctx.fillStyle = '#000000';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('☢', 0, -17);
+      } else if (kind.startsWith('AURA_') || kind === 'LUNAR') {
+        // Trụ Hào Quang Aura
+        const auraColor = kind === 'AURA_DMG' ? '#ef4444' : (kind === 'AURA_SPEED' ? '#38bdf8' : (kind === 'AURA_CRIT' ? '#f59e0b' : (kind === 'LUNAR' ? '#c084fc' : '#10b981')));
+        ctx.fillStyle = '#1e293b';
+        ctx.beginPath();
+        ctx.arc(0, -14, 16, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = auraColor;
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        ctx.font = 'bold 16px "Segoe UI", sans-serif';
+        ctx.fillStyle = auraColor;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        const symbol = kind === 'AURA_DMG' ? '⚔' : (kind === 'AURA_SPEED' ? '⚡' : (kind === 'AURA_CRIT' ? '🎯' : (kind === 'LUNAR' ? '🌙' : '💎')));
+        ctx.fillText(symbol, 0, -14);
+      } else {
+        // Súng công nghệ cao khác (POISON, WIND, BOUNTY, COMBO, BLIZZARD, v.v.)
+        ctx.fillStyle = pal.body;
+        ctx.fillRect(-8, -32, 16, 32);
+        ctx.fillStyle = pal.accent;
+        ctx.fillRect(-5, -30, 10, 30);
+        ctx.fillStyle = pal.highlight;
+        ctx.fillRect(-7, -35, 14, 5);
       }
 
       ctx.fillStyle = pal.body;
@@ -668,44 +947,95 @@ export class PixelAssetManager {
       const cx = 40, cy = 40;
 
       const colors = {
-        DMG: { bg: '#7f1d1d', fg: '#ef4444', core: '#fee2e2', glow: '#f87171' },
-        SPEED: { bg: '#1e3a8a', fg: '#3b82f6', core: '#dbeafe', glow: '#60a5fa' },
-        FILL: { bg: '#14532d', fg: '#22c55e', core: '#dcfce7', glow: '#4ade80' },
-        CRIT: { bg: '#713f12', fg: '#eab308', core: '#fef9c3', glow: '#fde047' },
+        DMG: { bg: '#450a0a', fg: '#b91c1c', core: '#ffffff', glow: '#ef4444' },
+        SPEED: { bg: '#082f49', fg: '#0284c7', core: '#ffffff', glow: '#38bdf8' },
+        FILL: { bg: '#064e3b', fg: '#059669', core: '#ffffff', glow: '#34d399' },
+        CRIT: { bg: '#451a03', fg: '#d97706', core: '#ffffff', glow: '#facc15' },
       }[kind];
 
-      ctx.fillStyle = colors.bg;
+      // 1. Đế mài bảo vệ bên ngoài (Radius 36)
+      ctx.fillStyle = '#0f172a';
       ctx.beginPath();
-      ctx.arc(cx, cy, 32, 0, Math.PI * 2);
+      ctx.arc(cx, cy, 36, 0, Math.PI * 2);
       ctx.fill();
-
-      ctx.fillStyle = colors.fg;
-      ctx.beginPath();
-      ctx.arc(cx, cy, 26, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.strokeStyle = colors.glow;
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.arc(cx, cy, 24, 0, Math.PI * 2);
+      ctx.strokeStyle = '#334155';
+      ctx.lineWidth = 2.5;
       ctx.stroke();
 
-      ctx.fillStyle = colors.core;
+      // 2. VÒNG TRÒN MÀU SẮC TO HẲN RA VÀ RA CHÍNH GIỮA (Radius 31)
+      ctx.fillStyle = colors.fg;
+      ctx.beginPath();
+      ctx.arc(cx, cy, 31, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = colors.glow;
+      ctx.lineWidth = 3.5;
+      ctx.stroke();
+
+      // 3. Vòng tròn nền tương phản bên trong (Radius 24)
+      ctx.fillStyle = colors.bg;
+      ctx.beginPath();
+      ctx.arc(cx, cy, 24, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 4. BIỂU TƯỢNG PHÓNG ĐẠI MÀU TRẮNG Ở GIỮA
       if (kind === 'DMG') {
-        ctx.fillRect(cx - 3, cy - 16, 6, 32);
-        ctx.fillRect(cx - 10, cy - 4, 20, 6);
-      } else if (kind === 'SPEED') {
+        // Hình cái kiếm màu trắng sắc nét cho Chiến Ý / DMG
+        ctx.fillStyle = '#ffffff';
+        // Lưỡi kiếm
         ctx.beginPath();
-        ctx.moveTo(cx - 12, cy - 10);
-        ctx.lineTo(cx - 2, cy);
-        ctx.lineTo(cx - 12, cy + 10);
-        ctx.moveTo(cx + 2, cy - 10);
-        ctx.lineTo(cx + 12, cy);
-        ctx.lineTo(cx + 2, cy + 10);
-        ctx.strokeStyle = colors.core;
-        ctx.lineWidth = 4;
+        ctx.moveTo(cx, cy - 18);
+        ctx.lineTo(cx + 5, cy - 12);
+        ctx.lineTo(cx + 4.5, cy + 2);
+        ctx.lineTo(cx - 4.5, cy + 2);
+        ctx.lineTo(cx - 5, cy - 12);
+        ctx.closePath();
+        ctx.fill();
+
+        // Chuôi ngang (Crossguard)
+        ctx.beginPath();
+        ctx.roundRect(cx - 12, cy + 2, 24, 4.5, 2);
+        ctx.fill();
+
+        // Cán kiếm
+        ctx.fillStyle = '#f87171';
+        ctx.fillRect(cx - 2, cy + 6.5, 4, 6.5);
+
+        // Chuôi tròn (Pommel)
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(cx, cy + 15, 3.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Rãnh giữa lưỡi kiếm
+        ctx.strokeStyle = '#b91c1c';
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy - 14);
+        ctx.lineTo(cx, cy + 2);
+        ctx.stroke();
+      } else if (kind === 'SPEED') {
+        // Mũi tên ngửa lên trời 2 dấu chồng lên nhau màu trắng (Speed Up >> ngửa đứng)
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 5;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        // Dấu trên
+        ctx.beginPath();
+        ctx.moveTo(cx - 13, cy - 3);
+        ctx.lineTo(cx, cy - 15);
+        ctx.lineTo(cx + 13, cy - 3);
+        ctx.stroke();
+
+        // Dấu dưới
+        ctx.beginPath();
+        ctx.moveTo(cx - 13, cy + 8);
+        ctx.lineTo(cx, cy - 4);
+        ctx.lineTo(cx + 13, cy + 8);
         ctx.stroke();
       } else if (kind === 'FILL') {
+        // Tia sét siêu nạp màu trắng
+        ctx.fillStyle = '#ffffff';
         ctx.beginPath();
         ctx.moveTo(cx + 4, cy - 16);
         ctx.lineTo(cx - 6, cy);
@@ -716,15 +1046,17 @@ export class PixelAssetManager {
         ctx.closePath();
         ctx.fill();
       } else {
+        // Ngôi sao bạo kích màu trắng
+        ctx.fillStyle = '#ffffff';
         ctx.beginPath();
         ctx.moveTo(cx, cy - 16);
-        ctx.lineTo(cx + 5, cy - 5);
+        ctx.lineTo(cx + 4, cy - 4);
         ctx.lineTo(cx + 16, cy);
-        ctx.lineTo(cx + 5, cy + 5);
+        ctx.lineTo(cx + 4, cy + 4);
         ctx.lineTo(cx, cy + 16);
-        ctx.lineTo(cx - 5, cy + 5);
+        ctx.lineTo(cx - 4, cy + 4);
         ctx.lineTo(cx - 16, cy);
-        ctx.lineTo(cx - 5, cy - 5);
+        ctx.lineTo(cx - 4, cy - 4);
         ctx.closePath();
         ctx.fill();
       }
@@ -904,10 +1236,22 @@ export class PixelAssetManager {
     let width = 24;
     let height = 36;
     if (kind === 'METEOR') { width = 48; height = 48; }
+    else if (kind === 'NUCLEAR') { width = 34; height = 48; }
     else if (kind === 'SNIPER') { width = 16; height = 48; }
     else if (kind === 'CANNON') { width = 32; height = 32; }
     else if (kind === 'FLAMER') { width = 32; height = 40; }
     else if (kind === 'SLINGSHOT') { width = 28; height = 28; }
+    else if (kind === 'CHAINSAW') { width = 46; height = 46; }
+    else if (kind === 'TYPHOON') { width = 48; height = 48; }
+    else if (kind === 'MINE') { width = 32; height = 32; }
+    else if (kind === 'LASER') { width = 20; height = 52; }
+    else if (kind === 'SOLAR') { width = 48; height = 48; }
+    else if (kind === 'TIME') { width = 32; height = 32; }
+    else if (kind === 'MAGNET') { width = 30; height = 30; }
+    else if (kind === 'THORN') { width = 22; height = 38; }
+    else if (kind === 'PRISM') { width = 38; height = 38; }
+    else if (kind === 'BLACKHOLE') { width = 46; height = 46; }
+    else if (kind === 'HOLY') { width = 44; height = 54; }
 
     const tex = createHighResTexture(width, height, (ctx) => {
       const cx = width / 2;
@@ -1112,21 +1456,41 @@ export class PixelAssetManager {
           break;
         }
 
-        case 'MINIGUN': { // Đạn đồng vàng rực có vệt nhiệt
-          const grad = ctx.createLinearGradient(0, 0, 0, height);
+        case 'MINIGUN': {
+          // Đầu đạn vonfram siêu thanh vàng cam có đuôi nhiệt rực cháy
+          // Vệt nhiệt đuôi đạn
+          const tGrad = ctx.createLinearGradient(0, cy + 2, 0, cy + 18);
+          tGrad.addColorStop(0, '#f97316');
+          tGrad.addColorStop(0.5, '#ef4444');
+          tGrad.addColorStop(1, 'rgba(239, 68, 68, 0)');
+          ctx.fillStyle = tGrad;
+          ctx.beginPath();
+          ctx.moveTo(cx - 3, cy + 2);
+          ctx.lineTo(cx, cy + 18);
+          ctx.lineTo(cx + 3, cy + 2);
+          ctx.closePath();
+          ctx.fill();
+
+          // Thân đầu đạn đồng nóng đỏ
+          const grad = ctx.createLinearGradient(0, cy - 14, 0, cy + 4);
           grad.addColorStop(0, '#ffffff');
-          grad.addColorStop(0.3, '#fde047');
-          grad.addColorStop(0.8, '#eab308');
-          grad.addColorStop(1, '#ca8a04');
+          grad.addColorStop(0.3, '#fef08a');
+          grad.addColorStop(0.7, '#f59e0b');
+          grad.addColorStop(1, '#b45309');
           ctx.fillStyle = grad;
 
           ctx.beginPath();
-          ctx.moveTo(cx, cy - 11);
-          ctx.lineTo(cx + 3.5, cy - 6);
-          ctx.lineTo(cx + 3, cy + 11);
-          ctx.lineTo(cx - 3, cy + 11);
-          ctx.lineTo(cx - 3.5, cy - 6);
+          ctx.moveTo(cx, cy - 15);
+          ctx.lineTo(cx + 4.5, cy - 6);
+          ctx.lineTo(cx + 3.5, cy + 4);
+          ctx.lineTo(cx - 3.5, cy + 4);
+          ctx.lineTo(cx - 4.5, cy - 6);
           ctx.closePath();
+          ctx.fill();
+
+          // Lõi rực sáng
+          ctx.fillStyle = '#ffffff';
+          safeEllipse(ctx, cx, cy - 6, 1.8, 5);
           ctx.fill();
           break;
         }
@@ -1158,6 +1522,528 @@ export class PixelAssetManager {
           ctx.moveTo(cx - 2, cy + 2);
           ctx.lineTo(cx + 4, cy + 8);
           ctx.stroke();
+          break;
+        }
+
+        case 'MYSTERY': {
+          // Viên ngọc ma thuật xoay tròn với dấu ? phát sáng vàng
+          const grad = ctx.createRadialGradient(cx, cy, 3, cx, cy, 14);
+          grad.addColorStop(0, '#fef08a');
+          grad.addColorStop(0.4, '#c084fc');
+          grad.addColorStop(1, '#581c87');
+          ctx.fillStyle = grad;
+          ctx.beginPath();
+          ctx.arc(cx, cy, 13, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#facc15';
+          ctx.lineWidth = 2.5;
+          ctx.stroke();
+
+          ctx.font = 'bold 16px "Segoe UI", sans-serif';
+          ctx.fillStyle = '#fef08a';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('?', cx, cy);
+          break;
+        }
+
+        case 'POISON': {
+          // Giọt axit ăn mòn xanh độc
+          ctx.fillStyle = '#22c55e';
+          ctx.beginPath();
+          ctx.arc(cx, cy, 10, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#86efac';
+          ctx.beginPath();
+          ctx.arc(cx - 3, cy - 3, 3.5, 0, Math.PI * 2);
+          ctx.fill();
+          break;
+        }
+
+        case 'WIND': {
+          // Luồng gió lốc xoáy xanh ngọc
+          ctx.strokeStyle = '#67e8f9';
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.arc(cx, cy, 10, 0, Math.PI * 1.5);
+          ctx.stroke();
+          break;
+        }
+
+        case 'BOUNTY': {
+          // Đồng xu vàng hoàng kim
+          ctx.fillStyle = '#facc15';
+          ctx.beginPath();
+          ctx.arc(cx, cy, 11, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#854d0e';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          ctx.font = 'bold 12px "Segoe UI", sans-serif';
+          ctx.fillStyle = '#854d0e';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('$', cx, cy);
+          break;
+        }
+
+        case 'HOLY': {
+          // Thánh Giá Ánh Sáng Hoàng Kim với đầu nhọn cắm xuống và hào quang tỏa sáng
+          // 1. Vòng hào quang thần thánh (Divine Sun Halo)
+          ctx.strokeStyle = '#fde047';
+          ctx.lineWidth = 2.5;
+          ctx.beginPath();
+          ctx.arc(cx, cy - 6, 12, 0, Math.PI * 2);
+          ctx.stroke();
+
+          // 2. Các tia sáng tỏa ra từ tâm
+          ctx.strokeStyle = '#fef08a';
+          ctx.lineWidth = 1.5;
+          for (let r = 0; r < 4; r++) {
+            const ra = (r * Math.PI) / 2 + Math.PI / 4;
+            ctx.beginPath();
+            ctx.moveTo(cx + Math.cos(ra) * 9, cy - 6 + Math.sin(ra) * 9);
+            ctx.lineTo(cx + Math.cos(ra) * 16, cy - 6 + Math.sin(ra) * 16);
+            ctx.stroke();
+          }
+
+          // 3. Thân Thánh Giá: Thanh ngang
+          const hGrad = ctx.createLinearGradient(cx - 16, 0, cx + 16, 0);
+          hGrad.addColorStop(0, '#eab308');
+          hGrad.addColorStop(0.5, '#ffffff');
+          hGrad.addColorStop(1, '#eab308');
+          ctx.fillStyle = hGrad;
+          safeRoundRect(ctx, cx - 15, cy - 9, 30, 6, 2);
+          ctx.fill();
+
+          // 4. Thân Thánh Giá: Thanh dọc với đầu nhọn cắm xuống
+          ctx.beginPath();
+          ctx.moveTo(cx - 3.5, cy - 22); // Đỉnh trên
+          ctx.lineTo(cx + 3.5, cy - 22);
+          ctx.lineTo(cx + 3.5, cy + 10);
+          ctx.lineTo(cx, cy + 24); // ĐẦU NHỌN CẮM XUỐNG
+          ctx.lineTo(cx - 3.5, cy + 10);
+          ctx.closePath();
+
+          const vGrad = ctx.createLinearGradient(0, cy - 22, 0, cy + 24);
+          vGrad.addColorStop(0, '#fef08a');
+          vGrad.addColorStop(0.3, '#ffffff');
+          vGrad.addColorStop(0.8, '#facc15');
+          vGrad.addColorStop(1, '#eab308');
+          ctx.fillStyle = vGrad;
+          ctx.fill();
+
+          // Viền vàng kim sắc nét
+          ctx.strokeStyle = '#ca8a04';
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+
+          // Viên ngọc linh hồn rực sáng ở tâm giao nhau
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.arc(cx, cy - 6, 3.5, 0, Math.PI * 2);
+          ctx.fill();
+          break;
+        }
+
+        case 'BLACKHOLE': {
+          // Hố đen vũ trụ với đĩa bồi tụ chân trời sự kiện và bão hấp dẫn
+          // Đĩa bồi tụ phát sáng tím/hồng
+          const accGrad = ctx.createRadialGradient(cx, cy, 8, cx, cy, 21);
+          accGrad.addColorStop(0, '#c084fc');
+          accGrad.addColorStop(0.6, '#7e22ce');
+          accGrad.addColorStop(1, 'rgba(126, 34, 206, 0)');
+          ctx.fillStyle = accGrad;
+          ctx.beginPath();
+          ctx.arc(cx, cy, 21, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Vành đai photon lượng tử
+          ctx.strokeStyle = '#f472b6';
+          ctx.lineWidth = 2.5;
+          ctx.beginPath();
+          ctx.ellipse(cx, cy, 19, 9, Math.PI / 6, 0, Math.PI * 2);
+          ctx.stroke();
+
+          // Vòng ánh sáng xanh neon bẻ cong không thời gian
+          ctx.strokeStyle = '#38bdf8';
+          ctx.lineWidth = 1.8;
+          ctx.beginPath();
+          ctx.arc(cx, cy, 12, 0, Math.PI * 2);
+          ctx.stroke();
+
+          // Lõi Chân Trời Sự Kiện (Singularity đen sâu thẳm)
+          ctx.fillStyle = '#05020c';
+          ctx.beginPath();
+          ctx.arc(cx, cy, 10, 0, Math.PI * 2);
+          ctx.fill();
+          break;
+        }
+
+        case 'NUCLEAR': {
+          // Đầu đạn tên lửa hạt nhân Fat-Man khổng lồ với biểu tượng phóng xạ ☢
+          // Đuôi lửa phóng xạ xanh lá neon
+          const flameGrad = ctx.createLinearGradient(0, cy + 10, 0, cy + 24);
+          flameGrad.addColorStop(0, '#a3e635');
+          flameGrad.addColorStop(0.5, '#4ade80');
+          flameGrad.addColorStop(1, 'rgba(34, 197, 94, 0)');
+          ctx.fillStyle = flameGrad;
+          ctx.beginPath();
+          ctx.moveTo(cx - 7, cy + 12);
+          ctx.lineTo(cx, cy + 24);
+          ctx.lineTo(cx + 7, cy + 12);
+          ctx.closePath();
+          ctx.fill();
+
+          // Cánh ổn định đuôi đạn
+          ctx.fillStyle = '#1c1917';
+          ctx.beginPath();
+          ctx.moveTo(cx - 14, cy + 16);
+          ctx.lineTo(cx - 6, cy + 4);
+          ctx.lineTo(cx - 6, cy + 14);
+          ctx.closePath();
+          ctx.fill();
+          ctx.beginPath();
+          ctx.moveTo(cx + 14, cy + 16);
+          ctx.lineTo(cx + 6, cy + 4);
+          ctx.lineTo(cx + 6, cy + 14);
+          ctx.closePath();
+          ctx.fill();
+
+          // Thân bom kim loại quân sự xám tối
+          ctx.fillStyle = '#292524';
+          safeRoundRect(ctx, cx - 8, cy - 12, 16, 24, 4);
+          ctx.fill();
+          ctx.strokeStyle = '#78716c';
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+
+          // Chóp mũi đạn bo tròn với vạch vàng cảnh báo
+          ctx.fillStyle = '#eab308';
+          ctx.beginPath();
+          ctx.arc(cx, cy - 12, 8, Math.PI, 0);
+          ctx.closePath();
+          ctx.fill();
+
+          // Lõi năng lượng phóng xạ xanh neon
+          ctx.fillStyle = '#84cc16';
+          ctx.beginPath();
+          ctx.arc(cx, cy - 14, 3.5, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Biểu tượng phóng xạ ☢ trên thân bom
+          ctx.font = 'bold 12px "Segoe UI", sans-serif';
+          ctx.fillStyle = '#eab308';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('☢', cx, cy + 1);
+          break;
+        }
+
+        case 'LASER': {
+          // Tia laser quang học năng lượng cao chói lòa
+          const lGrad = ctx.createLinearGradient(cx - 8, 0, cx + 8, 0);
+          lGrad.addColorStop(0, 'rgba(56, 189, 248, 0.1)');
+          lGrad.addColorStop(0.5, '#38bdf8');
+          lGrad.addColorStop(1, 'rgba(56, 189, 248, 0.1)');
+          ctx.fillStyle = lGrad;
+          ctx.fillRect(cx - 7, cy - 22, 14, 44);
+
+          // Lõi sáng trắng cực hạn
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(cx - 2.5, cy - 24, 5, 48);
+
+          // Đốm sáng đầu mũi laser
+          ctx.beginPath();
+          ctx.arc(cx, cy - 22, 5, 0, Math.PI * 2);
+          ctx.fillStyle = '#7dd3fc';
+          ctx.fill();
+          ctx.beginPath();
+          ctx.arc(cx, cy - 22, 2.5, 0, Math.PI * 2);
+          ctx.fillStyle = '#ffffff';
+          ctx.fill();
+          break;
+        }
+
+        case 'MINE': {
+          // Quả mìn từ tính gai nhọn bọc thép
+          ctx.fillStyle = '#1e293b';
+          ctx.beginPath();
+          ctx.arc(cx, cy, 11, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#f59e0b';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+
+          // 4 gai kích nổ
+          const spikes = [[0, -14], [14, 0], [0, 14], [-14, 0]];
+          ctx.fillStyle = '#94a3b8';
+          spikes.forEach(([sx, sy]) => {
+            ctx.beginPath();
+            ctx.arc(cx + sx, cy + sy, 2.5, 0, Math.PI * 2);
+            ctx.fill();
+          });
+
+          // Đèn LED đỏ nhấp nháy ở tâm
+          ctx.fillStyle = '#ef4444';
+          ctx.beginPath();
+          ctx.arc(cx, cy, 4, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#fca5a5';
+          ctx.beginPath();
+          ctx.arc(cx - 1, cy - 1, 1.5, 0, Math.PI * 2);
+          ctx.fill();
+          break;
+        }
+
+        case 'CHAINSAW': {
+          // Lưỡi cưa sắt răng cưa khổng lồ có răng carbide sắc bén và tia lửa
+          // Thân đĩa cưa
+          ctx.fillStyle = '#475569';
+          ctx.beginPath();
+          ctx.arc(cx, cy, 16, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Răng cưa nhọn hình tam giác nghiêng góc
+          ctx.fillStyle = '#e2e8f0';
+          for (let a = 0; a < 10; a++) {
+            const rad = (a * Math.PI * 2) / 10;
+            const radNext = rad + 0.35;
+            ctx.beginPath();
+            ctx.moveTo(cx + Math.cos(rad) * 14, cy + Math.sin(rad) * 14);
+            ctx.lineTo(cx + Math.cos(radNext) * 21, cy + Math.sin(radNext) * 21);
+            ctx.lineTo(cx + Math.cos(radNext + 0.15) * 14, cy + Math.sin(radNext + 0.15) * 14);
+            ctx.closePath();
+            ctx.fill();
+          }
+
+          // Rãnh tản nhiệt trên đĩa cưa
+          ctx.strokeStyle = '#1e293b';
+          ctx.lineWidth = 2;
+          for (let s = 0; s < 4; s++) {
+            const sa = (s * Math.PI) / 2;
+            ctx.beginPath();
+            ctx.arc(cx + Math.cos(sa) * 8, cy + Math.sin(sa) * 8, 3, 0, Math.PI * 2);
+            ctx.stroke();
+          }
+
+          // Trục giữa hợp kim đồng đúc
+          ctx.fillStyle = '#b45309';
+          ctx.beginPath();
+          ctx.arc(cx, cy, 7, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#fde68a';
+          ctx.beginPath();
+          ctx.arc(cx, cy, 3.5, 0, Math.PI * 2);
+          ctx.fill();
+          break;
+        }
+
+        case 'TYPHOON': {
+          // Cơn lốc xoáy bão tố cuồn bạo đa tầng
+          // Vòng xoáy ngoài
+          ctx.strokeStyle = 'rgba(56, 189, 248, 0.7)';
+          ctx.lineWidth = 4;
+          ctx.beginPath();
+          ctx.arc(cx, cy, 19, 0, Math.PI * 1.7);
+          ctx.stroke();
+
+          // Vòng xoáy giữa
+          ctx.strokeStyle = '#38bdf8';
+          ctx.lineWidth = 3.5;
+          ctx.beginPath();
+          ctx.arc(cx, cy, 13, Math.PI * 0.4, Math.PI * 2.1);
+          ctx.stroke();
+
+          // Vòng xoáy trong
+          ctx.strokeStyle = '#e0f2fe';
+          ctx.lineWidth = 2.5;
+          ctx.beginPath();
+          ctx.arc(cx, cy, 7, Math.PI * 0.8, Math.PI * 2.6);
+          ctx.stroke();
+
+          // Mắt bão trung tâm phát sáng
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.arc(cx, cy, 4, 0, Math.PI * 2);
+          ctx.fill();
+          break;
+        }
+
+        case 'MAGNET': {
+          // Quả cầu từ trường điện từ xanh tím
+          ctx.fillStyle = '#312e81';
+          ctx.beginPath();
+          ctx.arc(cx, cy, 12, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#818cf8';
+          ctx.lineWidth = 2.5;
+          ctx.stroke();
+
+          // Vành đai điện trường
+          ctx.strokeStyle = '#c084fc';
+          ctx.lineWidth = 1.5;
+          safeEllipse(ctx, cx, cy, 14, 6);
+          ctx.stroke();
+
+          ctx.fillStyle = '#e0e7ff';
+          ctx.beginPath();
+          ctx.arc(cx, cy, 4, 0, Math.PI * 2);
+          ctx.fill();
+          break;
+        }
+
+        case 'SOLAR': {
+          // Quả cầu Thái Dương rực lửa với các tai lửa bùng phát
+          // Vầng hào quang ngoài (Corona)
+          const corona = ctx.createRadialGradient(cx, cy, 8, cx, cy, 22);
+          corona.addColorStop(0, '#fef08a');
+          corona.addColorStop(0.4, '#f97316');
+          corona.addColorStop(0.8, '#dc2626');
+          corona.addColorStop(1, 'rgba(220, 38, 38, 0)');
+          ctx.fillStyle = corona;
+          ctx.beginPath();
+          ctx.arc(cx, cy, 22, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Tai lửa bập bùng xung quanh (Solar Prominences)
+          ctx.strokeStyle = '#facc15';
+          ctx.lineWidth = 2.5;
+          for (let sp = 0; sp < 6; sp++) {
+            const spa = (sp * Math.PI) / 3;
+            ctx.beginPath();
+            ctx.arc(cx + Math.cos(spa) * 12, cy + Math.sin(spa) * 12, 5, spa - 0.8, spa + 0.8);
+            ctx.stroke();
+          }
+
+          // Lõi plasma mặt trời trắng vàng
+          const coreGrad = ctx.createRadialGradient(cx, cy, 2, cx, cy, 12);
+          coreGrad.addColorStop(0, '#ffffff');
+          coreGrad.addColorStop(0.4, '#fef08a');
+          coreGrad.addColorStop(0.8, '#f59e0b');
+          coreGrad.addColorStop(1, '#ea580c');
+          ctx.fillStyle = coreGrad;
+          ctx.beginPath();
+          ctx.arc(cx, cy, 11, 0, Math.PI * 2);
+          ctx.fill();
+          break;
+        }
+
+        case 'PRISM': {
+          // Tinh thể quang phổ đa sắc phân tách 7 sắc cầu vồng
+          // Vầng hào quang quang phổ
+          ctx.fillStyle = 'rgba(244, 114, 182, 0.25)';
+          ctx.beginPath();
+          ctx.arc(cx, cy, 18, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Tinh thể lăng kính kim cương
+          ctx.beginPath();
+          ctx.moveTo(cx, cy - 18);
+          ctx.lineTo(cx + 10, cy - 4);
+          ctx.lineTo(cx + 6, cy + 16);
+          ctx.lineTo(cx - 6, cy + 16);
+          ctx.lineTo(cx - 10, cy - 4);
+          ctx.closePath();
+
+          const pGrad = ctx.createLinearGradient(cx - 10, cy - 18, cx + 10, cy + 16);
+          pGrad.addColorStop(0, '#ffffff');
+          pGrad.addColorStop(0.25, '#67e8f9');
+          pGrad.addColorStop(0.5, '#a78bfa');
+          pGrad.addColorStop(0.75, '#f472b6');
+          pGrad.addColorStop(1, '#fde047');
+          ctx.fillStyle = pGrad;
+          ctx.fill();
+
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+
+          // Trục phản chiếu trung tâm
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(cx, cy - 14);
+          ctx.lineTo(cx, cy + 12);
+          ctx.stroke();
+          break;
+        }
+
+        case 'THORN': {
+          // Mũi gai độc gai góc xanh lục đậm
+          ctx.fillStyle = '#14532d';
+          ctx.beginPath();
+          ctx.moveTo(cx, cy - 16);
+          ctx.lineTo(cx + 7, cy + 14);
+          ctx.lineTo(cx, cy + 10);
+          ctx.lineTo(cx - 7, cy + 14);
+          ctx.closePath();
+          ctx.fill();
+
+          // Nọc độc xanh neon chảy dọc mũi gai
+          ctx.fillStyle = '#4ade80';
+          ctx.beginPath();
+          ctx.moveTo(cx, cy - 14);
+          ctx.lineTo(cx + 2.5, cy + 4);
+          ctx.lineTo(cx - 2.5, cy + 4);
+          ctx.closePath();
+          ctx.fill();
+          break;
+        }
+
+        case 'TIME': {
+          // Bánh răng thời gian luân hồi cyan
+          ctx.strokeStyle = '#38bdf8';
+          ctx.lineWidth = 2.5;
+          ctx.beginPath();
+          ctx.arc(cx, cy, 12, 0, Math.PI * 2);
+          ctx.stroke();
+
+          // Kim đồng hồ
+          ctx.strokeStyle = '#facc15';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(cx, cy);
+          ctx.lineTo(cx, cy - 8);
+          ctx.moveTo(cx, cy);
+          ctx.lineTo(cx + 6, cy);
+          ctx.stroke();
+          break;
+        }
+
+        case 'BERSERKER': {
+          // Đầu đạn cuồng nộ đỏ thẫm rực cháy
+          const bGrad = ctx.createLinearGradient(0, cy - 16, 0, cy + 16);
+          bGrad.addColorStop(0, '#fef08a');
+          bGrad.addColorStop(0.3, '#ef4444');
+          bGrad.addColorStop(1, '#7f1d1d');
+          ctx.fillStyle = bGrad;
+          safeEllipse(ctx, cx, cy, 7, 16);
+          ctx.fill();
+          break;
+        }
+
+        case 'COMBO': {
+          // Đạn lửa combo vàng cam tốc độ cao
+          ctx.fillStyle = '#f97316';
+          safeEllipse(ctx, cx, cy, 6, 14);
+          ctx.fill();
+          ctx.fillStyle = '#fde047';
+          safeEllipse(ctx, cx, cy - 3, 3, 7);
+          ctx.fill();
+          break;
+        }
+
+        default: {
+          // Mặc định đạn năng lượng tròn
+          ctx.fillStyle = '#fde047';
+          ctx.beginPath();
+          ctx.arc(cx, cy, 8, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.arc(cx - 2, cy - 2, 2.5, 0, Math.PI * 2);
+          ctx.fill();
           break;
         }
       }

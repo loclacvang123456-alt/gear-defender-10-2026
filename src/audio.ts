@@ -1,9 +1,94 @@
 import { GunKind } from './types';
 
-// Web Audio Retro Synthesizer - Không cần file âm thanh ngoài
+export type BGMTrack = 'MENU' | 'BATTLE' | 'BOSS';
+
+// Web Audio Retro Synthesizer & BGM / SFX Controller
 class SoundController {
   private ctx: AudioContext | null = null;
   public enabled: boolean = true;
+  public musicEnabled: boolean = true;
+  public sfxEnabled: boolean = true;
+  private prevEnabledState: boolean = true;
+  private prevMusicState: boolean = true;
+  private prevSfxState: boolean = true;
+
+  // BGM Elements - Âm lượng mặc định giảm 1 nửa theo yêu cầu người dùng (từ 0.42 xuống 0.21)
+  private currentTrack: BGMTrack | null = null;
+  private bgmAudio: HTMLAudioElement | null = null;
+  private bgmVolume: number = 0.21;
+  private bgmTracks: Record<BGMTrack, string> = {
+    MENU: '/assets/audio/bgm_menu.mp3',       // Arcade Toy March (Lobby/Menu)
+    BATTLE: '/assets/audio/bgm_battle.mp3',   // Clockwork Bounce (Battle Waves)
+    BOSS: '/assets/audio/bgm_boss.mp3',       // Arcade Boss Battle (Boss/Survival)
+  };
+
+  // Victory fanfare element
+  private victoryAudio: HTMLAudioElement | null = null;
+
+  // Click SFX Audio Pool for instant low-latency playback
+  private clickAudioPool: HTMLAudioElement[] = [];
+  private clickPoolIndex: number = 0;
+
+  constructor() {
+    this.loadSettings();
+    this.initAudioPool();
+    this.setupAutoplayUnlock();
+  }
+
+  private loadSettings() {
+    if (typeof window === 'undefined') return;
+    try {
+      const savedMusic = localStorage.getItem('gear_music_enabled');
+      if (savedMusic !== null) this.musicEnabled = savedMusic === 'true';
+
+      const savedSfx = localStorage.getItem('gear_sfx_enabled');
+      if (savedSfx !== null) this.sfxEnabled = savedSfx === 'true';
+
+      const savedSound = localStorage.getItem('gear_sound_enabled');
+      if (savedSound !== null) this.enabled = savedSound === 'true';
+    } catch (e) {}
+  }
+
+  private saveSettings() {
+    if (typeof window === 'undefined') return;
+    try {
+      localStorage.setItem('gear_music_enabled', String(this.musicEnabled));
+      localStorage.setItem('gear_sfx_enabled', String(this.sfxEnabled));
+      localStorage.setItem('gear_sound_enabled', String(this.enabled));
+    } catch (e) {}
+  }
+
+  public isMusicActive(): boolean {
+    return this.enabled && this.musicEnabled;
+  }
+
+  public isSfxActive(): boolean {
+    return this.enabled && this.sfxEnabled;
+  }
+
+  private initAudioPool() {
+    if (typeof window !== 'undefined') {
+      for (let i = 0; i < 6; i++) {
+        const a = new Audio('/assets/audio/sfx_btn_click.wav');
+        a.preload = 'auto';
+        this.clickAudioPool.push(a);
+      }
+    }
+  }
+
+  private setupAutoplayUnlock() {
+    if (typeof window === 'undefined') return;
+    const unlock = () => {
+      this.initCtx();
+      if (this.currentTrack && this.isMusicActive() && this.bgmAudio && this.bgmAudio.paused) {
+        this.bgmAudio.play().catch(() => {});
+      }
+      window.removeEventListener('pointerdown', unlock);
+      window.removeEventListener('keydown', unlock);
+    };
+    window.addEventListener('pointerdown', unlock, { once: true });
+    window.addEventListener('keydown', unlock, { once: true });
+  }
 
   private initCtx() {
     if (!this.ctx) {
@@ -11,8 +96,65 @@ class SoundController {
       this.ctx = new AudioCtx();
     }
     if (this.ctx.state === 'suspended') {
-      this.ctx.resume();
+      this.ctx.resume().catch(() => {});
     }
+  }
+
+  // Play button click SFX (snappy tactile UI click)
+  playClick() {
+    if (!this.isSfxActive()) return;
+    this.initCtx();
+
+    if (this.clickAudioPool.length > 0) {
+      const audio = this.clickAudioPool[this.clickPoolIndex];
+      this.clickPoolIndex = (this.clickPoolIndex + 1) % this.clickAudioPool.length;
+      try {
+        audio.currentTime = 0;
+        audio.volume = 0.65;
+        audio.play().catch(() => {
+          this.playSynthClick();
+        });
+      } catch (e) {
+        this.playSynthClick();
+      }
+    } else {
+      this.playSynthClick();
+    }
+  }
+
+  // Juicy tactile arcade pop click (used when audio element is busy or blocked)
+  private playSynthClick() {
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(750, t);
+    osc.frequency.exponentialRampToValueAtTime(160, t + 0.038);
+
+    gain.gain.setValueAtTime(0.18, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.038);
+
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    osc.start(t);
+    osc.stop(t + 0.04);
+  }
+
+  // Play stage clear / victory fanfare (uploaded audio asset)
+  playVictory() {
+    if (!this.isSfxActive()) return;
+    this.initCtx();
+    try {
+      if (!this.victoryAudio) {
+        this.victoryAudio = new Audio('/assets/audio/sfx_victory.mp3');
+      }
+      this.victoryAudio.currentTime = 0;
+      this.victoryAudio.volume = 0.85;
+      this.victoryAudio.play().catch(() => {});
+    } catch (e) {}
   }
 
   // Helper tạo buffer tiếng ồn (Noise) cho lửa, nổ, đạn pháo
@@ -27,32 +169,9 @@ class SoundController {
     return buffer;
   }
 
-  // Tiếng bánh răng gõ "tách"
-  playClick() {
-    if (!this.enabled) return;
-    this.initCtx();
-    if (!this.ctx) return;
-
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(480, this.ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(120, this.ctx.currentTime + 0.04);
-
-    gain.gain.setValueAtTime(0.12, this.ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.04);
-
-    osc.connect(gain);
-    gain.connect(this.ctx.destination);
-
-    osc.start();
-    osc.stop(this.ctx.currentTime + 0.05);
-  }
-
   // Điều phối âm thanh chuẩn xác cho từng loại trong 11 súng
   playGunShot(kind: GunKind) {
-    if (!this.enabled) return;
+    if (!this.isSfxActive()) return;
     this.initCtx();
     if (!this.ctx) return;
 
@@ -295,7 +414,7 @@ class SoundController {
 
   // Tiếng súng bắn cơ bản (fallback)
   playShoot(tier: number = 1) {
-    if (!this.enabled) return;
+    if (!this.isSfxActive()) return;
     this.initCtx();
     if (!this.ctx) return;
 
@@ -319,7 +438,7 @@ class SoundController {
 
   // Tiếng đạn trúng quái "bụp"
   playHit() {
-    if (!this.enabled) return;
+    if (!this.isSfxActive()) return;
     this.initCtx();
     if (!this.ctx) return;
 
@@ -342,7 +461,7 @@ class SoundController {
 
   // Tiếng ghép súng MERGE thăng cấp cực kỳ kích thích theo bậc Tier Rarity
   playMerge(tier: number = 2) {
-    if (!this.enabled) return;
+    if (!this.isSfxActive()) return;
     this.initCtx();
     if (!this.ctx) return;
 
@@ -483,7 +602,7 @@ class SoundController {
 
   // Tiếng máy cơ khí quay xúc xắc + vật phẩm xuất hiện thần thánh (Roll & Spawn SFX)
   playRollSpawn() {
-    if (!this.enabled) return;
+    if (!this.isSfxActive()) return;
     this.initCtx();
     if (!this.ctx) return;
 
@@ -555,7 +674,7 @@ class SoundController {
 
   // Tiếng nổ quái chết / Boss hit
   playExplode() {
-    if (!this.enabled) return;
+    if (!this.isSfxActive()) return;
     this.initCtx();
     if (!this.ctx) return;
 
@@ -574,6 +693,115 @@ class SoundController {
 
     osc.start();
     osc.stop(this.ctx.currentTime + 0.22);
+  }
+
+  // --- BGM MUSIC CONTROLLER ---
+  public playBGM(track: BGMTrack) {
+    this.currentTrack = track;
+    if (!this.isMusicActive()) {
+      this.pauseBGM();
+      return;
+    }
+    const src = this.bgmTracks[track];
+    if (!src) return;
+
+    if (!this.bgmAudio) {
+      this.bgmAudio = new Audio();
+      this.bgmAudio.loop = true;
+    }
+
+    if (this.bgmAudio.src !== window.location.origin + src && !this.bgmAudio.src.endsWith(src)) {
+      this.bgmAudio.src = src;
+      this.bgmAudio.currentTime = 0;
+    }
+
+    this.bgmAudio.volume = this.bgmVolume;
+    this.bgmAudio.play().catch(() => {});
+  }
+
+  public stopBGM() {
+    this.currentTrack = null;
+    if (this.bgmAudio) {
+      this.bgmAudio.pause();
+      this.bgmAudio.currentTime = 0;
+    }
+  }
+
+  public pauseBGM() {
+    if (this.bgmAudio) {
+      this.bgmAudio.pause();
+    }
+  }
+
+  public resumeBGM() {
+    if (this.isMusicActive() && this.currentTrack && this.bgmAudio) {
+      this.bgmAudio.volume = this.bgmVolume;
+      this.bgmAudio.play().catch(() => {});
+    }
+  }
+
+  public setMusicEnabled(val: boolean) {
+    this.musicEnabled = val;
+    this.saveSettings();
+    if (!this.isMusicActive()) {
+      this.pauseBGM();
+    } else if (this.currentTrack) {
+      this.playBGM(this.currentTrack);
+    }
+  }
+
+  public setSfxEnabled(val: boolean) {
+    this.sfxEnabled = val;
+    this.saveSettings();
+    if (this.isSfxActive()) {
+      this.playClick();
+    }
+  }
+
+  public setSoundEnabled(val: boolean) {
+    this.enabled = val;
+    this.saveSettings();
+    if (!this.enabled) {
+      this.pauseBGM();
+      if (this.victoryAudio && !this.victoryAudio.paused) {
+        this.victoryAudio.pause();
+      }
+    } else {
+      if (this.isMusicActive() && this.currentTrack) {
+        this.playBGM(this.currentTrack);
+      }
+    }
+  }
+
+  // --- GD SDK AUDIO PAUSE / RESUME COMPLIANCE ---
+  public pauseAudio() {
+    this.prevEnabledState = this.enabled;
+    this.prevMusicState = this.musicEnabled;
+    this.prevSfxState = this.sfxEnabled;
+    this.enabled = false;
+    this.pauseBGM();
+    if (this.victoryAudio && !this.victoryAudio.paused) {
+      this.victoryAudio.pause();
+    }
+    if (this.ctx && this.ctx.state === 'running') {
+      try {
+        this.ctx.suspend();
+      } catch (e) {}
+    }
+  }
+
+  public resumeAudio() {
+    this.enabled = this.prevEnabledState;
+    this.musicEnabled = this.prevMusicState;
+    this.sfxEnabled = this.prevSfxState;
+    if (this.isMusicActive()) {
+      this.resumeBGM();
+    }
+    if (this.ctx && this.ctx.state === 'suspended' && this.enabled) {
+      try {
+        this.ctx.resume();
+      } catch (e) {}
+    }
   }
 }
 

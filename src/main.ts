@@ -2,6 +2,7 @@ import { Application } from 'pixi.js';
 import { GameEngine } from './game';
 import { UIManager } from './ui';
 import { PixelAssetManager } from './pixelArt';
+import { sound } from './audio';
 
 async function bootstrap() {
   const container = document.getElementById('game-container')!;
@@ -28,6 +29,26 @@ async function bootstrap() {
   // Khởi tạo Real HTML/CSS UI Manager
   const ui = new UIManager(game, container);
   game.setUIManager(ui);
+
+  (window as any).game = game;
+  (window as any).ui = ui;
+  (window as any).restartTutorial = () => game.startTutorial();
+
+  // Khởi động trận đấu Tutorial ngay nếu là người chơi mới
+  if (!game.saveData.hasSeenTutorial) {
+    game.startTutorial();
+  } else {
+    // Khởi động nhạc nền sảnh chờ (Arcade Toy March)
+    sound.playBGM('MENU');
+  }
+
+  // Global button click SFX listener for interactive UI elements
+  document.addEventListener('click', (e) => {
+    const el = (e.target as HTMLElement)?.closest('button, [role="button"], .kid-side-btn, .honeycomb-cell, .kid-bottom-nav-item, .kid-mode-tab, .kid-map-card');
+    if (el) {
+      sound.playClick();
+    }
+  }, { capture: true });
 
   // Resize canvas & UI giữ đúng tỉ lệ 9:16 sắc nét trên mọi thiết bị
   function resizeGame() {

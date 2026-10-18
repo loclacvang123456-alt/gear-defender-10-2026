@@ -1,9 +1,28 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>Gear Gun Castle</title>
+  <title>Gear Defender - Castle Defense</title>
+  
+  <!-- GameDistribution HTML5 SDK -->
+  <script>
+    window["GD_OPTIONS"] = {
+      "gameId": "8dc5c5b9437c403ca7bebcd1b0a795c9",
+      "onEvent": function(event) {
+        window.dispatchEvent(new CustomEvent('gd_event', { detail: event }));
+      }
+    };
+    (function(d, s, id) {
+      var js, fjs = d.getElementsByTagName(s)[0];
+      if (d.getElementById(id)) return;
+      js = d.createElement(s);
+      js.id = id;
+      js.src = "https://html5.api.gamedistribution.com/main.min.js";
+      fjs.parentNode.insertBefore(js, fjs);
+    })(document, "script", "gamedistribution-jssdk");
+  </script>
+
   <style>
     * {
       box-sizing: border-box;
